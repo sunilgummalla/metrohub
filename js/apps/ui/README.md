@@ -1,5 +1,7 @@
-# UI
+# UI Portal
 
-React UI applications live here.
+The React portal shell lives here.
 
-This app owns browser-facing screens, components, client state, and user interactions.
+This app hosts multiple micro apps. Each micro app appears as a tile in the portal UI and is grouped by category.
+
+The portal shell owns category navigation, tile rendering, micro-app entry routing, client state, and user interactions.
