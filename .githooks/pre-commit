@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+set -eu
+
+branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+
+case "$branch" in
+  develop|main|master)
+    echo "Direct commits to '$branch' are blocked."
+    echo "Create a feature branch and open a pull request into develop."
+    exit 1
+    ;;
+esac

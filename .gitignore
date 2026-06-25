@@ -1,0 +1,25 @@
+# Local scratch space
+scratch/*
+!scratch/.gitkeep
+!scratch/README.md
+
+# JavaScript / pnpm
+js/node_modules/
+js/.pnpm-store/
+js/**/dist/
+js/**/coverage/
+
+# Flutter / Dart / Melos
+flutter/.dart_tool/
+flutter/**/.dart_tool/
+flutter/**/build/
+flutter/**/.flutter-plugins
+flutter/**/.flutter-plugins-dependencies
+
+# Python / uv
+py/.venv/
+py/**/__pycache__/
+py/**/.pytest_cache/
+py/**/.ruff_cache/
+py/**/build/
+py/**/dist/

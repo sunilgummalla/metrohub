@@ -1,0 +1,25 @@
+name: Branch Policy
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+
+jobs:
+  require-develop-base:
+    name: Require PRs into develop
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check pull request base branch
+        run: |
+          if [ "${{ github.base_ref }}" != "develop" ]; then
+            echo "::error::Pull requests must target develop."
+            exit 1
+          fi
