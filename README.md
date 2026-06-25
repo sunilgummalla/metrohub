@@ -3,6 +3,9 @@
 This is a multi-technology repository organized by platform:
 
 - `js/`: JavaScript and TypeScript projects managed with pnpm.
+  - `js/apps/api/`: NestJS API services.
+  - `js/apps/experience/`: Next.js experience layer.
+  - `js/apps/ui/`: React UI applications.
 - `flutter/`: Flutter and Dart projects managed with Melos.
 - `py/`: Python projects managed with uv.
 - `docs/`: specifications, planning notes, and to-do items.
