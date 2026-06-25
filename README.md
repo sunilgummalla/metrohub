@@ -1,11 +1,14 @@
-# Money Money
+# Money-Money
+
+Money-Money is the current code name and may change in the future.
 
 This is a multi-technology repository organized by platform:
 
-- `js/`: JavaScript and TypeScript projects managed with pnpm.
+  - `js/`: JavaScript and TypeScript projects managed with pnpm.
   - `js/apps/api/`: NestJS API services.
   - `js/apps/experience/`: Next.js experience layer.
-  - `js/apps/ui/`: React UI applications.
+  - `js/apps/shell/`: React shell that hosts micro apps.
+  - `js/packages/`: independently packaged micro apps and shared TypeScript libraries.
 - `flutter/`: Flutter and Dart projects managed with Melos.
 - `py/`: Python projects managed with uv.
 - `docs/`: specifications, planning notes, and to-do items.
