@@ -1,0 +1,9 @@
+{
+  "name": "money-money-js",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r --if-present run build",
+    "lint": "pnpm -r --if-present run lint",
+    "test": "pnpm -r --if-present run test"
+  }
+}

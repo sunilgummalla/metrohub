@@ -1,0 +1,18 @@
+[project]
+name = "money-money-py"
+version = "0.1.0"
+description = "Python workspace for money-money projects."
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = []
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = [
+  "apps/*",
+  "packages/*",
+]

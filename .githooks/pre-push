@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+set -eu
+
+while read -r local_ref local_sha remote_ref remote_sha
+do
+  case "$remote_ref" in
+    refs/heads/develop|refs/heads/main|refs/heads/master)
+      branch="${remote_ref#refs/heads/}"
+      echo "Direct pushes to '$branch' are blocked."
+      echo "Push your feature branch and open a pull request into develop."
+      exit 1
+      ;;
+  esac
+done
