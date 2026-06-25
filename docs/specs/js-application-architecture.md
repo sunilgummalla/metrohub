@@ -24,11 +24,20 @@ The portal hosts multiple micro apps. Each micro app appears as a tile in the UI
 
 ## Micro Apps
 
-- Path: `js/packages/micro-apps/*`
+- Path: `js/packages/*`
 - Framework: React by default unless an app needs a different client runtime.
 - Responsibility: separately packaged portal features that expose metadata for display name, category, route, tile content, and optional visual assets.
 
+Example micro apps and categories:
+
+- Poker scorecard: Scoreboard
+- Rummy scorecard: Scoreboards
+- Splits: Accounting
+- My Accounts: Accounting
+- Deals: Shopping
+- Near By: Site Seeing
+
 ## Shared Packages
 
-- Path: `js/packages/shared/*`
+- Path: `js/packages/*`
 - Responsibility: reusable TypeScript libraries shared by the API, experience layer, portal shell, and micro apps.

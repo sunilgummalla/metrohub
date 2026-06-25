@@ -1,4 +1,3 @@
 packages:
   - "apps/*"
-  - "packages/micro-apps/*"
-  - "packages/shared/*"
+  - "packages/*"

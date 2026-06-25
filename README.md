@@ -6,8 +6,7 @@ This is a multi-technology repository organized by platform:
   - `js/apps/api/`: NestJS API services.
   - `js/apps/experience/`: Next.js experience layer.
   - `js/apps/ui/`: React portal shell that hosts micro apps.
-  - `js/packages/micro-apps/`: independently packaged micro apps shown as portal tiles.
-  - `js/packages/shared/`: shared TypeScript libraries.
+  - `js/packages/`: independently packaged micro apps and shared TypeScript libraries.
 - `flutter/`: Flutter and Dart projects managed with Melos.
 - `py/`: Python projects managed with uv.
 - `docs/`: specifications, planning notes, and to-do items.
