@@ -1,5 +1,5 @@
-# Backend
+# API
 
-NestJS backend services and APIs live here.
+NestJS API services live here.
 
 This app owns domain APIs, persistence, integrations, background jobs, and server-side business workflows.

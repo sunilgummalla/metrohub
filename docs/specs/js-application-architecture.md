@@ -2,17 +2,17 @@
 
 The JavaScript workspace uses pnpm and is split into three application layers.
 
-## Backend
+## API
 
-- Path: `js/apps/backend`
+- Path: `js/apps/api`
 - Framework: NestJS
 - Responsibility: domain APIs, persistence, integrations, background jobs, and server-side business workflows.
 
-## BFF
+## Experience
 
-- Path: `js/apps/bff`
+- Path: `js/apps/experience`
 - Framework: Next.js
-- Responsibility: backend-for-frontend behavior, UI-specific API composition, request shaping, authentication handoff, and server-rendered routes where needed.
+- Responsibility: experience-layer behavior, UI-specific API composition, request shaping, authentication handoff, and server-rendered routes where needed.
 
 ## UI
 
@@ -23,4 +23,4 @@ The JavaScript workspace uses pnpm and is split into three application layers.
 ## Shared Packages
 
 - Path: `js/packages/*`
-- Responsibility: reusable TypeScript libraries shared by the backend, BFF, and UI apps.
+- Responsibility: reusable TypeScript libraries shared by the API, experience, and UI apps.
