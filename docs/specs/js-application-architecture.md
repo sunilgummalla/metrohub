@@ -6,21 +6,32 @@ The JavaScript workspace uses pnpm and is split into three application layers.
 
 - Path: `js/apps/api`
 - Framework: NestJS
-- Responsibility: domain APIs, persistence, integrations, background jobs, and server-side business workflows.
+- Responsibility: domain APIs, persistence, integrations, background jobs, server-side business workflows, and the JSON app registry.
+
+The API owns the JSON-based app registry. It exposes the supported app list to the experience layer.
 
 ## Experience
 
 - Path: `js/apps/experience`
 - Framework: Next.js
-- Responsibility: experience-layer behavior, UI-specific API composition, request shaping, authentication handoff, and server-rendered routes where needed.
+- Responsibility: experience-layer behavior, UI-specific API composition, request shaping, authentication handoff, server-rendered routes where needed, and fetching the supported app list from the API.
 
-## UI Portal
+The experience layer calls the API for the supported app registry and passes the app list to the shell.
 
-- Path: `js/apps/ui`
+## Shell
+
+- Path: `js/apps/shell`
 - Framework: React
-- Responsibility: portal shell, category navigation, micro-app tile rendering, micro-app entry routing, client state, and user interactions.
+- Responsibility: host shell, sticky header, sticky footer, category navigation, micro-app tile rendering, micro-app entry routing, client state, and user interactions.
 
-The portal hosts multiple micro apps. Each micro app appears as a tile in the UI and is grouped by category.
+The shell hosts multiple micro apps for the Money-Money code name. Each micro app appears as a clickable tile and is grouped by category.
+
+## App Registry Flow
+
+1. The API maintains a JSON registry of supported apps.
+2. The experience layer calls the API and gets the supported app list.
+3. The shell renders one clickable tile for each app, organized by category.
+4. The shell keeps the Money-Money header and footer sticky while users browse app categories.
 
 ## Micro Apps
 
@@ -42,4 +53,4 @@ Example micro apps and categories:
 ## Shared Packages
 
 - Path: `js/packages/*`
-- Responsibility: reusable TypeScript libraries shared by the API, experience layer, portal shell, and micro apps.
+- Responsibility: reusable TypeScript libraries shared by the API, experience layer, shell, and micro apps.
