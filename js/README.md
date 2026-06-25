@@ -21,7 +21,7 @@ pnpm test
 - `apps/api` owns domain APIs, persistence, integrations, background jobs, and server-side business workflows.
 - `apps/experience` owns request shaping for client experiences, UI-specific API composition, authentication handoff, and server-rendered Next.js routes where needed.
 - `apps/ui` owns the React portal shell, including the tile grid and category navigation for micro apps.
-- `packages/*` contains independently packaged micro apps and shared TypeScript libraries. Each micro app should expose portal metadata such as display name, category, route, and tile details.
+- `packages/*` contains independently packaged micro apps and shared TypeScript libraries. Micro-app folders use the `app-` prefix, but package names use the internal `@money` namespace. Each micro app should expose portal metadata such as display name, category, route, and tile details.
 
 Initial micro-app examples:
 

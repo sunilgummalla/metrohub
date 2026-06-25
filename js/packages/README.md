@@ -2,6 +2,8 @@
 
 Each direct child of this folder is its own pnpm package. Packages can be micro apps shown in the portal or reusable TypeScript libraries shared across apps.
 
+Micro-app folder names use the `app-` prefix so they group together in file listings. The prefix is only for folder names. Package names use the internal `@money` namespace and are private repo-only packages that are not published to a package store.
+
 Micro apps should expose portal metadata, including:
 
 - Display name
@@ -12,13 +14,13 @@ Micro apps should expose portal metadata, including:
 
 Initial micro-app examples:
 
-| Package | Display name | Category |
-| --- | --- | --- |
-| `poker-scorecard` | Poker scorecard | Scoreboard |
-| `rummy-scorecard` | Rummy scorecard | Scoreboards |
-| `splits` | Splits | Accounting |
-| `my-accounts` | My Accounts | Accounting |
-| `deals` | Deals | Shopping |
-| `near-by` | Near By | Site Seeing |
+| Folder | Package | Display name | Category |
+| --- | --- | --- | --- |
+| `app-poker-scorecard` | `@money/poker-scorecard` | Poker scorecard | Scoreboard |
+| `app-rummy-scorecard` | `@money/rummy-scorecard` | Rummy scorecard | Scoreboards |
+| `app-splits` | `@money/splits` | Splits | Accounting |
+| `app-my-accounts` | `@money/my-accounts` | My Accounts | Accounting |
+| `app-deals` | `@money/deals` | Deals | Shopping |
+| `app-near-by` | `@money/near-by` | Near By | Site Seeing |
 
 These packages are currently empty placeholders until their app implementations and shared portal metadata contract are defined.

@@ -28,6 +28,8 @@ The portal hosts multiple micro apps. Each micro app appears as a tile in the UI
 - Framework: React by default unless an app needs a different client runtime.
 - Responsibility: separately packaged portal features that expose metadata for display name, category, route, tile content, and optional visual assets.
 
+Micro-app folder names use the `app-` prefix so they group together under `js/packages`. The `app-` prefix is only for folder names; package names use the internal `@money` namespace.
+
 Example micro apps and categories:
 
 - Poker scorecard: Scoreboard
