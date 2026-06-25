@@ -20,3 +20,5 @@ Initial micro-app examples:
 | `my-accounts` | My Accounts | Accounting |
 | `deals` | Deals | Shopping |
 | `near-by` | Near By | Site Seeing |
+
+These packages are currently empty placeholders until their app implementations and shared portal metadata contract are defined.
