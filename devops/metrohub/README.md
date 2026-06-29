@@ -38,6 +38,23 @@ The Cloudflare public hostname routes for each tunnel should point to:
 http://traefik:80
 ```
 
+## Docker Logs
+
+Each stack runs Dozzle for Docker log review. Dozzle is not exposed through Cloudflare or Traefik.
+
+| Environment | Stack | Dozzle port |
+| --- | --- | --- |
+| `dev` | `mh-dev` | `9002` |
+| `prod` | `mh-prod` | `9001` |
+
+Open it through SSH port forwarding, for example:
+
+```sh
+ssh -L 9002:127.0.0.1:9002 metrohub
+```
+
+Then open `http://127.0.0.1:9002` locally for dev logs. Use port `9001` for prod.
+
 ## VPS Layout
 
 The workflow copies deployment files to:

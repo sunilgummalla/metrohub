@@ -50,6 +50,30 @@ services:
       restart_policy:
         condition: any
 
+  dozzle:
+    image: amir20/dozzle:latest
+    logging: *json-file-logging
+    environment:
+      - DOZZLE_ADDR=127.0.0.1:${DOZZLE_PORT:?DOZZLE_PORT_required}
+      - DOZZLE_FILTER=label=com.docker.stack.namespace=${STACK_NAME}
+      - DOZZLE_HOSTNAME=${STACK_NAME}
+      - DOZZLE_MODE=swarm
+      - DOZZLE_NO_ANALYTICS=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - host
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 10
+        window: 60s
+
   api:
     image: ${API_IMAGE:?API_IMAGE_required}
     logging: *json-file-logging
@@ -111,3 +135,6 @@ networks:
     name: ${STACK_NAME}_edge
     driver: overlay
     attachable: true
+  host:
+    name: host
+    external: true

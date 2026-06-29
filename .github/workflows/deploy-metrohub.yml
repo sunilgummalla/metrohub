@@ -32,6 +32,7 @@ jobs:
       stack: ${{ steps.target.outputs.stack }}
       app_domain: ${{ steps.target.outputs.app_domain }}
       cors_origins: ${{ steps.target.outputs.cors_origins }}
+      dozzle_port: ${{ steps.target.outputs.dozzle_port }}
     steps:
       - id: target
         run: |
@@ -49,15 +50,18 @@ jobs:
           if [ "$environment" = "dev" ]; then
             stack="mh-dev"
             app_domain="dev.metrohub.io"
+            dozzle_port="9002"
           else
             stack="mh-prod"
             app_domain="www.metrohub.io"
+            dozzle_port="9001"
           fi
 
           echo "environment=$environment" >> "$GITHUB_OUTPUT"
           echo "stack=$stack" >> "$GITHUB_OUTPUT"
           echo "app_domain=$app_domain" >> "$GITHUB_OUTPUT"
           echo "cors_origins=https://$app_domain" >> "$GITHUB_OUTPUT"
+          echo "dozzle_port=$dozzle_port" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build and publish images
@@ -119,10 +123,11 @@ jobs:
           STACK_NAME: ${{ needs.target.outputs.stack }}
           APP_DOMAIN: ${{ needs.target.outputs.app_domain }}
           CORS_ORIGINS: ${{ needs.target.outputs.cors_origins }}
+          DOZZLE_PORT: ${{ needs.target.outputs.dozzle_port }}
           CLOUDFLARED_TOKEN: ${{ secrets.CLOUDFLARED_TOKEN }}
           API_IMAGE: ${{ env.IMAGE_PREFIX }}-api:${{ github.sha }}
           EXPERIENCE_IMAGE: ${{ env.IMAGE_PREFIX }}-experience:${{ github.sha }}
           SHELL_IMAGE: ${{ env.IMAGE_PREFIX }}-shell:${{ github.sha }}
         run: |
           ssh -i ~/.ssh/metrohub "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            "cd /tmp/money-money-deploy && STACK_NAME='$STACK_NAME' APP_DOMAIN='$APP_DOMAIN' CORS_ORIGINS='$CORS_ORIGINS' CLOUDFLARED_TOKEN='$CLOUDFLARED_TOKEN' API_IMAGE='$API_IMAGE' EXPERIENCE_IMAGE='$EXPERIENCE_IMAGE' SHELL_IMAGE='$SHELL_IMAGE' sh deploy.sh"
+            "cd /tmp/money-money-deploy && STACK_NAME='$STACK_NAME' APP_DOMAIN='$APP_DOMAIN' CORS_ORIGINS='$CORS_ORIGINS' DOZZLE_PORT='$DOZZLE_PORT' CLOUDFLARED_TOKEN='$CLOUDFLARED_TOKEN' API_IMAGE='$API_IMAGE' EXPERIENCE_IMAGE='$EXPERIENCE_IMAGE' SHELL_IMAGE='$SHELL_IMAGE' sh deploy.sh"
