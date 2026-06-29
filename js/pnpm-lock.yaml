@@ -97,7 +97,7 @@ importers:
         specifier: 5.5.3
         version: 5.5.3
 
-  apps/ui:
+  apps/shell:
     dependencies:
       '@vitejs/plugin-react':
         specifier: 4.3.1
@@ -136,6 +136,18 @@ importers:
       typescript:
         specifier: 5.5.3
         version: 5.5.3
+
+  packages/app-deals: {}
+
+  packages/app-my-accounts: {}
+
+  packages/app-near-by: {}
+
+  packages/app-poker-scorecard: {}
+
+  packages/app-rummy-scorecard: {}
+
+  packages/app-splits: {}
 
 packages:
 

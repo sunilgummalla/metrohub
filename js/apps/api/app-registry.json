@@ -1,0 +1,78 @@
+{
+  "appName": "Money-Money",
+  "codeName": true,
+  "apps": [
+    {
+      "id": "poker-scorecard",
+      "packageName": "@money/poker-scorecard",
+      "folder": "app-poker-scorecard",
+      "displayName": "Poker scorecard",
+      "category": "Scoreboard",
+      "route": "/apps/poker-scorecard",
+      "tile": {
+        "title": "Poker scorecard",
+        "description": "Track poker game scores."
+      }
+    },
+    {
+      "id": "rummy-scorecard",
+      "packageName": "@money/rummy-scorecard",
+      "folder": "app-rummy-scorecard",
+      "displayName": "Rummy scorecard",
+      "category": "Scoreboards",
+      "route": "/apps/rummy-scorecard",
+      "tile": {
+        "title": "Rummy scorecard",
+        "description": "Track rummy game scores."
+      }
+    },
+    {
+      "id": "splits",
+      "packageName": "@money/splits",
+      "folder": "app-splits",
+      "displayName": "Splits",
+      "category": "Accounting",
+      "route": "/apps/splits",
+      "tile": {
+        "title": "Splits",
+        "description": "Split shared expenses."
+      }
+    },
+    {
+      "id": "my-accounts",
+      "packageName": "@money/my-accounts",
+      "folder": "app-my-accounts",
+      "displayName": "My Accounts",
+      "category": "Accounting",
+      "route": "/apps/my-accounts",
+      "tile": {
+        "title": "My Accounts",
+        "description": "Review personal account information."
+      }
+    },
+    {
+      "id": "deals",
+      "packageName": "@money/deals",
+      "folder": "app-deals",
+      "displayName": "Deals",
+      "category": "Shopping",
+      "route": "/apps/deals",
+      "tile": {
+        "title": "Deals",
+        "description": "Find shopping deals."
+      }
+    },
+    {
+      "id": "near-by",
+      "packageName": "@money/near-by",
+      "folder": "app-near-by",
+      "displayName": "Near By",
+      "category": "Site Seeing",
+      "route": "/apps/near-by",
+      "tile": {
+        "title": "Near By",
+        "description": "Discover nearby places to visit."
+      }
+    }
+  ]
+}
