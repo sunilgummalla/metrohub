@@ -5,9 +5,12 @@ scratch/*
 
 # JavaScript / pnpm
 js/node_modules/
+js/**/node_modules/
 js/.pnpm-store/
+js/**/.next/
 js/**/dist/
 js/**/coverage/
+js/**/tsconfig.tsbuildinfo
 
 # Flutter / Dart / Melos
 flutter/.dart_tool/

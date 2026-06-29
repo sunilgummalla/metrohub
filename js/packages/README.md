@@ -4,7 +4,7 @@ Each direct child of this folder is its own pnpm package. Packages can be micro 
 
 Micro-app folder names use the `app-` prefix so they group together in file listings. The prefix is only for folder names. Package names use the internal `@money` namespace and are private repo-only packages that are not published to a package store.
 
-Micro apps should expose portal metadata, including:
+Micro apps expose portal metadata using the shared `PortalAppMetadata` contract in `shared/src/portal-metadata.ts`, including:
 
 - Display name
 - Category
@@ -23,4 +23,4 @@ Initial micro-app examples:
 | `app-deals` | `@money/deals` | Deals | Shopping |
 | `app-near-by` | `@money/near-by` | Near By | Site Seeing |
 
-These packages are currently empty placeholders until their app implementations and shared portal metadata contract are defined.
+These packages are currently empty placeholders until their app implementations are defined.

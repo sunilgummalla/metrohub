@@ -1,9 +1,9 @@
 # To Do
 
-- [ ] Scaffold the NestJS API in `js/apps/api`.
-- [ ] Scaffold the Next.js experience app in `js/apps/experience`.
-- [ ] Scaffold the React shell in `js/apps/shell`.
-- [ ] Define the micro-app metadata contract for portal tiles and categories.
+- [x] Scaffold the NestJS API in `js/apps/api`.
+- [x] Scaffold the Next.js experience app in `js/apps/experience`.
+- [x] Scaffold the React shell in `js/apps/shell`.
+- [x] Define the micro-app metadata contract for portal tiles and categories.
 - [x] Scaffold the initial micro-app package placeholders under `js/packages`.
 - [x] Add the initial JSON app registry in `js/apps/api`.
 - [ ] Wire experience to fetch the supported app registry from the API.
