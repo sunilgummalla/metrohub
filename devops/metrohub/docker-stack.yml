@@ -6,7 +6,7 @@ x-json-file-logging: &json-file-logging
 
 services:
   cloudflared:
-    image: cloudflare/cloudflared:latest
+    image: cloudflare/cloudflared@sha256:6d91c121b803126f7a5344005d17a9324788fc09d305b6e2560ec6040a7ae283
     logging: *json-file-logging
     command:
       - tunnel
@@ -27,7 +27,7 @@ services:
         window: 60s
 
   traefik:
-    image: traefik:v3
+    image: traefik@sha256:e4d98158c01ad752fc1071d4e9573788747230d902cdde00a772516e692d07c9
     logging: *json-file-logging
     environment:
       - DOCKER_API_VERSION=1.40
@@ -51,7 +51,7 @@ services:
         condition: any
 
   dozzle:
-    image: amir20/dozzle:latest
+    image: amir20/dozzle@sha256:2e14180fa14c195b8e86705b7ab2234b87599215bcf06f7f56396cb45f57f963
     logging: *json-file-logging
     environment:
       - DOZZLE_ADDR=127.0.0.1:${DOZZLE_PORT:?DOZZLE_PORT_required}

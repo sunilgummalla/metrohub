@@ -1,23 +1,26 @@
-FROM node:22-alpine AS build
+FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS build
 
 WORKDIR /workspace/js
-RUN corepack enable
+ARG PNPM_VERSION=9.15.9
+RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 COPY js/package.json js/pnpm-lock.yaml js/pnpm-workspace.yaml ./
 COPY js/apps/experience/package.json apps/experience/package.json
 RUN pnpm install --frozen-lockfile
 
 COPY js/apps/experience apps/experience
-RUN pnpm --filter @money-money/experience build
+RUN pnpm --filter @money-money/experience build \
+  && pnpm --filter @money-money/experience deploy --prod /prod/experience
 
-FROM node:22-alpine AS runtime
+FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS runtime
 
-WORKDIR /workspace/js
 ENV NODE_ENV=production
 ENV PORT=3000
+WORKDIR /app
 
-RUN corepack enable
-COPY --from=build /workspace/js /workspace/js
+ARG PNPM_VERSION=9.15.9
+RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
+COPY --from=build /prod/experience /app
 
 EXPOSE 3000
-CMD ["pnpm", "--filter", "@money-money/experience", "start"]
+CMD ["pnpm", "start"]

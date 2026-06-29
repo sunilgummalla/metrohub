@@ -19,6 +19,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: deploy-metrohub-${{ inputs.environment || (github.ref_name == 'develop' && 'dev' || github.ref_name == 'main' && 'prod' || github.ref_name) }}
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ghcr.io/${{ github.repository }}
@@ -129,5 +133,5 @@ jobs:
           EXPERIENCE_IMAGE: ${{ env.IMAGE_PREFIX }}-experience:${{ github.sha }}
           SHELL_IMAGE: ${{ env.IMAGE_PREFIX }}-shell:${{ github.sha }}
         run: |
-          ssh -i ~/.ssh/metrohub "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            "cd /tmp/money-money-deploy && STACK_NAME='$STACK_NAME' APP_DOMAIN='$APP_DOMAIN' CORS_ORIGINS='$CORS_ORIGINS' DOZZLE_PORT='$DOZZLE_PORT' CLOUDFLARED_TOKEN='$CLOUDFLARED_TOKEN' API_IMAGE='$API_IMAGE' EXPERIENCE_IMAGE='$EXPERIENCE_IMAGE' SHELL_IMAGE='$SHELL_IMAGE' sh deploy.sh"
+          printf '%s' "$CLOUDFLARED_TOKEN" | ssh -i ~/.ssh/metrohub "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            "cd /tmp/money-money-deploy && token_file=\$(mktemp) && trap 'rm -f \"\$token_file\"' EXIT && cat > \"\$token_file\" && STACK_NAME='$STACK_NAME' APP_DOMAIN='$APP_DOMAIN' CORS_ORIGINS='$CORS_ORIGINS' DOZZLE_PORT='$DOZZLE_PORT' CLOUDFLARED_TOKEN_FILE=\"\$token_file\" API_IMAGE='$API_IMAGE' EXPERIENCE_IMAGE='$EXPERIENCE_IMAGE' SHELL_IMAGE='$SHELL_IMAGE' sh deploy.sh"
