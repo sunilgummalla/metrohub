@@ -12,8 +12,8 @@ on:
         required: true
         type: choice
         options:
-          - mh-dev
-          - mh-prod
+          - dev
+          - prod
 
 permissions:
   contents: read
@@ -38,22 +38,24 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             environment="${{ inputs.environment }}"
           elif [ "${{ github.ref_name }}" = "develop" ]; then
-            environment="mh-dev"
+            environment="dev"
           elif [ "${{ github.ref_name }}" = "main" ]; then
-            environment="mh-prod"
+            environment="prod"
           else
             echo "::error::Unsupported deployment branch: ${{ github.ref_name }}"
             exit 1
           fi
 
-          if [ "$environment" = "mh-dev" ]; then
+          if [ "$environment" = "dev" ]; then
+            stack="mh-dev"
             app_domain="dev.metrohub.io"
           else
+            stack="mh-prod"
             app_domain="www.metrohub.io"
           fi
 
           echo "environment=$environment" >> "$GITHUB_OUTPUT"
-          echo "stack=$environment" >> "$GITHUB_OUTPUT"
+          echo "stack=$stack" >> "$GITHUB_OUTPUT"
           echo "app_domain=$app_domain" >> "$GITHUB_OUTPUT"
           echo "cors_origins=https://$app_domain" >> "$GITHUB_OUTPUT"
 

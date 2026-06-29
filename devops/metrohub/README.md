@@ -4,8 +4,8 @@ GitHub Actions owns deployment to the MetroHub VPS.
 
 Branch mapping:
 
-- `develop` deploys to GitHub environment `mh-dev` and Swarm stack `mh-dev`.
-- `main` deploys to GitHub environment `mh-prod` and Swarm stack `mh-prod`.
+- `develop` deploys to GitHub environment `dev` and Swarm stack `mh-dev`.
+- `main` deploys to GitHub environment `prod` and Swarm stack `mh-prod`.
 
 Both stacks run on the same VPS and stay isolated by stack-specific overlay networks, Traefik routers, services, and Cloudflare tunnel secrets.
 
@@ -13,8 +13,8 @@ Both stacks run on the same VPS and stay isolated by stack-specific overlay netw
 
 Create two GitHub environments:
 
-- `mh-dev`
-- `mh-prod`
+- `dev`
+- `prod`
 
 Each environment needs these secrets:
 
@@ -27,8 +27,8 @@ The workflow exposes exactly one public hostname per environment:
 
 | Environment | Public domain |
 | --- | --- |
-| `mh-dev` | `dev.metrohub.io` |
-| `mh-prod` | `www.metrohub.io` |
+| `dev` | `dev.metrohub.io` |
+| `prod` | `www.metrohub.io` |
 
 Only the shell service has public Traefik labels. API and experience containers are deployed on the Swarm overlay network for internal use only and have no public hostnames or public Traefik routers.
 
@@ -55,4 +55,4 @@ mh-prod_cloudflare_tunnel_token
 
 ## Manual Workflow Dispatch
 
-The deploy workflow can also be run manually from GitHub Actions. Choose `mh-dev` or `mh-prod`; the workflow will use the matching GitHub environment.
+The deploy workflow can also be run manually from GitHub Actions. Choose `dev` or `prod`; the workflow will use the matching GitHub environment.
