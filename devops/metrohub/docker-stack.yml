@@ -8,12 +8,12 @@ services:
   cloudflared:
     image: cloudflare/cloudflared@sha256:6d91c121b803126f7a5344005d17a9324788fc09d305b6e2560ec6040a7ae283
     logging: *json-file-logging
+    environment:
+      - TUNNEL_TOKEN_FILE=/run/secrets/cloudflare_tunnel_token
     command:
       - tunnel
       - --no-autoupdate
       - run
-      - --token-file
-      - /run/secrets/cloudflare_tunnel_token
     secrets:
       - cloudflare_tunnel_token
     networks:

@@ -21,6 +21,7 @@ Each environment needs these secrets:
 - `VPS_HOST`: MetroHub VPS hostname or IP.
 - `VPS_USER`: SSH user, usually `deploy`.
 - `VPS_SSH_KEY`: private key for the deploy user.
+- `VPS_KNOWN_HOSTS`: pinned SSH host key lines for the MetroHub VPS.
 - `CLOUDFLARED_TOKEN`: token for that environment's new Cloudflare Tunnel.
 
 The workflow exposes exactly one public hostname per environment:

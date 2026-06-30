@@ -10,7 +10,8 @@ RUN pnpm install --frozen-lockfile
 
 COPY js/apps/experience apps/experience
 RUN pnpm --filter @money-money/experience build \
-  && pnpm --filter @money-money/experience deploy --prod /prod/experience
+  && pnpm --filter @money-money/experience deploy --prod /prod/experience \
+  && cp -R apps/experience/.next /prod/experience/.next
 
 FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS runtime
 
