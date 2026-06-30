@@ -1,0 +1,140 @@
+x-json-file-logging: &json-file-logging
+  driver: json-file
+  options:
+    max-size: "25m"
+    max-file: "7"
+
+services:
+  cloudflared:
+    image: cloudflare/cloudflared@sha256:6d91c121b803126f7a5344005d17a9324788fc09d305b6e2560ec6040a7ae283
+    logging: *json-file-logging
+    environment:
+      - TUNNEL_TOKEN_FILE=/run/secrets/cloudflare_tunnel_token
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+    secrets:
+      - cloudflare_tunnel_token
+    networks:
+      - edge
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 10
+        window: 60s
+
+  traefik:
+    image: traefik@sha256:e4d98158c01ad752fc1071d4e9573788747230d902cdde00a772516e692d07c9
+    logging: *json-file-logging
+    environment:
+      - DOCKER_API_VERSION=1.40
+    command:
+      - --providers.swarm.endpoint=unix:///var/run/docker.sock
+      - --providers.swarm.exposedByDefault=false
+      - --providers.swarm.network=${STACK_NAME}_edge
+      - --entrypoints.web.address=0.0.0.0:80
+      - --api.dashboard=false
+      - --log.level=INFO
+      - --accesslog=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - edge
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+
+  dozzle:
+    image: amir20/dozzle@sha256:2e14180fa14c195b8e86705b7ab2234b87599215bcf06f7f56396cb45f57f963
+    logging: *json-file-logging
+    environment:
+      - DOZZLE_ADDR=127.0.0.1:${DOZZLE_PORT:?DOZZLE_PORT_required}
+      - DOZZLE_FILTER=label=com.docker.stack.namespace=${STACK_NAME}
+      - DOZZLE_HOSTNAME=${STACK_NAME}
+      - DOZZLE_MODE=swarm
+      - DOZZLE_NO_ANALYTICS=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - host
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 10
+        window: 60s
+
+  api:
+    image: ${API_IMAGE:?API_IMAGE_required}
+    logging: *json-file-logging
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - CORS_ORIGINS=${CORS_ORIGINS:-}
+    networks:
+      - edge
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 10
+        window: 60s
+
+  experience:
+    image: ${EXPERIENCE_IMAGE:?EXPERIENCE_IMAGE_required}
+    logging: *json-file-logging
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    networks:
+      - edge
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 10
+        window: 60s
+
+  shell:
+    image: ${SHELL_IMAGE:?SHELL_IMAGE_required}
+    logging: *json-file-logging
+    networks:
+      - edge
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 10
+        window: 60s
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.${STACK_NAME}-shell.rule=Host(`${APP_DOMAIN}`)
+        - traefik.http.routers.${STACK_NAME}-shell.entrypoints=web
+        - traefik.http.services.${STACK_NAME}-shell.loadbalancer.server.port=80
+
+secrets:
+  cloudflare_tunnel_token:
+    external: true
+    name: ${STACK_NAME}_cloudflare_tunnel_token
+
+networks:
+  edge:
+    name: ${STACK_NAME}_edge
+    driver: overlay
+    attachable: true
+  host:
+    name: host
+    external: true

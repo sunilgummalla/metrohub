@@ -1,0 +1,137 @@
+name: Deploy MetroHub
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deployment target
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-metrohub-${{ inputs.environment || (github.ref_name == 'develop' && 'dev' || github.ref_name == 'main' && 'prod' || github.ref_name) }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+
+jobs:
+  target:
+    name: Resolve target
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.target.outputs.environment }}
+      stack: ${{ steps.target.outputs.stack }}
+      app_domain: ${{ steps.target.outputs.app_domain }}
+      cors_origins: ${{ steps.target.outputs.cors_origins }}
+      dozzle_port: ${{ steps.target.outputs.dozzle_port }}
+    steps:
+      - id: target
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            environment="${{ inputs.environment }}"
+          elif [ "${{ github.ref_name }}" = "develop" ]; then
+            environment="dev"
+          elif [ "${{ github.ref_name }}" = "main" ]; then
+            environment="prod"
+          else
+            echo "::error::Unsupported deployment branch: ${{ github.ref_name }}"
+            exit 1
+          fi
+
+          if [ "$environment" = "dev" ]; then
+            stack="mh-dev"
+            app_domain="dev.metrohub.io"
+            dozzle_port="9002"
+          else
+            stack="mh-prod"
+            app_domain="www.metrohub.io"
+            dozzle_port="9001"
+          fi
+
+          echo "environment=$environment" >> "$GITHUB_OUTPUT"
+          echo "stack=$stack" >> "$GITHUB_OUTPUT"
+          echo "app_domain=$app_domain" >> "$GITHUB_OUTPUT"
+          echo "cors_origins=https://$app_domain" >> "$GITHUB_OUTPUT"
+          echo "dozzle_port=$dozzle_port" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build and publish images
+    needs: target
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: api
+            dockerfile: js/apps/api/Dockerfile
+          - name: experience
+            dockerfile: js/apps/experience/Dockerfile
+          - name: shell
+            dockerfile: js/apps/shell/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.name }}:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.name }}:${{ needs.target.outputs.stack }}
+
+  deploy:
+    name: Deploy ${{ needs.target.outputs.environment }}
+    needs:
+      - target
+      - build
+    runs-on: ubuntu-latest
+    environment: ${{ needs.target.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/metrohub
+          chmod 600 ~/.ssh/metrohub
+          printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Copy deployment files
+        run: |
+          ssh -i ~/.ssh/metrohub "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "mkdir -p /tmp/money-money-deploy"
+          scp -i ~/.ssh/metrohub devops/metrohub/docker-stack.yml devops/metrohub/deploy.sh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/money-money-deploy/"
+
+      - name: Deploy Swarm stack
+        env:
+          STACK_NAME: ${{ needs.target.outputs.stack }}
+          APP_DOMAIN: ${{ needs.target.outputs.app_domain }}
+          CORS_ORIGINS: ${{ needs.target.outputs.cors_origins }}
+          DOZZLE_PORT: ${{ needs.target.outputs.dozzle_port }}
+          CLOUDFLARED_TOKEN: ${{ secrets.CLOUDFLARED_TOKEN }}
+          API_IMAGE: ${{ env.IMAGE_PREFIX }}-api:${{ github.sha }}
+          EXPERIENCE_IMAGE: ${{ env.IMAGE_PREFIX }}-experience:${{ github.sha }}
+          SHELL_IMAGE: ${{ env.IMAGE_PREFIX }}-shell:${{ github.sha }}
+        run: |
+          printf '%s' "$CLOUDFLARED_TOKEN" | ssh -i ~/.ssh/metrohub "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            "cd /tmp/money-money-deploy && token_file=\$(mktemp) && trap 'rm -f \"\$token_file\"' EXIT && cat > \"\$token_file\" && STACK_NAME='$STACK_NAME' APP_DOMAIN='$APP_DOMAIN' CORS_ORIGINS='$CORS_ORIGINS' DOZZLE_PORT='$DOZZLE_PORT' CLOUDFLARED_TOKEN_FILE=\"\$token_file\" API_IMAGE='$API_IMAGE' EXPERIENCE_IMAGE='$EXPERIENCE_IMAGE' SHELL_IMAGE='$SHELL_IMAGE' sh deploy.sh"
