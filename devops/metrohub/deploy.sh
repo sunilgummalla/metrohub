@@ -23,7 +23,7 @@ if [ -z "${CLOUDFLARED_TOKEN_FILE:-}" ] && [ -z "${CLOUDFLARED_TOKEN:-}" ]; then
   exit 1
 fi
 
-deploy_dir="${DEPLOY_DIR:-/opt/money-money}/${STACK_NAME}"
+deploy_dir="${DEPLOY_DIR:-${HOME}/money-money}/${STACK_NAME}"
 mkdir -p "$deploy_dir"
 cp docker-stack.yml "$deploy_dir/docker-stack.yml"
 
