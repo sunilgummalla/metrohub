@@ -58,10 +58,10 @@ Then open `http://127.0.0.1:9002` locally for dev logs. Use port `9001` for prod
 
 ## VPS Layout
 
-The workflow copies deployment files to:
+The workflow copies deployment files to the deploy user's home directory by default:
 
 ```text
-/opt/money-money/<stack-name>
+~/money-money/<stack-name>
 ```
 
 It creates one Swarm secret per stack:
