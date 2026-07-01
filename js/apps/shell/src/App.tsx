@@ -6,8 +6,8 @@ type PortalApp = (typeof registry.apps)[number];
 const allCategories = "All apps";
 
 function getInitialApp() {
-  const route = window.location.pathname;
-  return registry.apps.find((app) => app.route === route);
+  const route = window.location.pathname.replace(/\/+$/, "");
+  return registry.apps.find((app) => route === app.route || route.startsWith(`${app.route}/`));
 }
 
 function getInitialCategory(app?: PortalApp) {
@@ -58,6 +58,7 @@ function CategoryNav({
     <nav className="categoryNav" aria-label="App categories">
       {categories.map((category) => (
         <button
+          aria-pressed={category === activeCategory}
           className={category === activeCategory ? "active" : undefined}
           key={category}
           onClick={() => onSelect(category)}

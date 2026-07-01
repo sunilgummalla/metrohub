@@ -486,7 +486,7 @@ h2 {
   }
 
   .shellMain {
-    width: min(100% - 28px, 1180px);
+    width: min(calc(100% - 28px), 1180px);
     padding-top: 18px;
   }
 
