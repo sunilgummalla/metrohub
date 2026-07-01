@@ -8,6 +8,7 @@ COPY js/package.json js/pnpm-lock.yaml js/pnpm-workspace.yaml ./
 COPY js/apps/shell/package.json apps/shell/package.json
 RUN pnpm install --frozen-lockfile
 
+COPY js/apps/api/app-registry.json apps/api/app-registry.json
 COPY js/apps/shell apps/shell
 RUN pnpm --filter @money-money/shell build
 
