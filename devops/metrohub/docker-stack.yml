@@ -57,7 +57,6 @@ services:
       - DOZZLE_ADDR=127.0.0.1:${DOZZLE_PORT:?DOZZLE_PORT_required}
       - DOZZLE_FILTER=label=com.docker.stack.namespace=${STACK_NAME}
       - DOZZLE_HOSTNAME=${STACK_NAME}
-      - DOZZLE_MODE=swarm
       - DOZZLE_NO_ANALYTICS=true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
