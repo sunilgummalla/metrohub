@@ -83,7 +83,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: docker/setup-buildx-action@v3
+      - name: Pull BuildKit image
+        shell: bash
+        run: |
+          max_attempts=3
+
+          for attempt in $(seq 1 "$max_attempts"); do
+            if docker pull moby/buildkit:buildx-stable-1; then
+              exit 0
+            fi
+
+            if [ "$attempt" -eq "$max_attempts" ]; then
+              echo "::error::Unable to pull the BuildKit image after $max_attempts attempts"
+              exit 1
+            fi
+
+            delay_seconds=$((attempt * 15))
+            echo "::warning::BuildKit image pull failed on attempt $attempt; retrying in ${delay_seconds}s"
+            sleep "$delay_seconds"
+          done
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: image=moby/buildkit:buildx-stable-1
 
       - uses: docker/login-action@v3
         with:
@@ -91,14 +114,30 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ${{ matrix.dockerfile }}
-          push: true
-          tags: |
-            ${{ env.IMAGE_PREFIX }}-${{ matrix.name }}:${{ github.sha }}
-            ${{ env.IMAGE_PREFIX }}-${{ matrix.name }}:${{ needs.target.outputs.stack }}
+      - name: Build and publish ${{ matrix.name }} image
+        shell: bash
+        run: |
+          max_attempts=3
+
+          for attempt in $(seq 1 "$max_attempts"); do
+            if docker buildx build \
+              --file "${{ matrix.dockerfile }}" \
+              --tag "${IMAGE_PREFIX}-${{ matrix.name }}:${{ github.sha }}" \
+              --tag "${IMAGE_PREFIX}-${{ matrix.name }}:${{ needs.target.outputs.stack }}" \
+              --push \
+              .; then
+              exit 0
+            fi
+
+            if [ "$attempt" -eq "$max_attempts" ]; then
+              echo "::error::Unable to build and publish the ${{ matrix.name }} image after $max_attempts attempts"
+              exit 1
+            fi
+
+            delay_seconds=$((attempt * 15))
+            echo "::warning::Image build failed on attempt $attempt; retrying in ${delay_seconds}s"
+            sleep "$delay_seconds"
+          done
 
   deploy:
     name: Deploy ${{ needs.target.outputs.environment }}
