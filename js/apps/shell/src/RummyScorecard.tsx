@@ -7,10 +7,8 @@ export type RuleConfig = {
   middleDrop: number;
   fullCount: number;
   winnerBonus: number;
-  // rejoinPenalty removed — re-join score is always: highest active total + 2
 };
 
-// Events that can be assigned per player per round (re-join is NOT a round event)
 export type PlayerEvent =
   | "none"
   | "drop"
@@ -21,19 +19,19 @@ export type PlayerEvent =
 type Player = {
   id: string;
   name: string;
-  // "active" = still in the game; "busted" = eliminated; "rejoined" = came back
   status: "active" | "busted" | "rejoined";
 };
 
 type RoundEntry = {
   event: PlayerEvent;
-  score: number;      // effective score for this round
-  rawInput: number;   // what the user typed (ignored when event overrides)
+  score: number;
+  rawInput: number;
 };
 
 type Round = {
   id: string;
   entries: Record<string, RoundEntry>; // playerId → entry
+  cancelled: boolean; // soft-delete: still visible but struck-through, excluded from totals
 };
 
 type GameState =
@@ -57,8 +55,11 @@ function effectiveScore(event: PlayerEvent, raw: number, rules: RuleConfig): num
   }
 }
 
+// Only count non-cancelled rounds
 function totalScore(rounds: Round[], playerId: string): number {
-  return rounds.reduce((sum, r) => sum + (r.entries[playerId]?.score ?? 0), 0);
+  return rounds
+    .filter((r) => !r.cancelled)
+    .reduce((sum, r) => sum + (r.entries[playerId]?.score ?? 0), 0);
 }
 
 function isInGame(p: Player) {
@@ -97,7 +98,6 @@ const DEFAULT_RULES: RuleConfig = {
   winnerBonus: 0,
 };
 
-// Minimum score any player can record in a round
 const MIN_ROUND_SCORE = 2;
 
 // ─── Setup Screen ─────────────────────────────────────────────────────────────
@@ -217,26 +217,32 @@ function SetupScreen({ onStart }: { onStart: (players: Player[], target: number,
   );
 }
 
-// ─── Round Entry ──────────────────────────────────────────────────────────────
+// ─── Round Entry Form (used for both new rounds and editing existing ones) ────
 
-function RoundEntryPanel({
+function RoundEntryForm({
   players,
   rules,
-  roundNumber,
+  roundLabel,
+  initialEvents,
+  initialRaws,
   onSubmit,
+  onCancel,
 }: {
   players: Player[];
   rules: RuleConfig;
-  roundNumber: number;
+  roundLabel: string;
+  initialEvents?: Record<string, PlayerEvent>;
+  initialRaws?: Record<string, string>;
   onSubmit: (entries: Record<string, RoundEntry>) => void;
+  onCancel: () => void;
 }) {
   const activePlayers = players.filter(isInGame);
 
   const [events, setEvents] = useState<Record<string, PlayerEvent>>(
-    Object.fromEntries(activePlayers.map((p) => [p.id, "none"]))
+    initialEvents ?? Object.fromEntries(activePlayers.map((p) => [p.id, "none"]))
   );
   const [rawInputs, setRawInputs] = useState<Record<string, string>>(
-    Object.fromEntries(activePlayers.map((p) => [p.id, ""]))
+    initialRaws ?? Object.fromEntries(activePlayers.map((p) => [p.id, ""]))
   );
   const [error, setError] = useState("");
 
@@ -264,9 +270,7 @@ function RoundEntryPanel({
         if (raw === "") { setError(`Enter a score for ${p.name}.`); return; }
         const n = Number(raw);
         if (!Number.isInteger(n) || n < 0) { setError(`Score for ${p.name} must be a non-negative integer.`); return; }
-        // Enforce minimum score of 2
-        if (n < MIN_ROUND_SCORE) { setError(`Minimum score per round is ${MIN_ROUND_SCORE}. Use a higher value for ${p.name}.`); return; }
-        // Enforce maximum score = Full Count
+        if (n < MIN_ROUND_SCORE) { setError(`Minimum score per round is ${MIN_ROUND_SCORE}. Increase score for ${p.name}.`); return; }
         if (n > rules.fullCount) { setError(`Score for ${p.name} cannot exceed Full Count (${rules.fullCount}).`); return; }
         entries[p.id] = { event: ev, rawInput: n, score: effectiveScore(ev, n, rules) };
       } else {
@@ -277,13 +281,12 @@ function RoundEntryPanel({
     onSubmit(entries);
   }
 
-  // Re-join is NOT a round event — only Score, Winner, Drop, Mid Drop, Full Count
   const roundEvents: PlayerEvent[] = ["none", "winner", "drop", "middleDrop", "fullCount"];
 
   return (
     <div className="rummyEntryPanel">
       <div className="rummyEntryHeader">
-        <span className="rummyBadge">Round {roundNumber}</span>
+        <span className="rummyBadge">{roundLabel}</span>
         <h3>Enter scores for this round</h3>
         <p>Select an event for each active player. "Score" means enter points manually.</p>
       </div>
@@ -338,30 +341,42 @@ function RoundEntryPanel({
       </div>
 
       {error && <p className="rummyError">{error}</p>}
-      <button className="rummyPrimaryBtn" onClick={handleSubmit} type="button">
-        Save Round {roundNumber}
-      </button>
+      <div className="rummyEntryActions">
+        <button className="rummyPrimaryBtn" onClick={handleSubmit} type="button">
+          Save {roundLabel}
+        </button>
+        <button className="rummySecondaryBtn" onClick={onCancel} type="button">
+          Discard
+        </button>
+      </div>
     </div>
   );
 }
 
-// ─── Scoreboard with per-round history ────────────────────────────────────────
+// ─── Scorecard Table (rounds as rows, players as columns) ─────────────────────
 
-function Scoreboard({
+function Scorecard({
   players,
   rounds,
   targetScore,
+  onEditRound,
+  onCancelRound,
+  onRestoreRound,
 }: {
   players: Player[];
   rounds: Round[];
   targetScore: number;
+  onEditRound?: (roundId: string) => void;
+  onCancelRound?: (roundId: string) => void;
+  onRestoreRound?: (roundId: string) => void;
 }) {
+  // Sort players: active/rejoined first (by total asc), then busted
   const ranked = useMemo(() => rankPlayers(players, rounds), [players, rounds]);
 
   if (rounds.length === 0) {
     return (
       <div className="rummyEmptyBoard">
-        <span>No rounds played yet. Enter the first round scores above.</span>
+        <span>No rounds yet — click "Record Round 1" below to start.</span>
       </div>
     );
   }
@@ -371,88 +386,143 @@ function Scoreboard({
       <table className="rummyTable">
         <thead>
           <tr>
-            <th className="rummyThRank">#</th>
-            <th className="rummyThPlayer">Player</th>
-            {rounds.map((_, i) => (
-              <th key={i} className="rummyThRound">R{i + 1}</th>
+            {/* First column: round label + actions */}
+            <th className="rummyThRound rummyThRoundLabel">Round</th>
+            {/* One column per player */}
+            {ranked.map((p) => (
+              <th key={p.id} className="rummyThPlayer rummyThPlayerCol">
+                <div className="rummyPlayerColHeader">
+                  <span>{p.name}</span>
+                  {p.status === "busted" && <span className="rummyBustedTag">Out</span>}
+                  {p.status === "rejoined" && <span className="rummyRejoinedTag">Re-joined</span>}
+                </div>
+              </th>
             ))}
-            <th className="rummyThTotal">Total</th>
-            <th className="rummyThMargin">To Bust</th>
+            {/* Total row */}
+            <th className="rummyThTotal rummyThTotalCol">Total</th>
           </tr>
         </thead>
         <tbody>
-          {ranked.map((p) => {
-            const isBusted = p.status === "busted";
-            const rowClass = isBusted
-              ? "rummyBusted"
-              : p.rank === 1
-              ? "rummyLeader"
-              : "";
+          {rounds.map((round, roundIdx) => {
+            const isCancelled = round.cancelled;
 
-            // Compute running totals per round for this player
-            let running = 0;
-            const runningTotals: number[] = rounds.map((r) => {
-              running += r.entries[p.id]?.score ?? 0;
-              return running;
-            });
+            // Running totals up to and including this round (only non-cancelled)
+            const runningTotals: Record<string, number> = {};
+            for (const p of ranked) {
+              let sum = 0;
+              for (let i = 0; i <= roundIdx; i++) {
+                if (!rounds[i].cancelled) {
+                  sum += rounds[i].entries[p.id]?.score ?? 0;
+                }
+              }
+              runningTotals[p.id] = sum;
+            }
 
             return (
-              <tr key={p.id} className={rowClass}>
-                <td className="rummyRank">{p.rank === 1 ? "🏆" : p.rank}</td>
-                <td className="rummyPlayerName">
-                  {p.name}
-                  {isBusted && <span className="rummyBustedTag">Out</span>}
-                  {p.status === "rejoined" && <span className="rummyRejoinedTag">Re-joined</span>}
+              <tr key={round.id} className={isCancelled ? "rummyRoundCancelled" : ""}>
+                {/* Round label + edit/cancel buttons */}
+                <td className="rummyRoundLabelCell">
+                  <div className="rummyRoundLabelInner">
+                    <span className="rummyRoundNum">R{roundIdx + 1}</span>
+                    {!isCancelled && onEditRound && (
+                      <button
+                        className="rummyIconBtn"
+                        title="Edit this round"
+                        type="button"
+                        onClick={() => onEditRound(round.id)}
+                      >
+                        ✏️
+                      </button>
+                    )}
+                    {!isCancelled && onCancelRound && (
+                      <button
+                        className="rummyIconBtn rummyIconBtnDanger"
+                        title="Cancel this round"
+                        type="button"
+                        onClick={() => onCancelRound(round.id)}
+                      >
+                        ✕
+                      </button>
+                    )}
+                    {isCancelled && onRestoreRound && (
+                      <button
+                        className="rummyIconBtn rummyIconBtnRestore"
+                        title="Restore this round"
+                        type="button"
+                        onClick={() => onRestoreRound(round.id)}
+                      >
+                        ↩
+                      </button>
+                    )}
+                  </div>
                 </td>
 
-                {rounds.map((r, i) => {
-                  const entry = r.entries[p.id];
-                  // Player wasn't in this round (was busted before re-joining)
+                {/* One cell per player */}
+                {ranked.map((p) => {
+                  const entry = round.entries[p.id];
                   if (!entry) {
                     return (
-                      <td key={r.id} className="rummyRoundScore rummyRoundAbsent">
-                        <span className="rummyRoundPts">—</span>
+                      <td key={p.id} className="rummyScoreCell rummyRoundAbsent">
+                        <span className="rummyScorePts">—</span>
                       </td>
                     );
                   }
                   return (
                     <td
-                      key={r.id}
-                      className={`rummyRoundScore ${EVENT_COLORS[entry.event]}`}
+                      key={p.id}
+                      className={`rummyScoreCell ${isCancelled ? "" : EVENT_COLORS[entry.event]}`}
                       title={EVENT_LABELS[entry.event]}
                     >
-                      {/* Round points */}
-                      <span className="rummyRoundPts">
-                        {entry.event !== "none" && (
-                          <span className="rummyEventDot" />
-                        )}
+                      <span className="rummyScorePts">
+                        {entry.event !== "none" && <span className="rummyEventDot" />}
                         {entry.score}
                       </span>
-                      {/* Running total after this round */}
-                      <span className="rummyRunningTotal">{runningTotals[i]}</span>
-                      {/* Event label badge */}
-                      {entry.event !== "none" && (
+                      {!isCancelled && (
+                        <span className="rummyRunningTotal">{runningTotals[p.id]}</span>
+                      )}
+                      {entry.event !== "none" && !isCancelled && (
                         <span className="rummyEventTag">{EVENT_LABELS[entry.event]}</span>
                       )}
                     </td>
                   );
                 })}
 
-                <td className="rummyTotal" data-busted={isBusted}>
-                  {p.total}
-                </td>
-                <td className="rummyMargin">
-                  {isBusted ? (
-                    <span className="rummyBustedTag">Bust</span>
+                {/* Running total column (sum of all non-cancelled rounds up to here) */}
+                <td className="rummyRoundRowTotal">
+                  {isCancelled ? (
+                    <span className="rummyCancelledLabel">Cancelled</span>
                   ) : (
-                    <span className={targetScore - p.total <= 20 ? "rummyDangerMargin" : ""}>
-                      {targetScore - p.total}
-                    </span>
+                    <span>—</span>
                   )}
                 </td>
               </tr>
             );
           })}
+
+          {/* Final totals row */}
+          <tr className="rummyTotalsRow">
+            <td className="rummyRoundLabelCell"><strong>Total</strong></td>
+            {ranked.map((p) => {
+              const total = totalScore(rounds, p.id);
+              const isBusted = p.status === "busted";
+              const isLeader = ranked[0].id === p.id && !isBusted;
+              return (
+                <td key={p.id} className={`rummyTotalCell ${isBusted ? "rummyTotalBusted" : isLeader ? "rummyTotalLeader" : ""}`}>
+                  <span className="rummyTotalVal">
+                    {isLeader && "🏆 "}
+                    {total}
+                  </span>
+                  {!isBusted && (
+                    <span className={`rummyToBust ${targetScore - total <= 20 ? "rummyDangerMargin" : ""}`}>
+                      {targetScore - total} to bust
+                    </span>
+                  )}
+                  {isBusted && <span className="rummyBustedTag">Bust</span>}
+                </td>
+              );
+            })}
+            <td />
+          </tr>
         </tbody>
       </table>
     </div>
@@ -475,8 +545,7 @@ function RulesSummary({ rules }: { rules: RuleConfig }) {
   );
 }
 
-// ─── Re-join Panel (shown ONLY when there are busted players) ─────────────────
-// Re-join score = highest active player total + 2
+// ─── Re-join Panel ────────────────────────────────────────────────────────────
 
 function RejoinPanel({
   players,
@@ -490,7 +559,6 @@ function RejoinPanel({
   const bustedPlayers = players.filter((p) => p.status === "busted");
   if (bustedPlayers.length === 0) return null;
 
-  // Compute the highest total among currently active players
   const activeTotals = players
     .filter(isInGame)
     .map((p) => totalScore(rounds, p.id));
@@ -502,7 +570,7 @@ function RejoinPanel({
       <div className="rummyRejoinPanelHeader">
         <span className="rummyLabel">Busted players</span>
         <span className="rummyRejoinHint">
-          Re-joining sets their total to <strong>{rejoinScore}</strong> (highest active total {highestActive} + 2)
+          Re-joining sets their total to <strong>{rejoinScore}</strong> (highest active {highestActive} + 2)
         </span>
       </div>
       <div className="rummyRejoinList">
@@ -523,13 +591,20 @@ function RejoinPanel({
 
 // ─── Playing Screen ───────────────────────────────────────────────────────────
 
+type EntryMode =
+  | { type: "idle" }
+  | { type: "new" }
+  | { type: "edit"; roundId: string };
+
 function PlayingScreen({
   players,
   rounds,
   rules,
   targetScore,
   onAddRound,
-  onUndo,
+  onUpdateRound,
+  onCancelRound,
+  onRestoreRound,
   onEndGame,
   onRejoin,
 }: {
@@ -538,13 +613,64 @@ function PlayingScreen({
   rules: RuleConfig;
   targetScore: number;
   onAddRound: (entries: Record<string, RoundEntry>) => void;
-  onUndo: () => void;
+  onUpdateRound: (roundId: string, entries: Record<string, RoundEntry>) => void;
+  onCancelRound: (roundId: string) => void;
+  onRestoreRound: (roundId: string) => void;
   onEndGame: () => void;
   onRejoin: (playerId: string) => void;
 }) {
+  const [entryMode, setEntryMode] = useState<EntryMode>({ type: "idle" });
+
   const ranked = useMemo(() => rankPlayers(players, rounds), [players, rounds]);
   const leader = ranked[0];
   const activePlayers = players.filter(isInGame);
+  const activeRounds = rounds.filter((r) => !r.cancelled);
+  const nextRoundNum = rounds.length + 1;
+
+  function handleEditRound(roundId: string) {
+    setEntryMode({ type: "edit", roundId });
+  }
+
+  function handleRecordRound() {
+    setEntryMode({ type: "new" });
+  }
+
+  function handleDiscard() {
+    setEntryMode({ type: "idle" });
+  }
+
+  function handleAddRound(entries: Record<string, RoundEntry>) {
+    onAddRound(entries);
+    setEntryMode({ type: "idle" });
+  }
+
+  function handleUpdateRound(entries: Record<string, RoundEntry>) {
+    if (entryMode.type !== "edit") return;
+    onUpdateRound(entryMode.roundId, entries);
+    setEntryMode({ type: "idle" });
+  }
+
+  // Prefill edit form with existing round data
+  const editRound = entryMode.type === "edit"
+    ? rounds.find((r) => r.id === entryMode.roundId)
+    : undefined;
+
+  const editInitialEvents = editRound
+    ? Object.fromEntries(
+        players.filter(isInGame).map((p) => [p.id, editRound.entries[p.id]?.event ?? "none"])
+      )
+    : undefined;
+
+  const editInitialRaws = editRound
+    ? Object.fromEntries(
+        players.filter(isInGame).map((p) => {
+          const entry = editRound.entries[p.id];
+          if (!entry) return [p.id, ""];
+          // Only prefill raw for manual score entries
+          return [p.id, entry.event === "none" ? String(entry.rawInput) : ""];
+        })
+      )
+    : undefined;
 
   return (
     <div className="rummyPlaying">
@@ -552,7 +678,7 @@ function PlayingScreen({
       <div className="rummyStatsBar">
         <div className="rummyStat">
           <span>Rounds played</span>
-          <strong>{rounds.length}</strong>
+          <strong>{activeRounds.length}</strong>
         </div>
         <div className="rummyStat">
           <span>Target score</span>
@@ -560,7 +686,7 @@ function PlayingScreen({
         </div>
         <div className="rummyStat">
           <span>Current leader</span>
-          <strong>{rounds.length > 0 ? `${leader.name} (${leader.total})` : "—"}</strong>
+          <strong>{activeRounds.length > 0 ? `${leader.name} (${leader.total})` : "—"}</strong>
         </div>
         <div className="rummyStat">
           <span>Active / Total</span>
@@ -571,38 +697,67 @@ function PlayingScreen({
       {/* Rules summary */}
       <RulesSummary rules={rules} />
 
-      {/* Re-join panel — only visible when someone has busted out */}
+      {/* Re-join panel */}
       <RejoinPanel players={players} rounds={rounds} onRejoin={onRejoin} />
 
-      {/* Round score entry */}
-      {activePlayers.length >= 2 ? (
-        <RoundEntryPanel
-          players={players}
-          rules={rules}
-          roundNumber={rounds.length + 1}
-          onSubmit={onAddRound}
-        />
-      ) : (
-        <div className="rummyEmptyBoard">
-          <span>
-            Only {activePlayers.length} active player(s) remaining.
-            {players.some((p) => p.status === "busted") && " Use the Re-join panel above to bring a player back."}
-          </span>
-        </div>
-      )}
-
-      {/* Scoreboard with history */}
+      {/* ── SCORECARD (top) ── */}
       <div className="rummySection">
         <div className="rummySectionHeader">
-          <h3>Scoreboard</h3>
-          <div className="rummyActions">
-            {rounds.length > 0 && (
-              <button className="rummySecondaryBtn" onClick={onUndo} type="button">↩ Undo last round</button>
-            )}
-            <button className="rummyDangerBtn" onClick={onEndGame} type="button">End game</button>
-          </div>
+          <h3>Scorecard</h3>
+          <button className="rummyDangerBtn" onClick={onEndGame} type="button">End game</button>
         </div>
-        <Scoreboard players={players} rounds={rounds} targetScore={targetScore} />
+        <Scorecard
+          players={players}
+          rounds={rounds}
+          targetScore={targetScore}
+          onEditRound={entryMode.type === "idle" ? handleEditRound : undefined}
+          onCancelRound={entryMode.type === "idle" ? onCancelRound : undefined}
+          onRestoreRound={entryMode.type === "idle" ? onRestoreRound : undefined}
+        />
+      </div>
+
+      {/* ── ROUND ENTRY (bottom) ── */}
+      <div className="rummyEntrySection">
+        {entryMode.type === "idle" && (
+          activePlayers.length >= 2 ? (
+            <button
+              className="rummyRecordRoundBtn"
+              type="button"
+              onClick={handleRecordRound}
+            >
+              + Record Round {nextRoundNum}
+            </button>
+          ) : (
+            <div className="rummyEmptyBoard">
+              <span>
+                Only {activePlayers.length} active player(s) remaining.
+                {players.some((p) => p.status === "busted") && " Use the Re-join panel above to bring a player back."}
+              </span>
+            </div>
+          )
+        )}
+
+        {entryMode.type === "new" && (
+          <RoundEntryForm
+            players={players}
+            rules={rules}
+            roundLabel={`Round ${nextRoundNum}`}
+            onSubmit={handleAddRound}
+            onCancel={handleDiscard}
+          />
+        )}
+
+        {entryMode.type === "edit" && editRound && (
+          <RoundEntryForm
+            players={players}
+            rules={rules}
+            roundLabel={`Edit Round ${rounds.findIndex((r) => r.id === editRound.id) + 1}`}
+            initialEvents={editInitialEvents}
+            initialRaws={editInitialRaws}
+            onSubmit={handleUpdateRound}
+            onCancel={handleDiscard}
+          />
+        )}
       </div>
     </div>
   );
@@ -625,6 +780,7 @@ function FinishedScreen({
 }) {
   const ranked = useMemo(() => rankPlayers(players, rounds), [players, rounds]);
   const winner = ranked[0];
+  const activeRounds = rounds.filter((r) => !r.cancelled);
 
   return (
     <div className="rummyFinished">
@@ -633,17 +789,17 @@ function FinishedScreen({
         <p className="rummyBadge">Game over</p>
         <h2>{winner.name} wins!</h2>
         <p className="rummyWinnerScore">
-          Final score: <strong>{winner.total}</strong> pts across {rounds.length} rounds
+          Final score: <strong>{winner.total}</strong> pts across {activeRounds.length} rounds
         </p>
         <button className="rummyPrimaryBtn" onClick={onNewGame} type="button">New Game</button>
       </div>
 
       <div className="rummySection">
         <div className="rummySectionHeader">
-          <h3>Final Standings</h3>
+          <h3>Final Scorecard</h3>
           <RulesSummary rules={rules} />
         </div>
-        <Scoreboard players={players} rounds={rounds} targetScore={targetScore} />
+        <Scorecard players={players} rounds={rounds} targetScore={targetScore} />
       </div>
     </div>
   );
@@ -658,24 +814,27 @@ export function RummyScorecard() {
     setGame({ phase: "playing", players, rounds: [], rules, targetScore });
   }
 
-  function addRound(entries: Record<string, RoundEntry>) {
-    if (game.phase !== "playing") return;
-    const newRound: Round = { id: uid(), entries };
-    const newRounds = [...game.rounds, newRound];
-
-    // Check which active players just busted
-    const updatedPlayers = game.players.map((p) => {
-      if (!isInGame(p)) return p; // already busted, skip
-      const total = totalScore(newRounds, p.id);
-      if (total >= game.targetScore) {
+  function recomputePlayerStatuses(players: Player[], rounds: Round[], targetScore: number): Player[] {
+    return players.map((p) => {
+      const total = totalScore(rounds, p.id);
+      if (total >= targetScore) {
         return { ...p, status: "busted" as const };
+      }
+      // If they were busted but total dropped below target (after cancel/edit), restore
+      if (p.status === "busted" && total < targetScore) {
+        return { ...p, status: "active" as const };
       }
       return p;
     });
+  }
 
+  function addRound(entries: Record<string, RoundEntry>) {
+    if (game.phase !== "playing") return;
+    const newRound: Round = { id: uid(), entries, cancelled: false };
+    const newRounds = [...game.rounds, newRound];
+    const updatedPlayers = recomputePlayerStatuses(game.players, newRounds, game.targetScore);
     const stillActive = updatedPlayers.filter(isInGame);
 
-    // Auto-finish when only 1 or 0 active players remain
     if (stillActive.length <= 1) {
       setGame({ ...game, phase: "finished", players: updatedPlayers, rounds: newRounds });
     } else {
@@ -683,19 +842,43 @@ export function RummyScorecard() {
     }
   }
 
-  function undoLastRound() {
-    if (game.phase !== "playing" || game.rounds.length === 0) return;
-    const newRounds = game.rounds.slice(0, -1);
-    // Restore busted players whose total now falls below target
-    const updatedPlayers = game.players.map((p) => {
-      if (p.status !== "busted") return p;
-      const total = totalScore(newRounds, p.id);
-      if (total < game.targetScore) {
-        return { ...p, status: "active" as const };
-      }
-      return p;
-    });
+  function updateRound(roundId: string, entries: Record<string, RoundEntry>) {
+    if (game.phase !== "playing") return;
+    const newRounds = game.rounds.map((r) =>
+      r.id === roundId ? { ...r, entries, cancelled: false } : r
+    );
+    const updatedPlayers = recomputePlayerStatuses(game.players, newRounds, game.targetScore);
+    const stillActive = updatedPlayers.filter(isInGame);
+
+    if (stillActive.length <= 1) {
+      setGame({ ...game, phase: "finished", players: updatedPlayers, rounds: newRounds });
+    } else {
+      setGame({ ...game, players: updatedPlayers, rounds: newRounds });
+    }
+  }
+
+  function cancelRound(roundId: string) {
+    if (game.phase !== "playing") return;
+    const newRounds = game.rounds.map((r) =>
+      r.id === roundId ? { ...r, cancelled: true } : r
+    );
+    const updatedPlayers = recomputePlayerStatuses(game.players, newRounds, game.targetScore);
     setGame({ ...game, players: updatedPlayers, rounds: newRounds });
+  }
+
+  function restoreRound(roundId: string) {
+    if (game.phase !== "playing") return;
+    const newRounds = game.rounds.map((r) =>
+      r.id === roundId ? { ...r, cancelled: false } : r
+    );
+    const updatedPlayers = recomputePlayerStatuses(game.players, newRounds, game.targetScore);
+    const stillActive = updatedPlayers.filter(isInGame);
+
+    if (stillActive.length <= 1) {
+      setGame({ ...game, phase: "finished", players: updatedPlayers, rounds: newRounds });
+    } else {
+      setGame({ ...game, players: updatedPlayers, rounds: newRounds });
+    }
   }
 
   function endGame() {
@@ -706,23 +889,19 @@ export function RummyScorecard() {
   function rejoinPlayer(playerId: string) {
     if (game.phase !== "playing") return;
 
-    // Re-join score = highest active total + 2
     const activeTotals = game.players
       .filter(isInGame)
       .map((p) => totalScore(game.rounds, p.id));
     const highestActive = activeTotals.length > 0 ? Math.max(...activeTotals) : 0;
     const rejoinScore = highestActive + 2;
-
-    // Current total of the re-joining player
     const currentTotal = totalScore(game.rounds, playerId);
-    // We need to add the difference so their running total becomes rejoinScore
     const adjustment = rejoinScore - currentTotal;
 
     let newRounds = game.rounds;
     if (adjustment !== 0) {
-      // Insert a synthetic round entry (visible in history as a re-join adjustment)
       const rejoinRound: Round = {
         id: uid(),
+        cancelled: false,
         entries: {
           [playerId]: { event: "none", rawInput: adjustment, score: adjustment },
         },
@@ -753,7 +932,9 @@ export function RummyScorecard() {
         rules={game.rules}
         targetScore={game.targetScore}
         onAddRound={addRound}
-        onUndo={undoLastRound}
+        onUpdateRound={updateRound}
+        onCancelRound={cancelRound}
+        onRestoreRound={restoreRound}
         onEndGame={endGame}
         onRejoin={rejoinPlayer}
       />

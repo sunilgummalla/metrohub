@@ -11,11 +11,6 @@
 }
 
 /* ─── Event colour tokens ─────────────────────────────────────────────────── */
-/* Drop   = amber/orange */
-/* MidDrop= orange-red */
-/* Full   = red */
-/* Winner = green */
-/* Rejoin = purple */
 
 .rummyEventDrop      { --ev-bg: #fef3c7; --ev-border: #fcd34d; --ev-text: #92400e; }
 .rummyEventMidDrop   { --ev-bg: #ffedd5; --ev-border: #fb923c; --ev-text: #9a3412; }
@@ -80,10 +75,7 @@
   gap: 10px;
 }
 
-.rummyRuleField {
-  display: grid;
-  gap: 5px;
-}
+.rummyRuleField { display: grid; gap: 5px; }
 
 .rummyRuleLabel {
   font-size: 11px;
@@ -205,6 +197,57 @@
 }
 .rummyDangerBtn:hover { background: #fecaca; }
 
+/* Record round button — prominent, full-width-ish */
+.rummyRecordRoundBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  border: 2px dashed var(--brand);
+  border-radius: 10px;
+  background: rgb(15 118 110 / 5%);
+  color: var(--brand);
+  cursor: pointer;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  padding: 0 20px;
+  transition: background 140ms, border-color 140ms;
+}
+.rummyRecordRoundBtn:hover {
+  background: rgb(15 118 110 / 12%);
+  border-color: var(--brand-strong);
+}
+
+/* Icon buttons for edit / cancel inside scorecard rows */
+.rummyIconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  transition: background 120ms, border-color 120ms;
+  flex-shrink: 0;
+}
+.rummyIconBtn:hover { background: var(--surface-muted); border-color: var(--brand); }
+
+.rummyIconBtnDanger:hover { background: #fee2e2; border-color: #fca5a5; }
+
+.rummyIconBtnRestore {
+  border-color: #a78bfa;
+  color: #4c1d95;
+}
+.rummyIconBtnRestore:hover { background: #ede9fe; }
+
 /* ─── Playing screen ─────────────────────────────────────────────────────── */
 
 .rummyPlaying { display: grid; gap: 22px; padding: 22px 0 34px; }
@@ -223,7 +266,7 @@
   background: var(--surface);
   padding: 16px 18px;
 }
-.rummyStat span  { color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; }
+.rummyStat span   { color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; }
 .rummyStat strong { font-size: 22px; line-height: 1.1; }
 
 /* Rules summary */
@@ -246,7 +289,7 @@
   padding: 4px 10px;
 }
 
-/* Re-join panel (post-bust, standalone) */
+/* Re-join panel */
 .rummyRejoinPanel {
   display: grid;
   gap: 10px;
@@ -286,12 +329,261 @@
 }
 .rummyRejoinBtn:hover { background: #ede9fe; }
 
+/* ─── Section ─────────────────────────────────────────────────────────────── */
+
+.rummySection { display: grid; gap: 14px; }
+
+.rummySectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.rummySectionHeader h3 { font-size: 20px; margin: 0; }
+
+.rummyActions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Entry section at the bottom */
+.rummyEntrySection { display: grid; gap: 14px; }
+
+/* ─── Scorecard table (rounds as rows, players as columns) ────────────────── */
+
+.rummyScoreboard {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.rummyTable { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+.rummyTable th {
+  background: var(--surface-muted);
+  border-bottom: 2px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  padding: 10px 14px;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.rummyTable td {
+  border-bottom: 1px solid var(--border);
+  padding: 8px 12px;
+  vertical-align: middle;
+}
+.rummyTable tr:last-child td { border-bottom: none; }
+
+/* First column: round label */
+.rummyThRoundLabel {
+  text-align: left !important;
+  width: 90px;
+  min-width: 90px;
+}
+
+/* Player column headers */
+.rummyThPlayerCol {
+  min-width: 100px;
+  text-align: center !important;
+}
+
+.rummyPlayerColHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.rummyPlayerColHeader span:first-child {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Total column */
+.rummyThTotalCol {
+  min-width: 80px;
+  text-align: center !important;
+}
+
+/* Round label cell */
+.rummyRoundLabelCell {
+  white-space: nowrap;
+  padding: 8px 10px !important;
+}
+
+.rummyRoundLabelInner {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.rummyRoundNum {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--muted);
+  min-width: 28px;
+}
+
+/* Score cell */
+.rummyScoreCell {
+  text-align: center;
+  white-space: nowrap;
+  background: var(--ev-bg, transparent);
+  vertical-align: top;
+}
+
+.rummyRoundAbsent { opacity: 0.35; }
+
+.rummyScorePts {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ev-text, var(--text));
+  line-height: 1.2;
+}
+
+.rummyRunningTotal {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.2;
+  margin-top: 1px;
+}
+
+.rummyEventDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ev-border, var(--muted));
+  flex-shrink: 0;
+}
+
+.rummyEventTag {
+  display: block;
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--ev-text, var(--muted));
+  text-transform: uppercase;
+  opacity: 0.8;
+  text-align: center;
+  line-height: 1.2;
+  margin-top: 1px;
+}
+
+/* Cancelled round row */
+.rummyRoundCancelled td {
+  opacity: 0.45;
+  text-decoration: line-through;
+  background: var(--surface-muted) !important;
+}
+
+.rummyRoundCancelled .rummyRoundLabelCell {
+  text-decoration: none; /* keep label readable */
+}
+
+.rummyCancelledLabel {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--muted);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+/* Round row total column */
+.rummyRoundRowTotal {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Totals row */
+.rummyTotalsRow td {
+  background: var(--surface-muted);
+  border-top: 2px solid var(--border);
+  border-bottom: none !important;
+}
+
+.rummyTotalCell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.rummyTotalVal {
+  display: block;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.rummyTotalLeader .rummyTotalVal { color: var(--brand); }
+.rummyTotalBusted .rummyTotalVal { color: #b91c1c; }
+
+.rummyToBust {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.rummyDangerMargin { color: #b91c1c !important; font-weight: 900; }
+
+.rummyBustedTag {
+  display: inline-block;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 4px;
+  color: #b91c1c;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 6px;
+  text-transform: uppercase;
+}
+
+.rummyRejoinedTag {
+  display: inline-block;
+  background: #ede9fe;
+  border: 1px solid #a78bfa;
+  border-radius: 4px;
+  color: #4c1d95;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 6px;
+  text-transform: uppercase;
+}
+
+.rummyEmptyBoard {
+  display: grid;
+  place-items: center;
+  min-height: 80px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 24px;
+}
+
 /* ─── Round entry panel ───────────────────────────────────────────────────── */
 
 .rummyEntryPanel {
   display: grid;
   gap: 18px;
-  border: 1px solid var(--border);
+  border: 2px solid var(--brand);
   border-radius: 10px;
   background: var(--surface);
   padding: 24px;
@@ -302,8 +594,13 @@
 .rummyEntryHeader h3 { font-size: 20px; margin: 0; }
 .rummyEntryHeader p  { color: var(--muted); font-size: 14px; margin: 0; }
 
-/* Entry table */
-.rummyEntryTable { display: grid; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.rummyEntryTable {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
 
 .rummyEntryTableHead {
   display: grid;
@@ -339,7 +636,6 @@
   text-overflow: ellipsis;
 }
 
-/* Event picker */
 .rummyEventPicker {
   display: flex;
   flex-wrap: wrap;
@@ -396,163 +692,10 @@
   font-weight: 900;
 }
 
-/* ─── Section ─────────────────────────────────────────────────────────────── */
-
-.rummySection { display: grid; gap: 14px; }
-
-.rummySectionHeader {
+.rummyEntryActions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
-}
-.rummySectionHeader h3 { font-size: 20px; margin: 0; }
-
-.rummyActions { display: flex; gap: 8px; flex-wrap: wrap; }
-
-/* ─── Scoreboard table ────────────────────────────────────────────────────── */
-
-.rummyScoreboard {
-  overflow-x: auto;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-}
-
-.rummyTable { width: 100%; border-collapse: collapse; font-size: 14px; }
-
-.rummyTable th {
-  background: var(--surface-muted);
-  border-bottom: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  padding: 10px 14px;
-  text-align: left;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.rummyTable td {
-  border-bottom: 1px solid var(--border);
-  padding: 10px 14px;
-  vertical-align: middle;
-}
-.rummyTable tr:last-child td { border-bottom: none; }
-
-.rummyRank { font-size: 16px; font-weight: 900; text-align: center; width: 44px; }
-.rummyPlayerName { font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
-
-.rummyRoundScore {
-  text-align: right;
-  white-space: nowrap;
-  background: var(--ev-bg, transparent);
-  vertical-align: top;
-  min-width: 64px;
-}
-
-.rummyRoundAbsent { opacity: 0.35; }
-
-/* Round points (large) */
-.rummyRoundPts {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--ev-text, var(--text));
-  line-height: 1.2;
-}
-
-/* Running total (small, below the round pts) */
-.rummyRunningTotal {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--muted);
-  text-align: right;
-  line-height: 1.2;
-  margin-top: 1px;
-}
-
-.rummyEventDot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--ev-border, var(--muted));
-  flex-shrink: 0;
-}
-
-.rummyEventTag {
-  display: block;
-  font-size: 10px;
-  font-weight: 900;
-  color: var(--ev-text, var(--muted));
-  text-transform: uppercase;
-  opacity: 0.8;
-  text-align: right;
-  line-height: 1.2;
-  margin-top: 1px;
-}
-
-.rummyThRank   { width: 44px; }
-.rummyThPlayer { min-width: 110px; }
-.rummyThRound  { min-width: 64px; text-align: right; }
-.rummyThTotal  { min-width: 64px; text-align: right; }
-.rummyThMargin { min-width: 64px; text-align: right; }
-
-.rummyDangerMargin {
-  color: #b91c1c;
-  font-weight: 900;
-}
-
-.rummyTotal { font-size: 16px; font-weight: 900; text-align: right; white-space: nowrap; }
-.rummyTotal[data-busted="true"] { color: #b91c1c; }
-
-.rummyMargin { color: var(--muted); font-size: 13px; font-weight: 800; text-align: right; white-space: nowrap; }
-
-.rummyBustedTag {
-  display: inline-block;
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
-  border-radius: 4px;
-  color: #b91c1c;
-  font-size: 10px;
-  font-weight: 900;
-  padding: 2px 6px;
-  text-transform: uppercase;
-}
-
-.rummyRejoinedTag {
-  display: inline-block;
-  background: #ede9fe;
-  border: 1px solid #a78bfa;
-  border-radius: 4px;
-  color: #4c1d95;
-  font-size: 10px;
-  font-weight: 900;
-  padding: 2px 6px;
-  text-transform: uppercase;
-}
-
-.rummyLeader td { background: rgb(15 118 110 / 5%); }
-.rummyBusted td { background: rgb(239 68 68 / 4%); opacity: 0.75; }
-
-.rummyEmptyBoard {
-  display: grid;
-  place-items: center;
-  min-height: 80px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 700;
-  padding: 24px;
 }
 
 /* ─── Finished screen ─────────────────────────────────────────────────────── */
