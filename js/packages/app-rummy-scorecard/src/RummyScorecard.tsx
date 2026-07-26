@@ -3,61 +3,103 @@ import "./rummy.css";
 
 // ─── Persistence: localStorage (7-day TTL) + URL share ───────────────────────
 
-const STORAGE_KEY = "rummy-scorecard-v1";
-const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+// ─── Multi-game persistence (up to 7 games, FIFO eviction) ──────────────────
 
-type StoredEnvelope = { savedAt: number; state: GameState };
+const ACTIVE_KEY  = "rummy-active-v2";   // current in-progress or just-finished game
+const HISTORY_KEY = "rummy-history-v2";  // array of completed games (max 7)
+const TTL_MS      = 7 * 24 * 60 * 60 * 1000; // 7 days
+const MAX_HISTORY = 7;
+
+type HistoryEntry = {
+  id: string;          // uid assigned when game starts
+  savedAt: number;     // timestamp of last save
+  state: GameState;    // full finished (or playing) state
+};
+
+function loadHistory(): HistoryEntry[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw) as HistoryEntry[];
+    const cutoff = Date.now() - TTL_MS;
+    return arr.filter((e) => e.savedAt > cutoff);
+  } catch { return []; }
+}
+
+function saveHistory(entries: HistoryEntry[]) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(entries));
+  } catch { /* ignore */ }
+}
+
+/** Archive the current active game into history (FIFO, max 7). */
+function archiveGame(state: GameState, gameId: string) {
+  const history = loadHistory();
+  // Remove any existing entry with same id (update-in-place)
+  const filtered = history.filter((e) => e.id !== gameId);
+  const entry: HistoryEntry = { id: gameId, savedAt: Date.now(), state };
+  const updated = [...filtered, entry];
+  // Keep only the most recent MAX_HISTORY games (drop oldest first)
+  if (updated.length > MAX_HISTORY) updated.splice(0, updated.length - MAX_HISTORY);
+  saveHistory(updated);
+}
+
+type ActiveEnvelope = { id: string; savedAt: number; state: GameState };
 
 function loadGame(): GameState {
   // 1. Try URL hash first (shared link — both owner and read-only)
   try {
     const hash = window.location.hash.slice(1);
     const isOwner = hash.startsWith("rummy:");
-    const isRO = hash.startsWith("rummy-ro:");
+    const isRO    = hash.startsWith("rummy-ro:");
     if (isOwner || isRO) {
-      const b64 = isOwner ? hash.slice(6) : hash.slice(9);
+      const b64  = isOwner ? hash.slice(6) : hash.slice(9);
       const json = atob(b64);
       const parsed = JSON.parse(json) as GameState;
       if (parsed && (parsed.phase === "setup" || parsed.phase === "playing" || parsed.phase === "finished")) {
         if (isOwner) {
-          // Owner link: absorb into localStorage, clear hash
-          saveGame(parsed);
+          saveActiveGame(parsed, uid());
           window.history.replaceState(null, "", window.location.pathname + window.location.search);
         }
-        // Read-only link: keep hash in URL so the mode persists on refresh
         return parsed;
       }
     }
   } catch { /* ignore */ }
 
-  // 2. Fall back to localStorage with TTL check
+  // 2. Fall back to active localStorage slot
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(ACTIVE_KEY);
     if (raw) {
-      const envelope = JSON.parse(raw) as StoredEnvelope;
-      // Support both old plain format and new envelope format
-      const state = envelope.state ?? (envelope as unknown as GameState);
-      const savedAt = envelope.savedAt ?? 0;
-      if (Date.now() - savedAt > TTL_MS) {
-        // Expired — clear and start fresh
-        localStorage.removeItem(STORAGE_KEY);
+      const env = JSON.parse(raw) as ActiveEnvelope;
+      if (Date.now() - env.savedAt > TTL_MS) {
+        localStorage.removeItem(ACTIVE_KEY);
         return { phase: "setup" };
       }
-      if (state && (state.phase === "setup" || state.phase === "playing" || state.phase === "finished")) {
-        return state;
+      if (env.state && (env.state.phase === "setup" || env.state.phase === "playing" || env.state.phase === "finished")) {
+        return env.state;
       }
     }
-  } catch { /* ignore corrupt data */ }
+  } catch { /* ignore */ }
 
   return { phase: "setup" };
 }
 
-function saveGame(state: GameState) {
+function saveActiveGame(state: GameState, gameId: string) {
   try {
-    const envelope: StoredEnvelope = { savedAt: Date.now(), state };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(envelope));
-  } catch { /* ignore storage errors */ }
+    const env: ActiveEnvelope = { id: gameId, savedAt: Date.now(), state };
+    localStorage.setItem(ACTIVE_KEY, JSON.stringify(env));
+  } catch { /* ignore */ }
 }
+
+// Legacy key cleanup
+function clearActive() {
+  localStorage.removeItem(ACTIVE_KEY);
+  localStorage.removeItem("rummy-scorecard-v1"); // remove old key if present
+}
+
+// Keep saveGame as a thin alias so existing call-sites still compile
+function saveGame(state: GameState) { saveActiveGame(state, currentGameId); }
+let currentGameId = uid();
 
 function buildShareUrl(state: GameState, readOnly = false): string {
   try {
@@ -1125,7 +1167,7 @@ export function RummyScorecard() {
   }
 
   function newGame() {
-    localStorage.removeItem(STORAGE_KEY);
+    clearActive();
     setGame({ phase: "setup" });
   }
 

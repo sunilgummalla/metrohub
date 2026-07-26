@@ -165,7 +165,8 @@
   padding: 0 20px;
   transition: background 140ms;
 }
-.rummyPrimaryBtn:hover { background: var(--brand-strong); }
+.rummyPrimaryBtn:hover { background: var(--brand-dark, #0b5f59); }
+.rummyNewGameBtn:hover { background: var(--brand-dark, #0b5f59) !important; }
 
 .rummySecondaryBtn {
   min-height: 38px;
