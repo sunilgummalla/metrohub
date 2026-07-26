@@ -578,6 +578,35 @@
   padding: 24px;
 }
 
+/* ─── Cancel confirmation banner ─────────────────────────────────────────── */
+
+.rummyCancelConfirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: #fff7ed;
+  border: 1px solid #fb923c;
+  border-radius: 8px 8px 0 0;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9a3412;
+}
+
+.rummyCancelConfirmActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.rummyIconBtnActive {
+  background: #fee2e2 !important;
+  border-color: #f87171 !important;
+  box-shadow: 0 0 0 2px #fca5a5;
+}
+
 /* ─── Round entry panel ───────────────────────────────────────────────────── */
 
 .rummyEntryPanel {

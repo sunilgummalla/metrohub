@@ -66,13 +66,19 @@ function isInGame(p: Player) {
   return p.status === "active" || p.status === "rejoined";
 }
 
-function rankPlayers(
+// Preserve original player order; just attach totals (no sorting)
+function withTotals(
   players: Player[],
   rounds: Round[]
-): (Player & { total: number; rank: number })[] {
-  const withTotals = players.map((p) => ({ ...p, total: totalScore(rounds, p.id) }));
-  withTotals.sort((a, b) => a.total - b.total);
-  return withTotals.map((p, i) => ({ ...p, rank: i + 1 }));
+): (Player & { total: number })[] {
+  return players.map((p) => ({ ...p, total: totalScore(rounds, p.id) }));
+}
+
+// Find the player with the lowest total among active players (for leader display)
+function findLeader(players: Player[], rounds: Round[]): (Player & { total: number }) | undefined {
+  const active = withTotals(players, rounds).filter((p) => isInGame(p));
+  if (active.length === 0) return undefined;
+  return active.reduce((best, p) => (p.total < best.total ? p : best));
 }
 
 const EVENT_LABELS: Record<PlayerEvent, string> = {
@@ -370,8 +376,25 @@ function Scorecard({
   onCancelRound?: (roundId: string) => void;
   onRestoreRound?: (roundId: string) => void;
 }) {
-  // Sort players: active/rejoined first (by total asc), then busted
-  const ranked = useMemo(() => rankPlayers(players, rounds), [players, rounds]);
+  // Preserve original player order — no sorting
+  const ranked = useMemo(() => withTotals(players, rounds), [players, rounds]);
+  // Track which round is pending cancel confirmation
+  const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
+
+  function requestCancel(roundId: string) {
+    setPendingCancelId(roundId);
+  }
+
+  function confirmCancel() {
+    if (pendingCancelId && onCancelRound) {
+      onCancelRound(pendingCancelId);
+    }
+    setPendingCancelId(null);
+  }
+
+  function dismissCancel() {
+    setPendingCancelId(null);
+  }
 
   if (rounds.length === 0) {
     return (
@@ -383,12 +406,22 @@ function Scorecard({
 
   return (
     <div className="rummyScoreboard">
+      {/* Cancel confirmation banner */}
+      {pendingCancelId && (
+        <div className="rummyCancelConfirm">
+          <span>Cancel this round? Scores will be excluded from all totals (you can restore it later).</span>
+          <div className="rummyCancelConfirmActions">
+            <button className="rummyDangerBtn" type="button" onClick={confirmCancel}>Yes, cancel round</button>
+            <button className="rummySecondaryBtn" type="button" onClick={dismissCancel}>No, keep it</button>
+          </div>
+        </div>
+      )}
       <table className="rummyTable">
         <thead>
           <tr>
             {/* First column: round label + actions */}
             <th className="rummyThRound rummyThRoundLabel">Round</th>
-            {/* One column per player */}
+            {/* One column per player — original order preserved */}
             {ranked.map((p) => (
               <th key={p.id} className="rummyThPlayer rummyThPlayerCol">
                 <div className="rummyPlayerColHeader">
@@ -436,10 +469,10 @@ function Scorecard({
                     )}
                     {!isCancelled && onCancelRound && (
                       <button
-                        className="rummyIconBtn rummyIconBtnDanger"
+                        className={`rummyIconBtn rummyIconBtnDanger ${pendingCancelId === round.id ? "rummyIconBtnActive" : ""}`}
                         title="Cancel this round"
                         type="button"
-                        onClick={() => onCancelRound(round.id)}
+                        onClick={() => requestCancel(round.id)}
                       >
                         ✕
                       </button>
@@ -503,9 +536,11 @@ function Scorecard({
           <tr className="rummyTotalsRow">
             <td className="rummyRoundLabelCell"><strong>Total</strong></td>
             {ranked.map((p) => {
-              const total = totalScore(rounds, p.id);
+              const total = p.total;
               const isBusted = p.status === "busted";
-              const isLeader = ranked[0].id === p.id && !isBusted;
+              // Leader = lowest total among active players
+              const leader = findLeader(players, rounds);
+              const isLeader = !isBusted && leader?.id === p.id;
               return (
                 <td key={p.id} className={`rummyTotalCell ${isBusted ? "rummyTotalBusted" : isLeader ? "rummyTotalLeader" : ""}`}>
                   <span className="rummyTotalVal">
@@ -621,8 +656,7 @@ function PlayingScreen({
 }) {
   const [entryMode, setEntryMode] = useState<EntryMode>({ type: "idle" });
 
-  const ranked = useMemo(() => rankPlayers(players, rounds), [players, rounds]);
-  const leader = ranked[0];
+  const leader = useMemo(() => findLeader(players, rounds), [players, rounds]);
   const activePlayers = players.filter(isInGame);
   const activeRounds = rounds.filter((r) => !r.cancelled);
   const nextRoundNum = rounds.length + 1;
@@ -686,7 +720,7 @@ function PlayingScreen({
         </div>
         <div className="rummyStat">
           <span>Current leader</span>
-          <strong>{activeRounds.length > 0 ? `${leader.name} (${leader.total})` : "—"}</strong>
+          <strong>{activeRounds.length > 0 && leader ? `${leader.name} (${leader.total})` : "—"}</strong>
         </div>
         <div className="rummyStat">
           <span>Active / Total</span>
@@ -778,8 +812,11 @@ function FinishedScreen({
   targetScore: number;
   onNewGame: () => void;
 }) {
-  const ranked = useMemo(() => rankPlayers(players, rounds), [players, rounds]);
-  const winner = ranked[0];
+  // Winner = player with lowest total (original order preserved)
+  const winner = useMemo(() => {
+    const pts = withTotals(players, rounds);
+    return pts.reduce((best, p) => (p.total < best.total ? p : best));
+  }, [players, rounds]);
   const activeRounds = rounds.filter((r) => !r.cancelled);
 
   return (
