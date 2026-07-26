@@ -1,4 +1,32 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+
+// ─── localStorage persistence ─────────────────────────────────────────────────
+
+const STORAGE_KEY = "rummy-scorecard-v1";
+
+function loadGame(): GameState {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as GameState;
+      // Basic sanity check
+      if (parsed && (parsed.phase === "setup" || parsed.phase === "playing" || parsed.phase === "finished")) {
+        return parsed;
+      }
+    }
+  } catch {
+    // ignore corrupt data
+  }
+  return { phase: "setup" };
+}
+
+function saveGame(state: GameState) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // ignore storage errors (e.g. private browsing quota)
+  }
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -845,7 +873,12 @@ function FinishedScreen({
 // ─── Root Component ───────────────────────────────────────────────────────────
 
 export function RummyScorecard() {
-  const [game, setGame] = useState<GameState>({ phase: "setup" });
+  const [game, setGame] = useState<GameState>(() => loadGame());
+
+  // Persist every state change to localStorage
+  useEffect(() => {
+    saveGame(game);
+  }, [game]);
 
   function startGame(players: Player[], targetScore: number, rules: RuleConfig) {
     setGame({ phase: "playing", players, rounds: [], rules, targetScore });
@@ -954,6 +987,7 @@ export function RummyScorecard() {
   }
 
   function newGame() {
+    localStorage.removeItem(STORAGE_KEY);
     setGame({ phase: "setup" });
   }
 
