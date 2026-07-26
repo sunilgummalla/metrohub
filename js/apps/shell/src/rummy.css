@@ -246,14 +246,27 @@
   padding: 4px 10px;
 }
 
-/* Re-join panel */
+/* Re-join panel (post-bust, standalone) */
 .rummyRejoinPanel {
   display: grid;
   gap: 10px;
-  border: 1px solid var(--ev-border, #a78bfa);
+  border: 1px solid #a78bfa;
   border-radius: 8px;
   background: #ede9fe;
   padding: 14px 18px;
+}
+
+.rummyRejoinPanelHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rummyRejoinHint {
+  font-size: 12px;
+  color: #4c1d95;
+  opacity: 0.75;
 }
 
 .rummyRejoinList { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -436,16 +449,65 @@
   text-align: right;
   white-space: nowrap;
   background: var(--ev-bg, transparent);
+  vertical-align: top;
+  min-width: 64px;
 }
 
-.rummyRoundScore span { display: block; }
+.rummyRoundAbsent { opacity: 0.35; }
+
+/* Round points (large) */
+.rummyRoundPts {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ev-text, var(--text));
+  line-height: 1.2;
+}
+
+/* Running total (small, below the round pts) */
+.rummyRunningTotal {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: right;
+  line-height: 1.2;
+  margin-top: 1px;
+}
+
+.rummyEventDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ev-border, var(--muted));
+  flex-shrink: 0;
+}
 
 .rummyEventTag {
+  display: block;
   font-size: 10px;
   font-weight: 900;
   color: var(--ev-text, var(--muted));
   text-transform: uppercase;
   opacity: 0.8;
+  text-align: right;
+  line-height: 1.2;
+  margin-top: 1px;
+}
+
+.rummyThRank   { width: 44px; }
+.rummyThPlayer { min-width: 110px; }
+.rummyThRound  { min-width: 64px; text-align: right; }
+.rummyThTotal  { min-width: 64px; text-align: right; }
+.rummyThMargin { min-width: 64px; text-align: right; }
+
+.rummyDangerMargin {
+  color: #b91c1c;
+  font-weight: 900;
 }
 
 .rummyTotal { font-size: 16px; font-weight: 900; text-align: right; white-space: nowrap; }
@@ -459,6 +521,18 @@
   border: 1px solid #fca5a5;
   border-radius: 4px;
   color: #b91c1c;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 6px;
+  text-transform: uppercase;
+}
+
+.rummyRejoinedTag {
+  display: inline-block;
+  background: #ede9fe;
+  border: 1px solid #a78bfa;
+  border-radius: 4px;
+  color: #4c1d95;
   font-size: 10px;
   font-weight: 900;
   padding: 2px 6px;

@@ -3,30 +3,31 @@ import { useState, useMemo } from "react";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type RuleConfig = {
-  drop: number;         // points for first drop (default 20)
-  middleDrop: number;   // points for middle drop (default 40)
-  fullCount: number;    // points for full count (default 80)
-  winnerBonus: number;  // points SUBTRACTED from winner (default 0, can be negative reward)
-  rejoinPenalty: number;// points added when a player re-joins after busting (default 0)
+  drop: number;
+  middleDrop: number;
+  fullCount: number;
+  winnerBonus: number;
+  rejoinPenalty: number;
 };
 
+// Events that can be assigned per player per round (re-join is NOT a round event)
 export type PlayerEvent =
-  | "none"        // normal score entry
-  | "drop"        // first drop — score is overridden by rule
-  | "middleDrop"  // middle drop — score is overridden by rule
-  | "fullCount"   // full count — score is overridden by rule
-  | "winner"      // round winner — score is 0 + optional bonus
-  | "rejoin";     // re-joined after busting — score reset + penalty
+  | "none"
+  | "drop"
+  | "middleDrop"
+  | "fullCount"
+  | "winner";
 
 type Player = {
   id: string;
   name: string;
-  active: boolean; // false = busted out (not re-joined)
+  // "active" = still in the game; "busted" = eliminated; "rejoined" = came back
+  status: "active" | "busted" | "rejoined";
 };
 
 type RoundEntry = {
   event: PlayerEvent;
-  score: number;      // final effective score for this round
+  score: number;      // effective score for this round
   rawInput: number;   // what the user typed (ignored when event overrides)
 };
 
@@ -52,13 +53,16 @@ function effectiveScore(event: PlayerEvent, raw: number, rules: RuleConfig): num
     case "middleDrop": return rules.middleDrop;
     case "fullCount":  return rules.fullCount;
     case "winner":     return rules.winnerBonus;
-    case "rejoin":     return rules.rejoinPenalty;
     default:           return raw;
   }
 }
 
 function totalScore(rounds: Round[], playerId: string): number {
   return rounds.reduce((sum, r) => sum + (r.entries[playerId]?.score ?? 0), 0);
+}
+
+function isInGame(p: Player) {
+  return p.status === "active" || p.status === "rejoined";
 }
 
 function rankPlayers(
@@ -76,7 +80,6 @@ const EVENT_LABELS: Record<PlayerEvent, string> = {
   middleDrop: "Mid Drop",
   fullCount: "Full Count",
   winner: "Winner",
-  rejoin: "Re-join",
 };
 
 const EVENT_COLORS: Record<PlayerEvent, string> = {
@@ -85,10 +88,7 @@ const EVENT_COLORS: Record<PlayerEvent, string> = {
   middleDrop: "rummyEventMidDrop",
   fullCount: "rummyEventFull",
   winner: "rummyEventWinner",
-  rejoin: "rummyEventRejoin",
 };
-
-// ─── Default Rules ────────────────────────────────────────────────────────────
 
 const DEFAULT_RULES: RuleConfig = {
   drop: 20,
@@ -131,18 +131,18 @@ function SetupScreen({ onStart }: { onStart: (players: Player[], target: number,
     if (target < 50 || target > 1000) { setError("Target score must be between 50 and 1000."); return; }
     setError("");
     onStart(
-      valid.map((name) => ({ id: uid(), name, active: true })),
+      valid.map((name) => ({ id: uid(), name, status: "active" as const })),
       target,
       rules
     );
   }
 
   const ruleFields: { key: keyof RuleConfig; label: string; hint: string }[] = [
-    { key: "drop",          label: "Drop",          hint: "Points for first drop" },
-    { key: "middleDrop",    label: "Middle Drop",    hint: "Points for middle drop" },
-    { key: "fullCount",     label: "Full Count",     hint: "Points for full count" },
-    { key: "winnerBonus",   label: "Winner Bonus",   hint: "Points added to winner (use negative to reward)" },
-    { key: "rejoinPenalty", label: "Re-join Penalty",hint: "Points added when a player re-joins" },
+    { key: "drop",          label: "Drop",           hint: "Points for first drop" },
+    { key: "middleDrop",    label: "Middle Drop",     hint: "Points for middle drop" },
+    { key: "fullCount",     label: "Full Count",      hint: "Points for full count" },
+    { key: "winnerBonus",   label: "Winner Bonus",    hint: "Points added to winner (use negative to reward)" },
+    { key: "rejoinPenalty", label: "Re-join Penalty", hint: "Points added when a busted player re-joins" },
   ];
 
   return (
@@ -154,7 +154,6 @@ function SetupScreen({ onStart }: { onStart: (players: Player[], target: number,
           <p>Configure rules, add players, and set the target score. Lowest score wins.</p>
         </div>
 
-        {/* Rule configuration */}
         <div className="rummyField">
           <label className="rummyLabel">Game Rules</label>
           <div className="rummyRulesGrid">
@@ -172,7 +171,6 @@ function SetupScreen({ onStart }: { onStart: (players: Player[], target: number,
           </div>
         </div>
 
-        {/* Target score */}
         <div className="rummyField">
           <label className="rummyLabel">Target Score (bust-out threshold)</label>
           <input
@@ -186,7 +184,6 @@ function SetupScreen({ onStart }: { onStart: (players: Player[], target: number,
           />
         </div>
 
-        {/* Players */}
         <div className="rummyField">
           <label className="rummyLabel">Players ({names.length} / 8)</label>
           <div className="rummyPlayerList">
@@ -231,7 +228,7 @@ function RoundEntryPanel({
   roundNumber: number;
   onSubmit: (entries: Record<string, RoundEntry>) => void;
 }) {
-  const activePlayers = players.filter((p) => p.active);
+  const activePlayers = players.filter(isInGame);
 
   const [events, setEvents] = useState<Record<string, PlayerEvent>>(
     Object.fromEntries(activePlayers.map((p) => [p.id, "none"]))
@@ -241,12 +238,10 @@ function RoundEntryPanel({
   );
   const [error, setError] = useState("");
 
-  // Recompute when activePlayers changes (re-join scenario)
   const needsInput = (event: PlayerEvent) => event === "none";
 
   function setEvent(id: string, ev: PlayerEvent) {
     setEvents((prev) => ({ ...prev, [id]: ev }));
-    // Clear error when user makes a selection
     setError("");
   }
 
@@ -255,12 +250,10 @@ function RoundEntryPanel({
   }
 
   function handleSubmit() {
-    // Validate: exactly one winner
     const winnerCount = Object.values(events).filter((e) => e === "winner").length;
     if (winnerCount === 0) { setError("Mark one player as the round Winner."); return; }
     if (winnerCount > 1)   { setError("Only one player can be the round Winner."); return; }
 
-    // Validate raw inputs for "none" events
     const entries: Record<string, RoundEntry> = {};
     for (const p of activePlayers) {
       const ev = events[p.id];
@@ -278,14 +271,15 @@ function RoundEntryPanel({
     onSubmit(entries);
   }
 
-  const allEvents: PlayerEvent[] = ["none", "winner", "drop", "middleDrop", "fullCount", "rejoin"];
+  // Re-join is NOT a round event — only Score, Winner, Drop, Mid Drop, Full Count
+  const roundEvents: PlayerEvent[] = ["none", "winner", "drop", "middleDrop", "fullCount"];
 
   return (
     <div className="rummyEntryPanel">
       <div className="rummyEntryHeader">
         <span className="rummyBadge">Round {roundNumber}</span>
         <h3>Enter scores for this round</h3>
-        <p>Select an event for each player. "Score" means enter points manually.</p>
+        <p>Select an event for each active player. "Score" means enter points manually.</p>
       </div>
 
       <div className="rummyEntryTable">
@@ -300,9 +294,12 @@ function RoundEntryPanel({
           const preview = overridden ? effectiveScore(ev, 0, rules) : null;
           return (
             <div className={`rummyEntryTableRow ${EVENT_COLORS[ev]}`} key={p.id}>
-              <span className="rummyEntryPlayerName">{p.name}</span>
+              <span className="rummyEntryPlayerName">
+                {p.name}
+                {p.status === "rejoined" && <span className="rummyRejoinedTag">Re-joined</span>}
+              </span>
               <div className="rummyEventPicker">
-                {allEvents.map((e) => (
+                {roundEvents.map((e) => (
                   <button
                     key={e}
                     type="button"
@@ -341,7 +338,7 @@ function RoundEntryPanel({
   );
 }
 
-// ─── Scoreboard ───────────────────────────────────────────────────────────────
+// ─── Scoreboard with per-round history ────────────────────────────────────────
 
 function Scoreboard({
   players,
@@ -367,40 +364,84 @@ function Scoreboard({
       <table className="rummyTable">
         <thead>
           <tr>
-            <th>#</th>
-            <th>Player</th>
-            {rounds.map((_, i) => <th key={i}>R{i + 1}</th>)}
-            <th>Total</th>
-            <th>Margin</th>
+            <th className="rummyThRank">#</th>
+            <th className="rummyThPlayer">Player</th>
+            {rounds.map((_, i) => (
+              <th key={i} className="rummyThRound">R{i + 1}</th>
+            ))}
+            <th className="rummyThTotal">Total</th>
+            <th className="rummyThMargin">To Bust</th>
           </tr>
         </thead>
         <tbody>
           {ranked.map((p) => {
-            const busted = !p.active && p.total >= targetScore;
+            const isBusted = p.status === "busted";
+            const rowClass = isBusted
+              ? "rummyBusted"
+              : p.rank === 1
+              ? "rummyLeader"
+              : "";
+
+            // Compute running totals per round for this player
+            let running = 0;
+            const runningTotals: number[] = rounds.map((r) => {
+              running += r.entries[p.id]?.score ?? 0;
+              return running;
+            });
+
             return (
-              <tr key={p.id} className={busted ? "rummyBusted" : p.rank === 1 ? "rummyLeader" : ""}>
+              <tr key={p.id} className={rowClass}>
                 <td className="rummyRank">{p.rank === 1 ? "🏆" : p.rank}</td>
                 <td className="rummyPlayerName">
                   {p.name}
-                  {!p.active && <span className="rummyBustedTag">Out</span>}
+                  {isBusted && <span className="rummyBustedTag">Out</span>}
+                  {p.status === "rejoined" && <span className="rummyRejoinedTag">Re-joined</span>}
                 </td>
-                {rounds.map((r) => {
+
+                {rounds.map((r, i) => {
                   const entry = r.entries[p.id];
-                  if (!entry) return <td key={r.id} className="rummyRoundScore">—</td>;
+                  // Player wasn't in this round (was busted before re-joining)
+                  if (!entry) {
+                    return (
+                      <td key={r.id} className="rummyRoundScore rummyRoundAbsent">
+                        <span className="rummyRoundPts">—</span>
+                      </td>
+                    );
+                  }
                   return (
-                    <td key={r.id} className={`rummyRoundScore ${EVENT_COLORS[entry.event]}`}>
-                      <span title={EVENT_LABELS[entry.event]}>{entry.score}</span>
+                    <td
+                      key={r.id}
+                      className={`rummyRoundScore ${EVENT_COLORS[entry.event]}`}
+                      title={EVENT_LABELS[entry.event]}
+                    >
+                      {/* Round points */}
+                      <span className="rummyRoundPts">
+                        {entry.event !== "none" && (
+                          <span className="rummyEventDot" />
+                        )}
+                        {entry.score}
+                      </span>
+                      {/* Running total after this round */}
+                      <span className="rummyRunningTotal">{runningTotals[i]}</span>
+                      {/* Event label badge */}
                       {entry.event !== "none" && (
                         <span className="rummyEventTag">{EVENT_LABELS[entry.event]}</span>
                       )}
                     </td>
                   );
                 })}
-                <td className="rummyTotal" data-busted={busted}>{p.total}</td>
+
+                <td className="rummyTotal" data-busted={isBusted}>
+                  {p.total}
+                </td>
                 <td className="rummyMargin">
-                  {busted
-                    ? <span className="rummyBustedTag">Bust</span>
-                    : targetScore - p.total}
+                  {isBusted ? (
+                    <span className="rummyBustedTag">Bust</span>
+                  ) : (
+                    <span className={targetScore - p.total <= 20 ? "rummyDangerMargin" : ""}>
+                      {targetScore - p.total}
+                    </span>
+                  )}
                 </td>
               </tr>
             );
@@ -411,7 +452,7 @@ function Scoreboard({
   );
 }
 
-// ─── Rules Summary Badge ──────────────────────────────────────────────────────
+// ─── Rules Summary ────────────────────────────────────────────────────────────
 
 function RulesSummary({ rules }: { rules: RuleConfig }) {
   return (
@@ -423,8 +464,48 @@ function RulesSummary({ rules }: { rules: RuleConfig }) {
         <span className="rummyRuleChip rummyEventWinner">Winner Bonus: {rules.winnerBonus}</span>
       )}
       {rules.rejoinPenalty !== 0 && (
-        <span className="rummyRuleChip rummyEventRejoin">Re-join: +{rules.rejoinPenalty}</span>
+        <span className="rummyRuleChip rummyEventRejoin">Re-join Penalty: +{rules.rejoinPenalty}</span>
       )}
+    </div>
+  );
+}
+
+// ─── Re-join Panel (shown ONLY when there are busted players) ─────────────────
+
+function RejoinPanel({
+  players,
+  rules,
+  onRejoin,
+}: {
+  players: Player[];
+  rules: RuleConfig;
+  onRejoin: (playerId: string) => void;
+}) {
+  const bustedPlayers = players.filter((p) => p.status === "busted");
+  if (bustedPlayers.length === 0) return null;
+
+  return (
+    <div className="rummyRejoinPanel">
+      <div className="rummyRejoinPanelHeader">
+        <span className="rummyLabel">Busted players</span>
+        <span className="rummyRejoinHint">
+          {rules.rejoinPenalty > 0
+            ? `Re-joining adds ${rules.rejoinPenalty} pts to their total`
+            : "Re-joining reactivates them from their current total"}
+        </span>
+      </div>
+      <div className="rummyRejoinList">
+        {bustedPlayers.map((p) => (
+          <button
+            key={p.id}
+            className="rummyRejoinBtn"
+            type="button"
+            onClick={() => onRejoin(p.id)}
+          >
+            ↩ {p.name} re-joins
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -452,8 +533,7 @@ function PlayingScreen({
 }) {
   const ranked = useMemo(() => rankPlayers(players, rounds), [players, rounds]);
   const leader = ranked[0];
-  const bustedPlayers = players.filter((p) => !p.active);
-  const activePlayers = players.filter((p) => p.active);
+  const activePlayers = players.filter(isInGame);
 
   return (
     <div className="rummyPlaying">
@@ -480,26 +560,10 @@ function PlayingScreen({
       {/* Rules summary */}
       <RulesSummary rules={rules} />
 
-      {/* Re-join panel */}
-      {bustedPlayers.length > 0 && (
-        <div className="rummyRejoinPanel">
-          <span className="rummyLabel">Busted players — click to re-join:</span>
-          <div className="rummyRejoinList">
-            {bustedPlayers.map((p) => (
-              <button
-                key={p.id}
-                className="rummyRejoinBtn"
-                type="button"
-                onClick={() => onRejoin(p.id)}
-              >
-                ↩ {p.name} re-joins
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Re-join panel — only visible when someone has busted out */}
+      <RejoinPanel players={players} rules={rules} onRejoin={onRejoin} />
 
-      {/* Score entry */}
+      {/* Round score entry */}
       {activePlayers.length >= 2 ? (
         <RoundEntryPanel
           players={players}
@@ -509,11 +573,14 @@ function PlayingScreen({
         />
       ) : (
         <div className="rummyEmptyBoard">
-          <span>Only {activePlayers.length} active player(s) remaining. End the game or wait for a re-join.</span>
+          <span>
+            Only {activePlayers.length} active player(s) remaining.
+            {players.some((p) => p.status === "busted") && " Use the Re-join panel above to bring a player back."}
+          </span>
         </div>
       )}
 
-      {/* Scoreboard */}
+      {/* Scoreboard with history */}
       <div className="rummySection">
         <div className="rummySectionHeader">
           <h3>Scoreboard</h3>
@@ -585,17 +652,20 @@ export function RummyScorecard() {
     const newRound: Round = { id: uid(), entries };
     const newRounds = [...game.rounds, newRound];
 
-    // Mark players who have hit or exceeded target as inactive (busted)
+    // Check which active players just busted
     const updatedPlayers = game.players.map((p) => {
-      if (!p.active) return p;
+      if (!isInGame(p)) return p; // already busted, skip
       const total = totalScore(newRounds, p.id);
-      return { ...p, active: total < game.targetScore };
+      if (total >= game.targetScore) {
+        return { ...p, status: "busted" as const };
+      }
+      return p;
     });
 
-    const activePlayers = updatedPlayers.filter((p) => p.active);
+    const stillActive = updatedPlayers.filter(isInGame);
 
     // Auto-finish when only 1 or 0 active players remain
-    if (activePlayers.length <= 1) {
+    if (stillActive.length <= 1) {
       setGame({ ...game, phase: "finished", players: updatedPlayers, rounds: newRounds });
     } else {
       setGame({ ...game, players: updatedPlayers, rounds: newRounds });
@@ -605,10 +675,14 @@ export function RummyScorecard() {
   function undoLastRound() {
     if (game.phase !== "playing" || game.rounds.length === 0) return;
     const newRounds = game.rounds.slice(0, -1);
-    // Reactivate players who were busted by the removed round
+    // Restore busted players whose total now falls below target
     const updatedPlayers = game.players.map((p) => {
+      if (p.status !== "busted") return p;
       const total = totalScore(newRounds, p.id);
-      return { ...p, active: total < game.targetScore };
+      if (total < game.targetScore) {
+        return { ...p, status: "active" as const };
+      }
+      return p;
     });
     setGame({ ...game, players: updatedPlayers, rounds: newRounds });
   }
@@ -620,10 +694,27 @@ export function RummyScorecard() {
 
   function rejoinPlayer(playerId: string) {
     if (game.phase !== "playing") return;
+    // Apply re-join penalty as a synthetic round entry on the current round count
+    // We record it as a standalone "rejoin" marker on the player's total
+    const penalty = game.rules.rejoinPenalty;
+    let newRounds = game.rounds;
+
+    if (penalty > 0) {
+      // Add a penalty round entry for this player only (other players get a "—" entry)
+      const rejoinRound: Round = {
+        id: uid(),
+        entries: {
+          [playerId]: { event: "none", rawInput: penalty, score: penalty },
+        },
+      };
+      newRounds = [...game.rounds, rejoinRound];
+    }
+
     const updatedPlayers = game.players.map((p) =>
-      p.id === playerId ? { ...p, active: true } : p
+      p.id === playerId ? { ...p, status: "rejoined" as const } : p
     );
-    setGame({ ...game, players: updatedPlayers });
+
+    setGame({ ...game, players: updatedPlayers, rounds: newRounds });
   }
 
   function newGame() {
