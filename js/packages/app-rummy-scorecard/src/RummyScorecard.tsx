@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import "./rummy.css";
 
 // ─── Persistence: localStorage (7-day TTL) + URL share ───────────────────────
 
