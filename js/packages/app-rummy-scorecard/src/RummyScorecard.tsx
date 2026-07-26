@@ -231,9 +231,114 @@ const DEFAULT_RULES: RuleConfig = {
 
 const MIN_ROUND_SCORE = 2;
 
+// ─── Game History Browser ─────────────────────────────────────────────────────
+
+function GameHistoryBrowser({
+  history,
+  onResume,
+  onView,
+}: {
+  history: HistoryEntry[];
+  onResume: (entry: HistoryEntry) => void;
+  onView: (entry: HistoryEntry) => void;
+}) {
+  if (history.length === 0) return null;
+
+  function formatDate(ts: number) {
+    return new Date(ts).toLocaleDateString(undefined, {
+      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+    });
+  }
+
+  function winnerOf(entry: HistoryEntry): string {
+    const s = entry.state;
+    if (s.phase !== "finished" && s.phase !== "playing") return "—";
+    const pts = s.players.map((p) => ({
+      name: p.name,
+      total: s.rounds
+        .filter((r) => !r.cancelled)
+        .reduce((sum, r) => {
+          const e = r.entries[p.id];
+          return sum + (e ? e.score : 0);
+        }, 0),
+    }));
+    if (pts.length === 0) return "—";
+    return pts.reduce((best, p) => (p.total < best.total ? p : best)).name;
+  }
+
+  return (
+    <div className="rummyHistorySection">
+      <div className="rummyHistorySectionHeader">
+        <span className="rummyLabel">Recent games</span>
+        <span className="rummyHistoryCount">{history.length} / {MAX_HISTORY}</span>
+      </div>
+      <div className="rummyHistoryList">
+        {[...history].reverse().map((entry) => {
+          const s = entry.state;
+          const isPlaying = s.phase === "playing";
+          const playerNames = s.phase !== "setup"
+            ? s.players.map((p) => p.name).join(", ")
+            : "—";
+          const rounds = s.phase !== "setup"
+            ? s.rounds.filter((r) => !r.cancelled).length
+            : 0;
+          return (
+            <div
+              key={entry.id}
+              className={`rummyHistoryCard${isPlaying ? " rummyHistoryCardActive" : ""}`}
+            >
+              <div className="rummyHistoryCardBody">
+                <div className="rummyHistoryCardTop">
+                  <span className="rummyHistoryPhase">
+                    {isPlaying ? "⏸ In progress" : "✓ Finished"}
+                  </span>
+                  <span className="rummyHistoryDate">{formatDate(entry.savedAt)}</span>
+                </div>
+                <div className="rummyHistoryPlayers">{playerNames}</div>
+                <div className="rummyHistoryMeta">
+                  {rounds} round{rounds !== 1 ? "s" : ""}
+                  {s.phase === "finished" && ` · Winner: ${winnerOf(entry)}`}
+                  {s.phase !== "setup" && ` · Target: ${s.targetScore}`}
+                </div>
+              </div>
+              <div className="rummyHistoryCardActions">
+                {isPlaying && (
+                  <button
+                    className="rummySecondaryBtn rummyHistoryResumeBtn"
+                    type="button"
+                    onClick={() => onResume(entry)}
+                  >
+                    Resume
+                  </button>
+                )}
+                <button
+                  className="rummySecondaryBtn"
+                  type="button"
+                  onClick={() => onView(entry)}
+                >
+                  View
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Setup Screen ─────────────────────────────────────────────────────────────
 
-function SetupScreen({ onStart }: { onStart: (players: Player[], target: number, rules: RuleConfig) => void }) {
+function SetupScreen({
+  onStart,
+  onResume,
+  onView,
+}: {
+  onStart: (players: Player[], target: number, rules: RuleConfig) => void;
+  onResume: (entry: HistoryEntry) => void;
+  onView: (entry: HistoryEntry) => void;
+}) {
+  const [history] = useState<HistoryEntry[]>(() => loadHistory());
   const [names, setNames] = useState<string[]>(["", "", ""]);
   const [target, setTarget] = useState(200);
   const [rules, setRules] = useState<RuleConfig>({ ...DEFAULT_RULES });
@@ -344,6 +449,7 @@ function SetupScreen({ onStart }: { onStart: (players: Player[], target: number,
         {error && <p className="rummyError">{error}</p>}
         <button className="rummyPrimaryBtn" onClick={handleStart} type="button">Start Game</button>
       </div>
+      <GameHistoryBrowser history={history} onResume={onResume} onView={onView} />
     </div>
   );
 }
@@ -1055,12 +1161,32 @@ export function RummyScorecard() {
   const [game, setGame] = useState<GameState>(() => loadGame());
   const readOnly = detectReadOnly();
 
+  // Stable game ID — recovered from the active envelope or freshly generated
+  const gameIdRef = useMemo<{ current: string }>(() => {
+    try {
+      const raw = localStorage.getItem(ACTIVE_KEY);
+      if (raw) {
+        const env = JSON.parse(raw) as ActiveEnvelope;
+        if (env.id) return { current: env.id };
+      }
+    } catch { /* ignore */ }
+    return { current: uid() };
+  }, []);
+
   // Persist every state change to localStorage (skip for read-only viewers)
   useEffect(() => {
-    if (!readOnly) saveGame(game);
-  }, [game, readOnly]);
+    if (!readOnly) {
+      saveActiveGame(game, gameIdRef.current);
+      // Archive whenever the game reaches finished state
+      if (game.phase === "finished") {
+        archiveGame(game, gameIdRef.current);
+      }
+    }
+  }, [game, readOnly, gameIdRef]);
 
   function startGame(players: Player[], targetScore: number, rules: RuleConfig) {
+    // Assign a fresh id for this new game
+    gameIdRef.current = uid();
     setGame({ phase: "playing", players, rounds: [], rules, targetScore });
   }
 
@@ -1133,7 +1259,9 @@ export function RummyScorecard() {
 
   function endGame() {
     if (game.phase !== "playing") return;
-    setGame({ ...game, phase: "finished" });
+    const finished = { ...game, phase: "finished" as const };
+    archiveGame(finished, gameIdRef.current);
+    setGame(finished);
   }
 
   function rejoinPlayer(playerId: string) {
@@ -1166,13 +1294,30 @@ export function RummyScorecard() {
     setGame({ ...game, players: updatedPlayers, rounds: newRounds });
   }
 
+  function resumeGame(entry: HistoryEntry) {
+    gameIdRef.current = entry.id;
+    saveActiveGame(entry.state, entry.id);
+    setGame(entry.state);
+  }
+
+  function viewGame(entry: HistoryEntry) {
+    // Load the historical game in read-only-like view (finished screen)
+    gameIdRef.current = entry.id;
+    setGame(entry.state);
+  }
+
   function newGame() {
+    // Archive current game if it was in progress before clearing
+    if (game.phase === "playing" || game.phase === "finished") {
+      archiveGame(game, gameIdRef.current);
+    }
     clearActive();
+    gameIdRef.current = uid();
     setGame({ phase: "setup" });
   }
 
   if (game.phase === "setup") {
-    return <SetupScreen onStart={startGame} />;
+    return <SetupScreen onStart={startGame} onResume={resumeGame} onView={viewGame} />;
   }
 
   if (game.phase === "playing") {
