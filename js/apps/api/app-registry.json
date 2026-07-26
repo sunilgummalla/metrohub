@@ -7,7 +7,7 @@
       "packageName": "@money/poker-scorecard",
       "folder": "app-poker-scorecard",
       "displayName": "Poker scorecard",
-      "category": "Scoreboard",
+      "category": "Scoreboards",
       "route": "/apps/poker-scorecard",
       "tile": {
         "title": "Poker scorecard",

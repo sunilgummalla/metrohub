@@ -18,7 +18,6 @@ const APP_ICONS: Record<string, string> = {
 
 // ─── Gradient map per category ────────────────────────────────────────────────
 const CATEGORY_GRADIENTS: Record<string, string> = {
-  Scoreboard:  "linear-gradient(135deg,#7c3aed,#a855f7)",
   Scoreboards: "linear-gradient(135deg,#7c3aed,#a855f7)",
   Accounting:  "linear-gradient(135deg,#0f766e,#14b8a6)",
   Shopping:    "linear-gradient(135deg,#b45309,#f59e0b)",
