@@ -7,7 +7,7 @@ export type RuleConfig = {
   middleDrop: number;
   fullCount: number;
   winnerBonus: number;
-  rejoinPenalty: number;
+  // rejoinPenalty removed — re-join score is always: highest active total + 2
 };
 
 // Events that can be assigned per player per round (re-join is NOT a round event)
@@ -95,8 +95,10 @@ const DEFAULT_RULES: RuleConfig = {
   middleDrop: 40,
   fullCount: 80,
   winnerBonus: 0,
-  rejoinPenalty: 0,
 };
+
+// Minimum score any player can record in a round
+const MIN_ROUND_SCORE = 2;
 
 // ─── Setup Screen ─────────────────────────────────────────────────────────────
 
@@ -138,11 +140,10 @@ function SetupScreen({ onStart }: { onStart: (players: Player[], target: number,
   }
 
   const ruleFields: { key: keyof RuleConfig; label: string; hint: string }[] = [
-    { key: "drop",          label: "Drop",           hint: "Points for first drop" },
-    { key: "middleDrop",    label: "Middle Drop",     hint: "Points for middle drop" },
-    { key: "fullCount",     label: "Full Count",      hint: "Points for full count" },
-    { key: "winnerBonus",   label: "Winner Bonus",    hint: "Points added to winner (use negative to reward)" },
-    { key: "rejoinPenalty", label: "Re-join Penalty", hint: "Points added when a busted player re-joins" },
+    { key: "drop",        label: "Drop",         hint: "Points for first drop" },
+    { key: "middleDrop",  label: "Middle Drop",   hint: "Points for middle drop" },
+    { key: "fullCount",   label: "Full Count",    hint: "Points for full count (also the per-round maximum)" },
+    { key: "winnerBonus", label: "Winner Bonus",  hint: "Points added to winner (use negative to reward)" },
   ];
 
   return (
@@ -152,6 +153,7 @@ function SetupScreen({ onStart }: { onStart: (players: Player[], target: number,
           <span className="rummyBadge">Scoreboards</span>
           <h2>New Rummy Game</h2>
           <p>Configure rules, add players, and set the target score. Lowest score wins.</p>
+          <p style={{fontSize:"12px",color:"var(--muted)",marginTop:"2px"}}>Min score per round: 2 &nbsp;·&nbsp; Re-join score: highest active total + 2</p>
         </div>
 
         <div className="rummyField">
@@ -262,6 +264,10 @@ function RoundEntryPanel({
         if (raw === "") { setError(`Enter a score for ${p.name}.`); return; }
         const n = Number(raw);
         if (!Number.isInteger(n) || n < 0) { setError(`Score for ${p.name} must be a non-negative integer.`); return; }
+        // Enforce minimum score of 2
+        if (n < MIN_ROUND_SCORE) { setError(`Minimum score per round is ${MIN_ROUND_SCORE}. Use a higher value for ${p.name}.`); return; }
+        // Enforce maximum score = Full Count
+        if (n > rules.fullCount) { setError(`Score for ${p.name} cannot exceed Full Count (${rules.fullCount}).`); return; }
         entries[p.id] = { event: ev, rawInput: n, score: effectiveScore(ev, n, rules) };
       } else {
         entries[p.id] = { event: ev, rawInput: 0, score: effectiveScore(ev, 0, rules) };
@@ -317,8 +323,9 @@ function RoundEntryPanel({
                   <input
                     className="rummyInput rummyScoreInput"
                     type="number"
-                    min={0}
-                    placeholder="0"
+                    min={MIN_ROUND_SCORE}
+                    max={rules.fullCount}
+                    placeholder={String(MIN_ROUND_SCORE)}
                     value={rawInputs[p.id]}
                     onChange={(e) => setRaw(p.id, e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
@@ -463,35 +470,39 @@ function RulesSummary({ rules }: { rules: RuleConfig }) {
       {rules.winnerBonus !== 0 && (
         <span className="rummyRuleChip rummyEventWinner">Winner Bonus: {rules.winnerBonus}</span>
       )}
-      {rules.rejoinPenalty !== 0 && (
-        <span className="rummyRuleChip rummyEventRejoin">Re-join Penalty: +{rules.rejoinPenalty}</span>
-      )}
+      <span className="rummyRuleChip rummyEventRejoin">Re-join: highest + 2</span>
     </div>
   );
 }
 
 // ─── Re-join Panel (shown ONLY when there are busted players) ─────────────────
+// Re-join score = highest active player total + 2
 
 function RejoinPanel({
   players,
-  rules,
+  rounds,
   onRejoin,
 }: {
   players: Player[];
-  rules: RuleConfig;
+  rounds: Round[];
   onRejoin: (playerId: string) => void;
 }) {
   const bustedPlayers = players.filter((p) => p.status === "busted");
   if (bustedPlayers.length === 0) return null;
+
+  // Compute the highest total among currently active players
+  const activeTotals = players
+    .filter(isInGame)
+    .map((p) => totalScore(rounds, p.id));
+  const highestActive = activeTotals.length > 0 ? Math.max(...activeTotals) : 0;
+  const rejoinScore = highestActive + 2;
 
   return (
     <div className="rummyRejoinPanel">
       <div className="rummyRejoinPanelHeader">
         <span className="rummyLabel">Busted players</span>
         <span className="rummyRejoinHint">
-          {rules.rejoinPenalty > 0
-            ? `Re-joining adds ${rules.rejoinPenalty} pts to their total`
-            : "Re-joining reactivates them from their current total"}
+          Re-joining sets their total to <strong>{rejoinScore}</strong> (highest active total {highestActive} + 2)
         </span>
       </div>
       <div className="rummyRejoinList">
@@ -502,7 +513,7 @@ function RejoinPanel({
             type="button"
             onClick={() => onRejoin(p.id)}
           >
-            ↩ {p.name} re-joins
+            ↩ {p.name} re-joins ({rejoinScore} pts)
           </button>
         ))}
       </div>
@@ -561,7 +572,7 @@ function PlayingScreen({
       <RulesSummary rules={rules} />
 
       {/* Re-join panel — only visible when someone has busted out */}
-      <RejoinPanel players={players} rules={rules} onRejoin={onRejoin} />
+      <RejoinPanel players={players} rounds={rounds} onRejoin={onRejoin} />
 
       {/* Round score entry */}
       {activePlayers.length >= 2 ? (
@@ -694,17 +705,26 @@ export function RummyScorecard() {
 
   function rejoinPlayer(playerId: string) {
     if (game.phase !== "playing") return;
-    // Apply re-join penalty as a synthetic round entry on the current round count
-    // We record it as a standalone "rejoin" marker on the player's total
-    const penalty = game.rules.rejoinPenalty;
-    let newRounds = game.rounds;
 
-    if (penalty > 0) {
-      // Add a penalty round entry for this player only (other players get a "—" entry)
+    // Re-join score = highest active total + 2
+    const activeTotals = game.players
+      .filter(isInGame)
+      .map((p) => totalScore(game.rounds, p.id));
+    const highestActive = activeTotals.length > 0 ? Math.max(...activeTotals) : 0;
+    const rejoinScore = highestActive + 2;
+
+    // Current total of the re-joining player
+    const currentTotal = totalScore(game.rounds, playerId);
+    // We need to add the difference so their running total becomes rejoinScore
+    const adjustment = rejoinScore - currentTotal;
+
+    let newRounds = game.rounds;
+    if (adjustment !== 0) {
+      // Insert a synthetic round entry (visible in history as a re-join adjustment)
       const rejoinRound: Round = {
         id: uid(),
         entries: {
-          [playerId]: { event: "none", rawInput: penalty, score: penalty },
+          [playerId]: { event: "none", rawInput: adjustment, score: adjustment },
         },
       };
       newRounds = [...game.rounds, rejoinRound];
