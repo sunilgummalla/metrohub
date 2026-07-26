@@ -839,6 +839,22 @@
 .rummyWinnerCard h2 { font-size: 36px; margin: 0; }
 .rummyWinnerScore { color: var(--muted); font-size: 15px; margin: 0; }
 
+.rummyFinishedActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.rummyNewGameBtn {
+  padding: 10px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  min-width: 140px;
+}
+
 /* ─── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {

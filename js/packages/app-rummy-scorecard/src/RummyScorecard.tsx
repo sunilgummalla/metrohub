@@ -986,9 +986,13 @@ function FinishedScreen({
         <p className="rummyWinnerScore">
           Final score: <strong>{winner.total}</strong> pts across {activeRounds.length} rounds
         </p>
-        <div style={{display:"flex",gap:"10px",flexWrap:"wrap",justifyContent:"center"}}>
+        <div className="rummyFinishedActions">
           <SharePanel game={game} readOnly={readOnly} />
-          {!readOnly && <button className="rummyPrimaryBtn" onClick={onNewGame} type="button">New Game</button>}
+          {!readOnly && (
+            <button className="rummyPrimaryBtn rummyNewGameBtn" onClick={onNewGame} type="button">
+              ↺ New Game
+            </button>
+          )}
         </div>
       </div>
 
