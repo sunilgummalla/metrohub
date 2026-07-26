@@ -2,20 +2,43 @@ import { useState, useMemo } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export type RuleConfig = {
+  drop: number;         // points for first drop (default 20)
+  middleDrop: number;   // points for middle drop (default 40)
+  fullCount: number;    // points for full count (default 80)
+  winnerBonus: number;  // points SUBTRACTED from winner (default 0, can be negative reward)
+  rejoinPenalty: number;// points added when a player re-joins after busting (default 0)
+};
+
+export type PlayerEvent =
+  | "none"        // normal score entry
+  | "drop"        // first drop — score is overridden by rule
+  | "middleDrop"  // middle drop — score is overridden by rule
+  | "fullCount"   // full count — score is overridden by rule
+  | "winner"      // round winner — score is 0 + optional bonus
+  | "rejoin";     // re-joined after busting — score reset + penalty
+
 type Player = {
   id: string;
   name: string;
+  active: boolean; // false = busted out (not re-joined)
+};
+
+type RoundEntry = {
+  event: PlayerEvent;
+  score: number;      // final effective score for this round
+  rawInput: number;   // what the user typed (ignored when event overrides)
 };
 
 type Round = {
   id: string;
-  scores: Record<string, number>; // playerId → points for that round
+  entries: Record<string, RoundEntry>; // playerId → entry
 };
 
 type GameState =
   | { phase: "setup" }
-  | { phase: "playing"; players: Player[]; rounds: Round[]; targetScore: number }
-  | { phase: "finished"; players: Player[]; rounds: Round[]; targetScore: number };
+  | { phase: "playing"; players: Player[]; rounds: Round[]; rules: RuleConfig; targetScore: number }
+  | { phase: "finished"; players: Player[]; rounds: Round[]; rules: RuleConfig; targetScore: number };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -23,25 +46,73 @@ function uid() {
   return Math.random().toString(36).slice(2, 9);
 }
 
-function totalScore(rounds: Round[], playerId: string): number {
-  return rounds.reduce((sum, r) => sum + (r.scores[playerId] ?? 0), 0);
+function effectiveScore(event: PlayerEvent, raw: number, rules: RuleConfig): number {
+  switch (event) {
+    case "drop":       return rules.drop;
+    case "middleDrop": return rules.middleDrop;
+    case "fullCount":  return rules.fullCount;
+    case "winner":     return rules.winnerBonus;
+    case "rejoin":     return rules.rejoinPenalty;
+    default:           return raw;
+  }
 }
 
-function rankPlayers(players: Player[], rounds: Round[]): (Player & { total: number; rank: number })[] {
+function totalScore(rounds: Round[], playerId: string): number {
+  return rounds.reduce((sum, r) => sum + (r.entries[playerId]?.score ?? 0), 0);
+}
+
+function rankPlayers(
+  players: Player[],
+  rounds: Round[]
+): (Player & { total: number; rank: number })[] {
   const withTotals = players.map((p) => ({ ...p, total: totalScore(rounds, p.id) }));
-  withTotals.sort((a, b) => a.total - b.total); // lowest score wins in Rummy
+  withTotals.sort((a, b) => a.total - b.total);
   return withTotals.map((p, i) => ({ ...p, rank: i + 1 }));
 }
 
+const EVENT_LABELS: Record<PlayerEvent, string> = {
+  none: "Score",
+  drop: "Drop",
+  middleDrop: "Mid Drop",
+  fullCount: "Full Count",
+  winner: "Winner",
+  rejoin: "Re-join",
+};
+
+const EVENT_COLORS: Record<PlayerEvent, string> = {
+  none: "",
+  drop: "rummyEventDrop",
+  middleDrop: "rummyEventMidDrop",
+  fullCount: "rummyEventFull",
+  winner: "rummyEventWinner",
+  rejoin: "rummyEventRejoin",
+};
+
+// ─── Default Rules ────────────────────────────────────────────────────────────
+
+const DEFAULT_RULES: RuleConfig = {
+  drop: 20,
+  middleDrop: 40,
+  fullCount: 80,
+  winnerBonus: 0,
+  rejoinPenalty: 0,
+};
+
 // ─── Setup Screen ─────────────────────────────────────────────────────────────
 
-function SetupScreen({ onStart }: { onStart: (players: Player[], target: number) => void }) {
+function SetupScreen({ onStart }: { onStart: (players: Player[], target: number, rules: RuleConfig) => void }) {
   const [names, setNames] = useState<string[]>(["", "", ""]);
   const [target, setTarget] = useState(200);
+  const [rules, setRules] = useState<RuleConfig>({ ...DEFAULT_RULES });
   const [error, setError] = useState("");
 
   function updateName(i: number, val: string) {
     setNames((prev) => prev.map((n, idx) => (idx === i ? val : n)));
+  }
+
+  function updateRule(key: keyof RuleConfig, val: string) {
+    const n = Number(val);
+    if (!isNaN(n)) setRules((prev) => ({ ...prev, [key]: n }));
   }
 
   function addPlayer() {
@@ -55,21 +126,24 @@ function SetupScreen({ onStart }: { onStart: (players: Player[], target: number)
   function handleStart() {
     const trimmed = names.map((n) => n.trim());
     const valid = trimmed.filter(Boolean);
-    if (valid.length < 2) {
-      setError("At least 2 players are required.");
-      return;
-    }
-    if (new Set(valid).size !== valid.length) {
-      setError("Player names must be unique.");
-      return;
-    }
-    if (target < 50 || target > 1000) {
-      setError("Target score must be between 50 and 1000.");
-      return;
-    }
+    if (valid.length < 2) { setError("At least 2 players are required."); return; }
+    if (new Set(valid).size !== valid.length) { setError("Player names must be unique."); return; }
+    if (target < 50 || target > 1000) { setError("Target score must be between 50 and 1000."); return; }
     setError("");
-    onStart(valid.map((name) => ({ id: uid(), name })), target);
+    onStart(
+      valid.map((name) => ({ id: uid(), name, active: true })),
+      target,
+      rules
+    );
   }
+
+  const ruleFields: { key: keyof RuleConfig; label: string; hint: string }[] = [
+    { key: "drop",          label: "Drop",          hint: "Points for first drop" },
+    { key: "middleDrop",    label: "Middle Drop",    hint: "Points for middle drop" },
+    { key: "fullCount",     label: "Full Count",     hint: "Points for full count" },
+    { key: "winnerBonus",   label: "Winner Bonus",   hint: "Points added to winner (use negative to reward)" },
+    { key: "rejoinPenalty", label: "Re-join Penalty",hint: "Points added when a player re-joins" },
+  ];
 
   return (
     <div className="rummySetup">
@@ -77,11 +151,30 @@ function SetupScreen({ onStart }: { onStart: (players: Player[], target: number)
         <div className="rummySetupHeader">
           <span className="rummyBadge">Scoreboards</span>
           <h2>New Rummy Game</h2>
-          <p>Add players and set the target score. Lowest score wins.</p>
+          <p>Configure rules, add players, and set the target score. Lowest score wins.</p>
         </div>
 
+        {/* Rule configuration */}
         <div className="rummyField">
-          <label className="rummyLabel">Target Score (points to bust out)</label>
+          <label className="rummyLabel">Game Rules</label>
+          <div className="rummyRulesGrid">
+            {ruleFields.map(({ key, label, hint }) => (
+              <div className="rummyRuleField" key={key}>
+                <label className="rummyRuleLabel" title={hint}>{label}</label>
+                <input
+                  className="rummyInput rummyRuleInput"
+                  type="number"
+                  value={rules[key]}
+                  onChange={(e) => updateRule(key, e.target.value)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Target score */}
+        <div className="rummyField">
+          <label className="rummyLabel">Target Score (bust-out threshold)</label>
           <input
             className="rummyInput"
             type="number"
@@ -93,6 +186,7 @@ function SetupScreen({ onStart }: { onStart: (players: Player[], target: number)
           />
         </div>
 
+        {/* Players */}
         <div className="rummyField">
           <label className="rummyLabel">Players ({names.length} / 8)</label>
           <div className="rummyPlayerList">
@@ -107,92 +201,138 @@ function SetupScreen({ onStart }: { onStart: (players: Player[], target: number)
                   onKeyDown={(e) => e.key === "Enter" && handleStart()}
                 />
                 {names.length > 2 && (
-                  <button className="rummyRemoveBtn" onClick={() => removePlayer(i)} type="button" aria-label="Remove player">
-                    ✕
-                  </button>
+                  <button className="rummyRemoveBtn" onClick={() => removePlayer(i)} type="button" aria-label="Remove player">✕</button>
                 )}
               </div>
             ))}
           </div>
           {names.length < 8 && (
-            <button className="rummyAddPlayerBtn" onClick={addPlayer} type="button">
-              + Add player
-            </button>
+            <button className="rummyAddPlayerBtn" onClick={addPlayer} type="button">+ Add player</button>
           )}
         </div>
 
         {error && <p className="rummyError">{error}</p>}
-
-        <button className="rummyPrimaryBtn" onClick={handleStart} type="button">
-          Start Game
-        </button>
+        <button className="rummyPrimaryBtn" onClick={handleStart} type="button">Start Game</button>
       </div>
     </div>
   );
 }
 
-// ─── Score Entry Row ──────────────────────────────────────────────────────────
+// ─── Round Entry ──────────────────────────────────────────────────────────────
 
-function ScoreEntryRow({
+function RoundEntryPanel({
   players,
+  rules,
+  roundNumber,
   onSubmit,
-  roundNumber
 }: {
   players: Player[];
+  rules: RuleConfig;
   roundNumber: number;
-  onSubmit: (scores: Record<string, number>) => void;
+  onSubmit: (entries: Record<string, RoundEntry>) => void;
 }) {
-  const [values, setValues] = useState<Record<string, string>>(
-    Object.fromEntries(players.map((p) => [p.id, ""]))
+  const activePlayers = players.filter((p) => p.active);
+
+  const [events, setEvents] = useState<Record<string, PlayerEvent>>(
+    Object.fromEntries(activePlayers.map((p) => [p.id, "none"]))
+  );
+  const [rawInputs, setRawInputs] = useState<Record<string, string>>(
+    Object.fromEntries(activePlayers.map((p) => [p.id, ""]))
   );
   const [error, setError] = useState("");
 
-  function update(id: string, val: string) {
-    setValues((prev) => ({ ...prev, [id]: val }));
+  // Recompute when activePlayers changes (re-join scenario)
+  const needsInput = (event: PlayerEvent) => event === "none";
+
+  function setEvent(id: string, ev: PlayerEvent) {
+    setEvents((prev) => ({ ...prev, [id]: ev }));
+    // Clear error when user makes a selection
+    setError("");
+  }
+
+  function setRaw(id: string, val: string) {
+    setRawInputs((prev) => ({ ...prev, [id]: val }));
   }
 
   function handleSubmit() {
-    const parsed: Record<string, number> = {};
-    for (const p of players) {
-      const raw = values[p.id].trim();
-      if (raw === "") {
-        setError(`Enter a score for ${p.name}.`);
-        return;
+    // Validate: exactly one winner
+    const winnerCount = Object.values(events).filter((e) => e === "winner").length;
+    if (winnerCount === 0) { setError("Mark one player as the round Winner."); return; }
+    if (winnerCount > 1)   { setError("Only one player can be the round Winner."); return; }
+
+    // Validate raw inputs for "none" events
+    const entries: Record<string, RoundEntry> = {};
+    for (const p of activePlayers) {
+      const ev = events[p.id];
+      if (needsInput(ev)) {
+        const raw = rawInputs[p.id].trim();
+        if (raw === "") { setError(`Enter a score for ${p.name}.`); return; }
+        const n = Number(raw);
+        if (!Number.isInteger(n) || n < 0) { setError(`Score for ${p.name} must be a non-negative integer.`); return; }
+        entries[p.id] = { event: ev, rawInput: n, score: effectiveScore(ev, n, rules) };
+      } else {
+        entries[p.id] = { event: ev, rawInput: 0, score: effectiveScore(ev, 0, rules) };
       }
-      const n = Number(raw);
-      if (!Number.isInteger(n) || n < 0) {
-        setError(`Score for ${p.name} must be a non-negative integer.`);
-        return;
-      }
-      parsed[p.id] = n;
     }
     setError("");
-    onSubmit(parsed);
+    onSubmit(entries);
   }
+
+  const allEvents: PlayerEvent[] = ["none", "winner", "drop", "middleDrop", "fullCount", "rejoin"];
 
   return (
     <div className="rummyEntryPanel">
       <div className="rummyEntryHeader">
         <span className="rummyBadge">Round {roundNumber}</span>
         <h3>Enter scores for this round</h3>
-        <p>Enter the points each player accumulated. The player who went out scores 0.</p>
+        <p>Select an event for each player. "Score" means enter points manually.</p>
       </div>
-      <div className="rummyEntryGrid">
-        {players.map((p) => (
-          <div className="rummyEntryField" key={p.id}>
-            <label className="rummyLabel">{p.name}</label>
-            <input
-              className="rummyInput rummyScoreInput"
-              type="number"
-              min={0}
-              placeholder="0"
-              value={values[p.id]}
-              onChange={(e) => update(p.id, e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-            />
-          </div>
-        ))}
+
+      <div className="rummyEntryTable">
+        <div className="rummyEntryTableHead">
+          <span>Player</span>
+          <span>Event</span>
+          <span>Points</span>
+        </div>
+        {activePlayers.map((p) => {
+          const ev = events[p.id];
+          const overridden = !needsInput(ev);
+          const preview = overridden ? effectiveScore(ev, 0, rules) : null;
+          return (
+            <div className={`rummyEntryTableRow ${EVENT_COLORS[ev]}`} key={p.id}>
+              <span className="rummyEntryPlayerName">{p.name}</span>
+              <div className="rummyEventPicker">
+                {allEvents.map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    className={`rummyEventBtn ${ev === e ? "active" : ""} ${EVENT_COLORS[e]}`}
+                    onClick={() => setEvent(p.id, e)}
+                  >
+                    {EVENT_LABELS[e]}
+                  </button>
+                ))}
+              </div>
+              <div className="rummyEntryScore">
+                {overridden ? (
+                  <span className={`rummyOverriddenScore ${EVENT_COLORS[ev]}`}>{preview}</span>
+                ) : (
+                  <input
+                    className="rummyInput rummyScoreInput"
+                    type="number"
+                    min={0}
+                    placeholder="0"
+                    value={rawInputs[p.id]}
+                    onChange={(e) => setRaw(p.id, e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                  />
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
+
       {error && <p className="rummyError">{error}</p>}
       <button className="rummyPrimaryBtn" onClick={handleSubmit} type="button">
         Save Round {roundNumber}
@@ -201,18 +341,16 @@ function ScoreEntryRow({
   );
 }
 
-// ─── Scoreboard Table ─────────────────────────────────────────────────────────
+// ─── Scoreboard ───────────────────────────────────────────────────────────────
 
 function Scoreboard({
   players,
   rounds,
   targetScore,
-  compact = false
 }: {
   players: Player[];
   rounds: Round[];
   targetScore: number;
-  compact?: boolean;
 }) {
   const ranked = useMemo(() => rankPlayers(players, rounds), [players, rounds]);
 
@@ -225,38 +363,44 @@ function Scoreboard({
   }
 
   return (
-    <div className={`rummyScoreboard ${compact ? "rummyScoreboardCompact" : ""}`}>
+    <div className="rummyScoreboard">
       <table className="rummyTable">
         <thead>
           <tr>
             <th>#</th>
             <th>Player</th>
-            {rounds.map((_, i) => (
-              <th key={i}>R{i + 1}</th>
-            ))}
+            {rounds.map((_, i) => <th key={i}>R{i + 1}</th>)}
             <th>Total</th>
             <th>Margin</th>
           </tr>
         </thead>
         <tbody>
           {ranked.map((p) => {
-            const busted = p.total >= targetScore;
+            const busted = !p.active && p.total >= targetScore;
             return (
               <tr key={p.id} className={busted ? "rummyBusted" : p.rank === 1 ? "rummyLeader" : ""}>
-                <td className="rummyRank">
-                  {p.rank === 1 ? "🏆" : p.rank}
+                <td className="rummyRank">{p.rank === 1 ? "🏆" : p.rank}</td>
+                <td className="rummyPlayerName">
+                  {p.name}
+                  {!p.active && <span className="rummyBustedTag">Out</span>}
                 </td>
-                <td className="rummyPlayerName">{p.name}</td>
-                {rounds.map((r) => (
-                  <td key={r.id} className="rummyRoundScore">
-                    {r.scores[p.id] ?? "—"}
-                  </td>
-                ))}
-                <td className="rummyTotal" data-busted={busted}>
-                  {p.total}
-                </td>
+                {rounds.map((r) => {
+                  const entry = r.entries[p.id];
+                  if (!entry) return <td key={r.id} className="rummyRoundScore">—</td>;
+                  return (
+                    <td key={r.id} className={`rummyRoundScore ${EVENT_COLORS[entry.event]}`}>
+                      <span title={EVENT_LABELS[entry.event]}>{entry.score}</span>
+                      {entry.event !== "none" && (
+                        <span className="rummyEventTag">{EVENT_LABELS[entry.event]}</span>
+                      )}
+                    </td>
+                  );
+                })}
+                <td className="rummyTotal" data-busted={busted}>{p.total}</td>
                 <td className="rummyMargin">
-                  {busted ? <span className="rummyBustedTag">Bust</span> : targetScore - p.total}
+                  {busted
+                    ? <span className="rummyBustedTag">Bust</span>
+                    : targetScore - p.total}
                 </td>
               </tr>
             );
@@ -267,26 +411,49 @@ function Scoreboard({
   );
 }
 
+// ─── Rules Summary Badge ──────────────────────────────────────────────────────
+
+function RulesSummary({ rules }: { rules: RuleConfig }) {
+  return (
+    <div className="rummyRulesSummary">
+      <span className="rummyRuleChip rummyEventDrop">Drop: {rules.drop}</span>
+      <span className="rummyRuleChip rummyEventMidDrop">Mid Drop: {rules.middleDrop}</span>
+      <span className="rummyRuleChip rummyEventFull">Full Count: {rules.fullCount}</span>
+      {rules.winnerBonus !== 0 && (
+        <span className="rummyRuleChip rummyEventWinner">Winner Bonus: {rules.winnerBonus}</span>
+      )}
+      {rules.rejoinPenalty !== 0 && (
+        <span className="rummyRuleChip rummyEventRejoin">Re-join: +{rules.rejoinPenalty}</span>
+      )}
+    </div>
+  );
+}
+
 // ─── Playing Screen ───────────────────────────────────────────────────────────
 
 function PlayingScreen({
   players,
   rounds,
+  rules,
   targetScore,
   onAddRound,
   onUndo,
-  onEndGame
+  onEndGame,
+  onRejoin,
 }: {
   players: Player[];
   rounds: Round[];
+  rules: RuleConfig;
   targetScore: number;
-  onAddRound: (scores: Record<string, number>) => void;
+  onAddRound: (entries: Record<string, RoundEntry>) => void;
   onUndo: () => void;
   onEndGame: () => void;
+  onRejoin: (playerId: string) => void;
 }) {
   const ranked = useMemo(() => rankPlayers(players, rounds), [players, rounds]);
   const leader = ranked[0];
-  const bustedPlayers = ranked.filter((p) => p.total >= targetScore);
+  const bustedPlayers = players.filter((p) => !p.active);
+  const activePlayers = players.filter((p) => p.active);
 
   return (
     <div className="rummyPlaying">
@@ -305,17 +472,46 @@ function PlayingScreen({
           <strong>{rounds.length > 0 ? `${leader.name} (${leader.total})` : "—"}</strong>
         </div>
         <div className="rummyStat">
-          <span>Players busted</span>
-          <strong>{bustedPlayers.length} / {players.length}</strong>
+          <span>Active / Total</span>
+          <strong>{activePlayers.length} / {players.length}</strong>
         </div>
       </div>
 
+      {/* Rules summary */}
+      <RulesSummary rules={rules} />
+
+      {/* Re-join panel */}
+      {bustedPlayers.length > 0 && (
+        <div className="rummyRejoinPanel">
+          <span className="rummyLabel">Busted players — click to re-join:</span>
+          <div className="rummyRejoinList">
+            {bustedPlayers.map((p) => (
+              <button
+                key={p.id}
+                className="rummyRejoinBtn"
+                type="button"
+                onClick={() => onRejoin(p.id)}
+              >
+                ↩ {p.name} re-joins
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Score entry */}
-      <ScoreEntryRow
-        players={players}
-        roundNumber={rounds.length + 1}
-        onSubmit={onAddRound}
-      />
+      {activePlayers.length >= 2 ? (
+        <RoundEntryPanel
+          players={players}
+          rules={rules}
+          roundNumber={rounds.length + 1}
+          onSubmit={onAddRound}
+        />
+      ) : (
+        <div className="rummyEmptyBoard">
+          <span>Only {activePlayers.length} active player(s) remaining. End the game or wait for a re-join.</span>
+        </div>
+      )}
 
       {/* Scoreboard */}
       <div className="rummySection">
@@ -323,13 +519,9 @@ function PlayingScreen({
           <h3>Scoreboard</h3>
           <div className="rummyActions">
             {rounds.length > 0 && (
-              <button className="rummySecondaryBtn" onClick={onUndo} type="button">
-                ↩ Undo last round
-              </button>
+              <button className="rummySecondaryBtn" onClick={onUndo} type="button">↩ Undo last round</button>
             )}
-            <button className="rummyDangerBtn" onClick={onEndGame} type="button">
-              End game
-            </button>
+            <button className="rummyDangerBtn" onClick={onEndGame} type="button">End game</button>
           </div>
         </div>
         <Scoreboard players={players} rounds={rounds} targetScore={targetScore} />
@@ -343,11 +535,13 @@ function PlayingScreen({
 function FinishedScreen({
   players,
   rounds,
+  rules,
   targetScore,
-  onNewGame
+  onNewGame,
 }: {
   players: Player[];
   rounds: Round[];
+  rules: RuleConfig;
   targetScore: number;
   onNewGame: () => void;
 }) {
@@ -360,15 +554,16 @@ function FinishedScreen({
         <span className="rummyWinnerTrophy">🏆</span>
         <p className="rummyBadge">Game over</p>
         <h2>{winner.name} wins!</h2>
-        <p className="rummyWinnerScore">Final score: <strong>{winner.total}</strong> points across {rounds.length} rounds</p>
-        <button className="rummyPrimaryBtn" onClick={onNewGame} type="button">
-          New Game
-        </button>
+        <p className="rummyWinnerScore">
+          Final score: <strong>{winner.total}</strong> pts across {rounds.length} rounds
+        </p>
+        <button className="rummyPrimaryBtn" onClick={onNewGame} type="button">New Game</button>
       </div>
 
       <div className="rummySection">
         <div className="rummySectionHeader">
           <h3>Final Standings</h3>
+          <RulesSummary rules={rules} />
         </div>
         <Scoreboard players={players} rounds={rounds} targetScore={targetScore} />
       </div>
@@ -381,32 +576,54 @@ function FinishedScreen({
 export function RummyScorecard() {
   const [game, setGame] = useState<GameState>({ phase: "setup" });
 
-  function startGame(players: Player[], targetScore: number) {
-    setGame({ phase: "playing", players, rounds: [], targetScore });
+  function startGame(players: Player[], targetScore: number, rules: RuleConfig) {
+    setGame({ phase: "playing", players, rounds: [], rules, targetScore });
   }
 
-  function addRound(scores: Record<string, number>) {
+  function addRound(entries: Record<string, RoundEntry>) {
     if (game.phase !== "playing") return;
-    const newRound: Round = { id: uid(), scores };
+    const newRound: Round = { id: uid(), entries };
     const newRounds = [...game.rounds, newRound];
-    // Auto-end: all but one player busted
-    const ranked = rankPlayers(game.players, newRounds);
-    const activePlayers = ranked.filter((p) => p.total < game.targetScore);
+
+    // Mark players who have hit or exceeded target as inactive (busted)
+    const updatedPlayers = game.players.map((p) => {
+      if (!p.active) return p;
+      const total = totalScore(newRounds, p.id);
+      return { ...p, active: total < game.targetScore };
+    });
+
+    const activePlayers = updatedPlayers.filter((p) => p.active);
+
+    // Auto-finish when only 1 or 0 active players remain
     if (activePlayers.length <= 1) {
-      setGame({ ...game, phase: "finished", rounds: newRounds });
+      setGame({ ...game, phase: "finished", players: updatedPlayers, rounds: newRounds });
     } else {
-      setGame({ ...game, rounds: newRounds });
+      setGame({ ...game, players: updatedPlayers, rounds: newRounds });
     }
   }
 
   function undoLastRound() {
     if (game.phase !== "playing" || game.rounds.length === 0) return;
-    setGame({ ...game, rounds: game.rounds.slice(0, -1) });
+    const newRounds = game.rounds.slice(0, -1);
+    // Reactivate players who were busted by the removed round
+    const updatedPlayers = game.players.map((p) => {
+      const total = totalScore(newRounds, p.id);
+      return { ...p, active: total < game.targetScore };
+    });
+    setGame({ ...game, players: updatedPlayers, rounds: newRounds });
   }
 
   function endGame() {
     if (game.phase !== "playing") return;
     setGame({ ...game, phase: "finished" });
+  }
+
+  function rejoinPlayer(playerId: string) {
+    if (game.phase !== "playing") return;
+    const updatedPlayers = game.players.map((p) =>
+      p.id === playerId ? { ...p, active: true } : p
+    );
+    setGame({ ...game, players: updatedPlayers });
   }
 
   function newGame() {
@@ -422,10 +639,12 @@ export function RummyScorecard() {
       <PlayingScreen
         players={game.players}
         rounds={game.rounds}
+        rules={game.rules}
         targetScore={game.targetScore}
         onAddRound={addRound}
         onUndo={undoLastRound}
         onEndGame={endGame}
+        onRejoin={rejoinPlayer}
       />
     );
   }
@@ -434,6 +653,7 @@ export function RummyScorecard() {
     <FinishedScreen
       players={game.players}
       rounds={game.rounds}
+      rules={game.rules}
       targetScore={game.targetScore}
       onNewGame={newGame}
     />

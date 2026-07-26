@@ -10,7 +10,20 @@
   margin-bottom: 4px;
 }
 
-/* Setup */
+/* ─── Event colour tokens ─────────────────────────────────────────────────── */
+/* Drop   = amber/orange */
+/* MidDrop= orange-red */
+/* Full   = red */
+/* Winner = green */
+/* Rejoin = purple */
+
+.rummyEventDrop      { --ev-bg: #fef3c7; --ev-border: #fcd34d; --ev-text: #92400e; }
+.rummyEventMidDrop   { --ev-bg: #ffedd5; --ev-border: #fb923c; --ev-text: #9a3412; }
+.rummyEventFull      { --ev-bg: #fee2e2; --ev-border: #f87171; --ev-text: #991b1b; }
+.rummyEventWinner    { --ev-bg: #dcfce7; --ev-border: #4ade80; --ev-text: #14532d; }
+.rummyEventRejoin    { --ev-bg: #ede9fe; --ev-border: #a78bfa; --ev-text: #4c1d95; }
+
+/* ─── Setup ──────────────────────────────────────────────────────────────── */
 
 .rummySetup {
   display: grid;
@@ -21,7 +34,7 @@
 .rummySetupCard {
   display: grid;
   gap: 22px;
-  width: min(560px, 100%);
+  width: min(640px, 100%);
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface);
@@ -29,26 +42,11 @@
   box-shadow: var(--shadow);
 }
 
-.rummySetupHeader {
-  display: grid;
-  gap: 6px;
-}
+.rummySetupHeader { display: grid; gap: 6px; }
+.rummySetupHeader h2 { font-size: 28px; margin: 0; }
+.rummySetupHeader p  { color: var(--muted); font-size: 15px; margin: 0; }
 
-.rummySetupHeader h2 {
-  font-size: 28px;
-  margin: 0;
-}
-
-.rummySetupHeader p {
-  color: var(--muted);
-  font-size: 15px;
-  margin: 0;
-}
-
-.rummyField {
-  display: grid;
-  gap: 10px;
-}
+.rummyField { display: grid; gap: 10px; }
 
 .rummyLabel {
   font-size: 13px;
@@ -75,16 +73,35 @@
   box-shadow: 0 0 0 3px rgb(15 118 110 / 12%);
 }
 
-.rummyScoreInput {
-  text-align: center;
-  font-size: 20px;
-  font-weight: 800;
+/* Rules grid */
+.rummyRulesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
 }
 
-.rummyPlayerList {
+.rummyRuleField {
   display: grid;
-  gap: 8px;
+  gap: 5px;
 }
+
+.rummyRuleLabel {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--muted);
+  text-transform: uppercase;
+  cursor: help;
+}
+
+.rummyRuleInput {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 800;
+  min-height: 38px;
+}
+
+/* Player list */
+.rummyPlayerList { display: grid; gap: 8px; }
 
 .rummyPlayerRow {
   display: grid;
@@ -113,12 +130,7 @@
   font-size: 12px;
   transition: background 140ms, color 140ms;
 }
-
-.rummyRemoveBtn:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  color: #b91c1c;
-}
+.rummyRemoveBtn:hover { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
 
 .rummyAddPlayerBtn {
   align-self: start;
@@ -133,11 +145,7 @@
   padding: 10px 16px;
   transition: background 140ms, border-color 140ms;
 }
-
-.rummyAddPlayerBtn:hover {
-  background: rgb(15 118 110 / 7%);
-  border-color: var(--brand);
-}
+.rummyAddPlayerBtn:hover { background: rgb(15 118 110 / 7%); border-color: var(--brand); }
 
 .rummyError {
   color: #b91c1c;
@@ -150,7 +158,7 @@
   border-radius: 8px;
 }
 
-/* Buttons */
+/* ─── Buttons ─────────────────────────────────────────────────────────────── */
 
 .rummyPrimaryBtn {
   min-height: 44px;
@@ -165,10 +173,7 @@
   padding: 0 20px;
   transition: background 140ms;
 }
-
-.rummyPrimaryBtn:hover {
-  background: var(--brand-strong);
-}
+.rummyPrimaryBtn:hover { background: var(--brand-strong); }
 
 .rummySecondaryBtn {
   min-height: 38px;
@@ -183,10 +188,7 @@
   padding: 0 14px;
   transition: border-color 140ms;
 }
-
-.rummySecondaryBtn:hover {
-  border-color: var(--brand);
-}
+.rummySecondaryBtn:hover { border-color: var(--brand); }
 
 .rummyDangerBtn {
   min-height: 38px;
@@ -201,18 +203,11 @@
   padding: 0 14px;
   transition: background 140ms;
 }
+.rummyDangerBtn:hover { background: #fecaca; }
 
-.rummyDangerBtn:hover {
-  background: #fecaca;
-}
+/* ─── Playing screen ─────────────────────────────────────────────────────── */
 
-/* Playing screen */
-
-.rummyPlaying {
-  display: grid;
-  gap: 22px;
-  padding: 22px 0 34px;
-}
+.rummyPlaying { display: grid; gap: 22px; padding: 22px 0 34px; }
 
 .rummyStatsBar {
   display: grid;
@@ -228,20 +223,57 @@
   background: var(--surface);
   padding: 16px 18px;
 }
+.rummyStat span  { color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; }
+.rummyStat strong { font-size: 22px; line-height: 1.1; }
 
-.rummyStat span {
-  color: var(--muted);
+/* Rules summary */
+.rummyRulesSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rummyRuleChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--ev-border, var(--border));
+  border-radius: 6px;
+  background: var(--ev-bg, var(--surface-muted));
+  color: var(--ev-text, var(--muted));
   font-size: 12px;
   font-weight: 800;
-  text-transform: uppercase;
+  padding: 4px 10px;
 }
 
-.rummyStat strong {
-  font-size: 22px;
-  line-height: 1.1;
+/* Re-join panel */
+.rummyRejoinPanel {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--ev-border, #a78bfa);
+  border-radius: 8px;
+  background: #ede9fe;
+  padding: 14px 18px;
 }
 
-/* Score entry panel */
+.rummyRejoinList { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.rummyRejoinBtn {
+  min-height: 36px;
+  border: 1px solid #a78bfa;
+  border-radius: 8px;
+  background: #fff;
+  color: #4c1d95;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 0 14px;
+  transition: background 140ms;
+}
+.rummyRejoinBtn:hover { background: #ede9fe; }
+
+/* ─── Round entry panel ───────────────────────────────────────────────────── */
 
 .rummyEntryPanel {
   display: grid;
@@ -253,59 +285,120 @@
   box-shadow: var(--shadow);
 }
 
-.rummyEntryHeader {
+.rummyEntryHeader { display: grid; gap: 4px; }
+.rummyEntryHeader h3 { font-size: 20px; margin: 0; }
+.rummyEntryHeader p  { color: var(--muted); font-size: 14px; margin: 0; }
+
+/* Entry table */
+.rummyEntryTable { display: grid; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+
+.rummyEntryTableHead {
   display: grid;
-  gap: 4px;
-}
-
-.rummyEntryHeader h3 {
-  font-size: 20px;
-  margin: 0;
-}
-
-.rummyEntryHeader p {
+  grid-template-columns: 130px 1fr 100px;
+  gap: 12px;
+  align-items: center;
+  background: var(--surface-muted);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 900;
   color: var(--muted);
-  font-size: 14px;
-  margin: 0;
+  text-transform: uppercase;
 }
 
-.rummyEntryGrid {
+.rummyEntryTableRow {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 14px;
+  grid-template-columns: 130px 1fr 100px;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
+  background: var(--ev-bg, var(--surface));
+  transition: background 160ms;
+}
+.rummyEntryTableRow:last-child { border-bottom: none; }
+
+.rummyEntryPlayerName {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.rummyEntryField {
-  display: grid;
+/* Event picker */
+.rummyEventPicker {
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
-/* Section */
-
-.rummySection {
-  display: grid;
-  gap: 14px;
+.rummyEventBtn {
+  min-height: 30px;
+  border: 1px solid var(--ev-border, var(--border));
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0 10px;
+  transition: background 120ms, border-color 120ms, color 120ms;
 }
+
+.rummyEventBtn:hover {
+  background: var(--ev-bg, var(--surface-muted));
+  border-color: var(--ev-border, var(--brand));
+  color: var(--ev-text, var(--brand-strong));
+}
+
+.rummyEventBtn.active {
+  background: var(--ev-bg, var(--surface-muted));
+  border-color: var(--ev-border, var(--brand));
+  color: var(--ev-text, var(--brand-strong));
+  box-shadow: 0 0 0 2px var(--ev-border, var(--brand));
+}
+
+.rummyEntryScore { display: grid; place-items: center; }
+
+.rummyScoreInput {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+  min-height: 38px;
+}
+
+.rummyOverriddenScore {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  min-height: 38px;
+  border: 1px solid var(--ev-border, var(--border));
+  border-radius: 8px;
+  background: var(--ev-bg, var(--surface-muted));
+  color: var(--ev-text, var(--text));
+  font-size: 20px;
+  font-weight: 900;
+}
+
+/* ─── Section ─────────────────────────────────────────────────────────────── */
+
+.rummySection { display: grid; gap: 14px; }
 
 .rummySectionHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-
-.rummySectionHeader h3 {
-  font-size: 20px;
-  margin: 0;
-}
-
-.rummyActions {
-  display: flex;
-  gap: 8px;
   flex-wrap: wrap;
 }
+.rummySectionHeader h3 { font-size: 20px; margin: 0; }
 
-/* Scoreboard table */
+.rummyActions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ─── Scoreboard table ────────────────────────────────────────────────────── */
 
 .rummyScoreboard {
   overflow-x: auto;
@@ -314,11 +407,7 @@
   background: var(--surface);
 }
 
-.rummyTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
+.rummyTable { width: 100%; border-collapse: collapse; font-size: 14px; }
 
 .rummyTable th {
   background: var(--surface-muted);
@@ -335,50 +424,34 @@
 
 .rummyTable td {
   border-bottom: 1px solid var(--border);
-  padding: 12px 14px;
+  padding: 10px 14px;
   vertical-align: middle;
 }
+.rummyTable tr:last-child td { border-bottom: none; }
 
-.rummyTable tr:last-child td {
-  border-bottom: none;
-}
-
-.rummyRank {
-  font-size: 16px;
-  font-weight: 900;
-  text-align: center;
-  width: 44px;
-}
-
-.rummyPlayerName {
-  font-weight: 700;
-  white-space: nowrap;
-}
+.rummyRank { font-size: 16px; font-weight: 900; text-align: center; width: 44px; }
+.rummyPlayerName { font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
 
 .rummyRoundScore {
-  color: var(--muted);
   text-align: right;
   white-space: nowrap;
+  background: var(--ev-bg, transparent);
 }
 
-.rummyTotal {
-  font-size: 16px;
+.rummyRoundScore span { display: block; }
+
+.rummyEventTag {
+  font-size: 10px;
   font-weight: 900;
-  text-align: right;
-  white-space: nowrap;
+  color: var(--ev-text, var(--muted));
+  text-transform: uppercase;
+  opacity: 0.8;
 }
 
-.rummyTotal[data-busted="true"] {
-  color: #b91c1c;
-}
+.rummyTotal { font-size: 16px; font-weight: 900; text-align: right; white-space: nowrap; }
+.rummyTotal[data-busted="true"] { color: #b91c1c; }
 
-.rummyMargin {
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 800;
-  text-align: right;
-  white-space: nowrap;
-}
+.rummyMargin { color: var(--muted); font-size: 13px; font-weight: 800; text-align: right; white-space: nowrap; }
 
 .rummyBustedTag {
   display: inline-block;
@@ -386,20 +459,14 @@
   border: 1px solid #fca5a5;
   border-radius: 4px;
   color: #b91c1c;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   padding: 2px 6px;
   text-transform: uppercase;
 }
 
-.rummyLeader td {
-  background: rgb(15 118 110 / 5%);
-}
-
-.rummyBusted td {
-  background: rgb(239 68 68 / 4%);
-  opacity: 0.75;
-}
+.rummyLeader td { background: rgb(15 118 110 / 5%); }
+.rummyBusted td { background: rgb(239 68 68 / 4%); opacity: 0.75; }
 
 .rummyEmptyBoard {
   display: grid;
@@ -414,13 +481,9 @@
   padding: 24px;
 }
 
-/* Finished screen */
+/* ─── Finished screen ─────────────────────────────────────────────────────── */
 
-.rummyFinished {
-  display: grid;
-  gap: 22px;
-  padding: 22px 0 34px;
-}
+.rummyFinished { display: grid; gap: 22px; padding: 22px 0 34px; }
 
 .rummyWinnerCard {
   display: grid;
@@ -428,53 +491,33 @@
   gap: 10px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background:
-    linear-gradient(135deg, rgb(15 118 110 / 10%), rgb(37 99 235 / 6%)),
-    var(--surface);
+  background: linear-gradient(135deg, rgb(15 118 110 / 10%), rgb(37 99 235 / 6%)), var(--surface);
   padding: 40px 28px;
   text-align: center;
   box-shadow: var(--shadow);
 }
+.rummyWinnerTrophy { font-size: 52px; line-height: 1; }
+.rummyWinnerCard h2 { font-size: 36px; margin: 0; }
+.rummyWinnerScore { color: var(--muted); font-size: 15px; margin: 0; }
 
-.rummyWinnerTrophy {
-  font-size: 52px;
-  line-height: 1;
-}
-
-.rummyWinnerCard h2 {
-  font-size: 36px;
-  margin: 0;
-}
-
-.rummyWinnerScore {
-  color: var(--muted);
-  font-size: 15px;
-  margin: 0;
-}
-
-/* Responsive */
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
-  .rummyStatsBar {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .rummySetupCard {
-    padding: 22px;
-  }
+  .rummyStatsBar { grid-template-columns: repeat(2, 1fr); }
+  .rummySetupCard { padding: 22px; }
+  .rummyEntryTableHead,
+  .rummyEntryTableRow { grid-template-columns: 100px 1fr 80px; }
 }
 
-@media (max-width: 520px) {
-  .rummyStatsBar {
-    grid-template-columns: 1fr 1fr;
+@media (max-width: 640px) {
+  .rummyStatsBar { grid-template-columns: 1fr 1fr; }
+  .rummyEntryTableHead { display: none; }
+  .rummyEntryTableRow {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 14px;
   }
-
-  .rummyEntryGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .rummySectionHeader {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  .rummyEntryScore { place-items: start; }
+  .rummySectionHeader { flex-direction: column; align-items: flex-start; }
+  .rummyRulesGrid { grid-template-columns: repeat(3, 1fr); }
 }
