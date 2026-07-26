@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { RummyScorecard } from "./RummyScorecard";
+import "./rummy.css";
 import registry from "../../api/app-registry.json";
 
 type PortalApp = (typeof registry.apps)[number];
@@ -181,17 +183,23 @@ function AppWorkspace({ app }: { app: PortalApp }) {
           <span>{app.route}</span>
           <span>{app.packageName}</span>
         </div>
-        <div className="viewportBody">
-          <span className="viewportMark" aria-hidden="true">
-            {app.tile.title
-              .split(" ")
-              .map((part) => part[0])
-              .join("")
-              .slice(0, 2)}
-          </span>
-          <h2>{app.tile.title}</h2>
-          <p>{app.folder}</p>
-        </div>
+        {app.id === "rummy-scorecard" ? (
+          <div style={{ padding: "0 22px" }}>
+            <RummyScorecard />
+          </div>
+        ) : (
+          <div className="viewportBody">
+            <span className="viewportMark" aria-hidden="true">
+              {app.tile.title
+                .split(" ")
+                .map((part) => part[0])
+                .join("")
+                .slice(0, 2)}
+            </span>
+            <h2>{app.tile.title}</h2>
+            <p>{app.folder}</p>
+          </div>
+        )}
       </section>
 
       {relatedApps.length > 0 ? (
