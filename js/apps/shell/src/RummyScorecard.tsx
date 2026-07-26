@@ -1,30 +1,66 @@
 import { useState, useMemo, useEffect } from "react";
 
-// ─── localStorage persistence ─────────────────────────────────────────────────
+// ─── Persistence: localStorage (7-day TTL) + URL share ───────────────────────
 
 const STORAGE_KEY = "rummy-scorecard-v1";
+const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+type StoredEnvelope = { savedAt: number; state: GameState };
 
 function loadGame(): GameState {
+  // 1. Try URL hash first (shared link)
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as GameState;
-      // Basic sanity check
+    const hash = window.location.hash.slice(1);
+    if (hash.startsWith("rummy:")) {
+      const b64 = hash.slice(6);
+      const json = atob(b64);
+      const parsed = JSON.parse(json) as GameState;
       if (parsed && (parsed.phase === "setup" || parsed.phase === "playing" || parsed.phase === "finished")) {
+        // Absorb into localStorage and clear the hash so refreshes use localStorage
+        saveGame(parsed);
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
         return parsed;
       }
     }
-  } catch {
-    // ignore corrupt data
-  }
+  } catch { /* ignore */ }
+
+  // 2. Fall back to localStorage with TTL check
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const envelope = JSON.parse(raw) as StoredEnvelope;
+      // Support both old plain format and new envelope format
+      const state = envelope.state ?? (envelope as unknown as GameState);
+      const savedAt = envelope.savedAt ?? 0;
+      if (Date.now() - savedAt > TTL_MS) {
+        // Expired — clear and start fresh
+        localStorage.removeItem(STORAGE_KEY);
+        return { phase: "setup" };
+      }
+      if (state && (state.phase === "setup" || state.phase === "playing" || state.phase === "finished")) {
+        return state;
+      }
+    }
+  } catch { /* ignore corrupt data */ }
+
   return { phase: "setup" };
 }
 
 function saveGame(state: GameState) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const envelope: StoredEnvelope = { savedAt: Date.now(), state };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(envelope));
+  } catch { /* ignore storage errors */ }
+}
+
+function buildShareUrl(state: GameState): string {
+  try {
+    const json = JSON.stringify(state);
+    const b64 = btoa(json);
+    const base = window.location.href.split("#")[0];
+    return `${base}#rummy:${b64}`;
   } catch {
-    // ignore storage errors (e.g. private browsing quota)
+    return window.location.href;
   }
 }
 
@@ -659,11 +695,33 @@ type EntryMode =
   | { type: "new" }
   | { type: "edit"; roundId: string };
 
+function ShareButton({ game }: { game: GameState }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleShare() {
+    const url = buildShareUrl(game);
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }).catch(() => {
+      // Fallback: open in new tab so user can copy manually
+      window.open(url, "_blank");
+    });
+  }
+
+  return (
+    <button className={`rummyShareBtn ${copied ? "rummyShareBtnCopied" : ""}`} type="button" onClick={handleShare}>
+      {copied ? "✓ Link copied!" : "Share"}
+    </button>
+  );
+}
+
 function PlayingScreen({
   players,
   rounds,
   rules,
   targetScore,
+  game,
   onAddRound,
   onUpdateRound,
   onCancelRound,
@@ -675,6 +733,7 @@ function PlayingScreen({
   rounds: Round[];
   rules: RuleConfig;
   targetScore: number;
+  game: GameState;
   onAddRound: (entries: Record<string, RoundEntry>) => void;
   onUpdateRound: (roundId: string, entries: Record<string, RoundEntry>) => void;
   onCancelRound: (roundId: string) => void;
@@ -766,7 +825,10 @@ function PlayingScreen({
       <div className="rummySection">
         <div className="rummySectionHeader">
           <h3>Scorecard</h3>
-          <button className="rummyDangerBtn" onClick={onEndGame} type="button">End game</button>
+          <div className="rummyActions">
+            <ShareButton game={game} />
+            <button className="rummyDangerBtn" onClick={onEndGame} type="button">End game</button>
+          </div>
         </div>
         <Scorecard
           players={players}
@@ -832,12 +894,14 @@ function FinishedScreen({
   rounds,
   rules,
   targetScore,
+  game,
   onNewGame,
 }: {
   players: Player[];
   rounds: Round[];
   rules: RuleConfig;
   targetScore: number;
+  game: GameState;
   onNewGame: () => void;
 }) {
   // Winner = player with lowest total (original order preserved)
@@ -856,7 +920,10 @@ function FinishedScreen({
         <p className="rummyWinnerScore">
           Final score: <strong>{winner.total}</strong> pts across {activeRounds.length} rounds
         </p>
-        <button className="rummyPrimaryBtn" onClick={onNewGame} type="button">New Game</button>
+        <div style={{display:"flex",gap:"10px",flexWrap:"wrap",justifyContent:"center"}}>
+          <ShareButton game={game} />
+          <button className="rummyPrimaryBtn" onClick={onNewGame} type="button">New Game</button>
+        </div>
       </div>
 
       <div className="rummySection">
@@ -1002,6 +1069,7 @@ export function RummyScorecard() {
         rounds={game.rounds}
         rules={game.rules}
         targetScore={game.targetScore}
+        game={game}
         onAddRound={addRound}
         onUpdateRound={updateRound}
         onCancelRound={cancelRound}
@@ -1018,6 +1086,7 @@ export function RummyScorecard() {
       rounds={game.rounds}
       rules={game.rules}
       targetScore={game.targetScore}
+      game={game}
       onNewGame={newGame}
     />
   );

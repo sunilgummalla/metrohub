@@ -578,6 +578,42 @@
   padding: 24px;
 }
 
+/* ─── Share button ──────────────────────────────────────────────────────── */
+
+.rummyShareBtn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1.5px solid var(--primary, #6366f1);
+  background: transparent;
+  color: var(--primary, #6366f1);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.rummyShareBtn:hover {
+  background: var(--primary, #6366f1);
+  color: #fff;
+}
+
+.rummyShareBtnCopied {
+  border-color: #16a34a;
+  color: #16a34a;
+}
+
+.rummyShareBtnCopied:hover {
+  background: #16a34a;
+  color: #fff;
+}
+
+.rummyActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 /* ─── Cancel confirmation banner ─────────────────────────────────────────── */
 
 .rummyCancelConfirm {
