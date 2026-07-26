@@ -8,17 +8,22 @@ const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 type StoredEnvelope = { savedAt: number; state: GameState };
 
 function loadGame(): GameState {
-  // 1. Try URL hash first (shared link)
+  // 1. Try URL hash first (shared link — both owner and read-only)
   try {
     const hash = window.location.hash.slice(1);
-    if (hash.startsWith("rummy:")) {
-      const b64 = hash.slice(6);
+    const isOwner = hash.startsWith("rummy:");
+    const isRO = hash.startsWith("rummy-ro:");
+    if (isOwner || isRO) {
+      const b64 = isOwner ? hash.slice(6) : hash.slice(9);
       const json = atob(b64);
       const parsed = JSON.parse(json) as GameState;
       if (parsed && (parsed.phase === "setup" || parsed.phase === "playing" || parsed.phase === "finished")) {
-        // Absorb into localStorage and clear the hash so refreshes use localStorage
-        saveGame(parsed);
-        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        if (isOwner) {
+          // Owner link: absorb into localStorage, clear hash
+          saveGame(parsed);
+          window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        }
+        // Read-only link: keep hash in URL so the mode persists on refresh
         return parsed;
       }
     }
@@ -53,14 +58,24 @@ function saveGame(state: GameState) {
   } catch { /* ignore storage errors */ }
 }
 
-function buildShareUrl(state: GameState): string {
+function buildShareUrl(state: GameState, readOnly = false): string {
   try {
     const json = JSON.stringify(state);
     const b64 = btoa(json);
     const base = window.location.href.split("#")[0];
-    return `${base}#rummy:${b64}`;
+    const prefix = readOnly ? "rummy-ro" : "rummy";
+    return `${base}#${prefix}:${b64}`;
   } catch {
     return window.location.href;
+  }
+}
+
+// Detect read-only mode from URL hash (rummy-ro: prefix)
+function detectReadOnly(): boolean {
+  try {
+    return window.location.hash.slice(1).startsWith("rummy-ro:");
+  } catch {
+    return false;
   }
 }
 
@@ -695,24 +710,65 @@ type EntryMode =
   | { type: "new" }
   | { type: "edit"; roundId: string };
 
-function ShareButton({ game }: { game: GameState }) {
+function CopyLinkBtn({ url, label }: { url: string; label: string }) {
   const [copied, setCopied] = useState(false);
 
-  function handleShare() {
-    const url = buildShareUrl(game);
+  function handleCopy() {
     navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
-    }).catch(() => {
-      // Fallback: open in new tab so user can copy manually
-      window.open(url, "_blank");
-    });
+    }).catch(() => { window.open(url, "_blank"); });
   }
 
   return (
-    <button className={`rummyShareBtn ${copied ? "rummyShareBtnCopied" : ""}`} type="button" onClick={handleShare}>
-      {copied ? "✓ Link copied!" : "Share"}
+    <button
+      className={`rummyShareBtn ${copied ? "rummyShareBtnCopied" : ""}`}
+      type="button"
+      onClick={handleCopy}
+    >
+      {copied ? `✓ ${label} copied!` : `Copy ${label}`}
     </button>
+  );
+}
+
+function SharePanel({ game, readOnly }: { game: GameState; readOnly: boolean }) {
+  const [open, setOpen] = useState(false);
+  const ownerUrl = buildShareUrl(game, false);
+  const roUrl = buildShareUrl(game, true);
+
+  if (readOnly) {
+    // Read-only viewers only see a single copy button for the read-only link
+    return <CopyLinkBtn url={roUrl} label="View link" />;
+  }
+
+  return (
+    <div className="rummySharePanel">
+      <button
+        className="rummyShareBtn"
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+      >
+        Share ▾
+      </button>
+      {open && (
+        <div className="rummyShareDropdown">
+          <div className="rummyShareDropdownItem">
+            <div>
+              <strong>Owner link</strong>
+              <p>Full access — can record &amp; edit rounds</p>
+            </div>
+            <CopyLinkBtn url={ownerUrl} label="Owner link" />
+          </div>
+          <div className="rummyShareDropdownItem">
+            <div>
+              <strong>View-only link</strong>
+              <p>Spectators can follow the scorecard live</p>
+            </div>
+            <CopyLinkBtn url={roUrl} label="View link" />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -722,6 +778,7 @@ function PlayingScreen({
   rules,
   targetScore,
   game,
+  readOnly,
   onAddRound,
   onUpdateRound,
   onCancelRound,
@@ -734,6 +791,7 @@ function PlayingScreen({
   rules: RuleConfig;
   targetScore: number;
   game: GameState;
+  readOnly: boolean;
   onAddRound: (entries: Record<string, RoundEntry>) => void;
   onUpdateRound: (roundId: string, entries: Record<string, RoundEntry>) => void;
   onCancelRound: (roundId: string) => void;
@@ -818,71 +876,73 @@ function PlayingScreen({
       {/* Rules summary */}
       <RulesSummary rules={rules} />
 
-      {/* Re-join panel */}
-      <RejoinPanel players={players} rounds={rounds} onRejoin={onRejoin} />
+      {/* Re-join panel — hidden for read-only viewers */}
+      {!readOnly && <RejoinPanel players={players} rounds={rounds} onRejoin={onRejoin} />}
 
       {/* ── SCORECARD (top) ── */}
       <div className="rummySection">
         <div className="rummySectionHeader">
-          <h3>Scorecard</h3>
+          <h3>Scorecard {readOnly && <span className="rummyReadOnlyBadge">View only</span>}</h3>
           <div className="rummyActions">
-            <ShareButton game={game} />
-            <button className="rummyDangerBtn" onClick={onEndGame} type="button">End game</button>
+            <SharePanel game={game} readOnly={readOnly} />
+            {!readOnly && <button className="rummyDangerBtn" onClick={onEndGame} type="button">End game</button>}
           </div>
         </div>
         <Scorecard
           players={players}
           rounds={rounds}
           targetScore={targetScore}
-          onEditRound={entryMode.type === "idle" ? handleEditRound : undefined}
-          onCancelRound={entryMode.type === "idle" ? onCancelRound : undefined}
-          onRestoreRound={entryMode.type === "idle" ? onRestoreRound : undefined}
+          onEditRound={!readOnly && entryMode.type === "idle" ? handleEditRound : undefined}
+          onCancelRound={!readOnly && entryMode.type === "idle" ? onCancelRound : undefined}
+          onRestoreRound={!readOnly && entryMode.type === "idle" ? onRestoreRound : undefined}
         />
       </div>
 
-      {/* ── ROUND ENTRY (bottom) ── */}
-      <div className="rummyEntrySection">
-        {entryMode.type === "idle" && (
-          activePlayers.length >= 2 ? (
-            <button
-              className="rummyRecordRoundBtn"
-              type="button"
-              onClick={handleRecordRound}
-            >
-              + Record Round {nextRoundNum}
-            </button>
-          ) : (
-            <div className="rummyEmptyBoard">
-              <span>
-                Only {activePlayers.length} active player(s) remaining.
-                {players.some((p) => p.status === "busted") && " Use the Re-join panel above to bring a player back."}
-              </span>
-            </div>
-          )
-        )}
+      {/* ── ROUND ENTRY (bottom) — hidden for read-only viewers ── */}
+      {!readOnly && (
+        <div className="rummyEntrySection">
+          {entryMode.type === "idle" && (
+            activePlayers.length >= 2 ? (
+              <button
+                className="rummyRecordRoundBtn"
+                type="button"
+                onClick={handleRecordRound}
+              >
+                + Record Round {nextRoundNum}
+              </button>
+            ) : (
+              <div className="rummyEmptyBoard">
+                <span>
+                  Only {activePlayers.length} active player(s) remaining.
+                  {players.some((p) => p.status === "busted") && " Use the Re-join panel above to bring a player back."}
+                </span>
+              </div>
+            )
+          )}
 
-        {entryMode.type === "new" && (
-          <RoundEntryForm
-            players={players}
-            rules={rules}
-            roundLabel={`Round ${nextRoundNum}`}
-            onSubmit={handleAddRound}
-            onCancel={handleDiscard}
-          />
-        )}
+          {entryMode.type === "new" && (
+            <RoundEntryForm
+              players={players}
+              rules={rules}
+              roundLabel={`Round ${nextRoundNum}`}
+              onSubmit={handleAddRound}
+              onCancel={handleDiscard}
+            />
+          )}
 
-        {entryMode.type === "edit" && editRound && (
-          <RoundEntryForm
-            players={players}
-            rules={rules}
-            roundLabel={`Edit Round ${rounds.findIndex((r) => r.id === editRound.id) + 1}`}
-            initialEvents={editInitialEvents}
-            initialRaws={editInitialRaws}
-            onSubmit={handleUpdateRound}
-            onCancel={handleDiscard}
-          />
-        )}
-      </div>
+          {entryMode.type === "edit" && editRound && (
+            <RoundEntryForm
+              players={players}
+              rules={rules}
+              roundLabel={`Edit Round ${rounds.findIndex((r) => r.id === editRound.id) + 1}`}
+              initialEvents={editInitialEvents}
+              initialRaws={editInitialRaws}
+              onSubmit={handleUpdateRound}
+              onCancel={handleDiscard}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -895,6 +955,7 @@ function FinishedScreen({
   rules,
   targetScore,
   game,
+  readOnly,
   onNewGame,
 }: {
   players: Player[];
@@ -902,6 +963,7 @@ function FinishedScreen({
   rules: RuleConfig;
   targetScore: number;
   game: GameState;
+  readOnly: boolean;
   onNewGame: () => void;
 }) {
   // Winner = player with lowest total (original order preserved)
@@ -921,8 +983,8 @@ function FinishedScreen({
           Final score: <strong>{winner.total}</strong> pts across {activeRounds.length} rounds
         </p>
         <div style={{display:"flex",gap:"10px",flexWrap:"wrap",justifyContent:"center"}}>
-          <ShareButton game={game} />
-          <button className="rummyPrimaryBtn" onClick={onNewGame} type="button">New Game</button>
+          <SharePanel game={game} readOnly={readOnly} />
+          {!readOnly && <button className="rummyPrimaryBtn" onClick={onNewGame} type="button">New Game</button>}
         </div>
       </div>
 
@@ -941,11 +1003,12 @@ function FinishedScreen({
 
 export function RummyScorecard() {
   const [game, setGame] = useState<GameState>(() => loadGame());
+  const readOnly = detectReadOnly();
 
-  // Persist every state change to localStorage
+  // Persist every state change to localStorage (skip for read-only viewers)
   useEffect(() => {
-    saveGame(game);
-  }, [game]);
+    if (!readOnly) saveGame(game);
+  }, [game, readOnly]);
 
   function startGame(players: Player[], targetScore: number, rules: RuleConfig) {
     setGame({ phase: "playing", players, rounds: [], rules, targetScore });
@@ -1070,6 +1133,7 @@ export function RummyScorecard() {
         rules={game.rules}
         targetScore={game.targetScore}
         game={game}
+        readOnly={readOnly}
         onAddRound={addRound}
         onUpdateRound={updateRound}
         onCancelRound={cancelRound}
@@ -1087,6 +1151,7 @@ export function RummyScorecard() {
       rules={game.rules}
       targetScore={game.targetScore}
       game={game}
+      readOnly={readOnly}
       onNewGame={newGame}
     />
   );

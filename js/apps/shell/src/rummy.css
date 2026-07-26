@@ -614,6 +614,63 @@
   flex-wrap: wrap;
 }
 
+/* Share dropdown */
+.rummySharePanel {
+  position: relative;
+}
+
+.rummyShareDropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 100;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  min-width: 280px;
+  overflow: hidden;
+}
+
+.rummyShareDropdownItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.rummyShareDropdownItem:last-child {
+  border-bottom: none;
+}
+
+.rummyShareDropdownItem strong {
+  display: block;
+  font-size: 13px;
+  color: #1e293b;
+}
+
+.rummyShareDropdownItem p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Read-only badge */
+.rummyReadOnlyBadge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+}
+
 /* ─── Cancel confirmation banner ─────────────────────────────────────────── */
 
 .rummyCancelConfirm {
