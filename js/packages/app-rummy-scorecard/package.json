@@ -1,6 +1,14 @@
 {
   "name": "@money/rummy-scorecard",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
-  "description": "Rummy scorecard micro app placeholder."
+  "description": "Rummy scorecard micro-app for the Money Money portal.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  }
 }

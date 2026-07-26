@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-import { RummyScorecard } from "./RummyScorecard";
-import "./rummy.css";
+import { RummyScorecard } from "@money/rummy-scorecard";
 import registry from "../../api/app-registry.json";
 
 type PortalApp = (typeof registry.apps)[number];
