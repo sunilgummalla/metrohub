@@ -1001,3 +1001,16 @@
   background: var(--brand);
   color: #fff;
 }
+
+/* ─── Disabled event button (would bust the player) ──────────────────────── */
+
+.rummyEventBtn.rummyEventBtnDisabled,
+.rummyEventBtn.rummyEventBtnDisabled:hover {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: #e5e7eb !important;
+  color: #9ca3af !important;
+  border-color: #d1d5db !important;
+  text-decoration: line-through;
+  box-shadow: none !important;
+}
