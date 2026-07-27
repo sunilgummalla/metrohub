@@ -14,8 +14,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "paths": {
+      "react": ["./node_modules/@types/react"],
+      "react/jsx-runtime": ["./node_modules/@types/react"]
+    }
   },
-  "include": ["src"],
+  "include": ["src", "../../packages/app-rummy-scorecard/src"],
   "references": []
 }
