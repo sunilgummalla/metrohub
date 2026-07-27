@@ -1004,13 +1004,24 @@
 
 /* ─── Disabled event button (would bust the player) ──────────────────────── */
 
-.rummyEventBtn.rummyEventBtnDisabled,
-.rummyEventBtn.rummyEventBtnDisabled:hover {
-  opacity: 0.35;
+/* Wrapper span is focusable and owns the tooltip for screen-reader / keyboard users */
+.rummyEventBtnWrapper {
+  display: inline-flex;
+}
+
+.rummyEventBtnWrapperDisabled {
   cursor: not-allowed;
+}
+
+/* The button itself keeps pointer-events so the wrapper tooltip still fires on hover,
+   but we visually style it as disabled via aria-disabled */
+.rummyEventBtn[aria-disabled="true"],
+.rummyEventBtn[aria-disabled="true"]:hover {
+  opacity: 0.35;
   background: #e5e7eb !important;
   color: #9ca3af !important;
   border-color: #d1d5db !important;
   text-decoration: line-through;
   box-shadow: none !important;
+  pointer-events: none;
 }
