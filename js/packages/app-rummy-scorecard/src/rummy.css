@@ -1,5 +1,14 @@
 /* ─── Rummy Scorecard ──────────────────────────────────────────────────────── */
 
+/* ─── Back-compat token aliases (for tokens not in the shell :root) ─────────── */
+:root {
+  --amber:         #b45309;
+  --surface-muted: #f1f5f9;
+  --brand-strong:  #0b5f59;
+  --shadow:        0 1px 3px rgb(0 0 0 / 8%), 0 1px 2px rgb(0 0 0 / 5%);
+  --surface-alt:   #f8fafc;
+}
+
 .rummyBadge {
   display: inline-block;
   color: var(--amber);

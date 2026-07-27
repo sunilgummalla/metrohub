@@ -46,6 +46,19 @@ function archiveGame(state: GameState, gameId: string) {
 
 type ActiveEnvelope = { id: string; savedAt: number; state: GameState };
 
+// ─── UTF-8 safe base64 helpers ──────────────────────────────────────────────
+function toBase64(str: string): string {
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) =>
+    String.fromCharCode(parseInt(p1, 16))
+  ));
+}
+
+function fromBase64(b64: string): string {
+  return decodeURIComponent(
+    atob(b64).split("").map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0")).join("")
+  );
+}
+
 function loadGame(): GameState {
   // 1. Try URL hash first (shared link — both owner and read-only)
   try {
@@ -54,7 +67,7 @@ function loadGame(): GameState {
     const isRO    = hash.startsWith("rummy-ro:");
     if (isOwner || isRO) {
       const b64  = isOwner ? hash.slice(6) : hash.slice(9);
-      const json = atob(b64);
+      const json = fromBase64(b64);
       const parsed = JSON.parse(json) as GameState;
       if (parsed && (parsed.phase === "setup" || parsed.phase === "playing" || parsed.phase === "finished")) {
         if (isOwner) {
@@ -71,7 +84,9 @@ function loadGame(): GameState {
     const raw = localStorage.getItem(ACTIVE_KEY);
     if (raw) {
       const env = JSON.parse(raw) as ActiveEnvelope;
-      if (Date.now() - env.savedAt > TTL_MS) {
+      // Treat missing savedAt as now (back-compat: old plain-state format should not expire immediately)
+      const savedAt = typeof env.savedAt === "number" ? env.savedAt : Date.now();
+      if (Date.now() - savedAt > TTL_MS) {
         localStorage.removeItem(ACTIVE_KEY);
         return { phase: "setup" };
       }
@@ -103,8 +118,7 @@ let currentGameId = uid();
 
 function buildShareUrl(state: GameState, readOnly = false): string {
   try {
-    const json = JSON.stringify(state);
-    const b64 = btoa(json);
+    const b64 = toBase64(JSON.stringify(state));
     const base = window.location.href.split("#")[0];
     const prefix = readOnly ? "rummy-ro" : "rummy";
     return `${base}#${prefix}:${b64}`;
@@ -663,7 +677,7 @@ function Scorecard({
               </th>
             ))}
             {/* Total row */}
-            <th className="rummyThTotal rummyThTotalCol">Total</th>
+            <th className="rummyThTotal rummyThTotalCol">Round Sum</th>
           </tr>
         </thead>
         <tbody>
@@ -692,6 +706,7 @@ function Scorecard({
                       <button
                         className="rummyIconBtn"
                         title="Edit this round"
+                        aria-label="Edit this round"
                         type="button"
                         onClick={() => onEditRound(round.id)}
                       >
@@ -702,6 +717,7 @@ function Scorecard({
                       <button
                         className={`rummyIconBtn rummyIconBtnDanger ${pendingCancelId === round.id ? "rummyIconBtnActive" : ""}`}
                         title="Cancel this round"
+                        aria-label="Cancel this round"
                         type="button"
                         onClick={() => requestCancel(round.id)}
                       >
@@ -712,6 +728,7 @@ function Scorecard({
                       <button
                         className="rummyIconBtn rummyIconBtnRestore"
                         title="Restore this round"
+                        aria-label="Restore this round"
                         type="button"
                         onClick={() => onRestoreRound(round.id)}
                       >
@@ -751,12 +768,17 @@ function Scorecard({
                   );
                 })}
 
-                {/* Running total column (sum of all non-cancelled rounds up to here) */}
+                {/* Round sum column: sum of all players' scores in this round */}
                 <td className="rummyRoundRowTotal">
                   {isCancelled ? (
                     <span className="rummyCancelledLabel">Cancelled</span>
                   ) : (
-                    <span>—</span>
+                    <span className="rummyRoundSum">
+                      {ranked.reduce((sum: number, p: PlayerWithTotal) => {
+                        const e = round.entries[p.id];
+                        return sum + (e ? e.score : 0);
+                      }, 0)}
+                    </span>
                   )}
                 </td>
               </tr>
