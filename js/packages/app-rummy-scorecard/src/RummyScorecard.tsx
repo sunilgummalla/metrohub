@@ -476,6 +476,8 @@ function RoundEntryForm({
   roundLabel,
   initialEvents,
   initialRaws,
+  playerTotals,
+  targetScore,
   onSubmit,
   onCancel,
 }: {
@@ -484,6 +486,10 @@ function RoundEntryForm({
   roundLabel: string;
   initialEvents?: Record<string, PlayerEvent>;
   initialRaws?: Record<string, string>;
+  /** Current cumulative total per player id — used to disable events that would bust */
+  playerTotals?: Record<string, number>;
+  /** Game target score — used together with playerTotals to disable bust-inducing events */
+  targetScore?: number;
   onSubmit: (entries: Record<string, RoundEntry>) => void;
   onCancel: () => void;
 }) {
@@ -534,6 +540,15 @@ function RoundEntryForm({
 
   const roundEvents: PlayerEvent[] = ["none", "winner", "drop", "middleDrop", "fullCount"];
 
+  /** Returns true if selecting this event for this player would push them over the target score */
+  function isEventDisabled(playerId: string, event: PlayerEvent): boolean {
+    if (!playerTotals || targetScore == null) return false;
+    const currentTotal = playerTotals[playerId] ?? 0;
+    if (event === "drop") return currentTotal + rules.drop > targetScore;
+    if (event === "middleDrop") return currentTotal + rules.middleDrop > targetScore;
+    return false;
+  }
+
   return (
     <div className="rummyEntryPanel">
       <div className="rummyEntryHeader">
@@ -559,16 +574,33 @@ function RoundEntryForm({
                 {p.status === "rejoined" && <span className="rummyRejoinedTag">Re-joined</span>}
               </span>
               <div className="rummyEventPicker">
-                {roundEvents.map((e) => (
-                  <button
-                    key={e}
-                    type="button"
-                    className={`rummyEventBtn ${ev === e ? "active" : ""} ${EVENT_COLORS[e]}`}
-                    onClick={() => setEvent(p.id, e)}
-                  >
-                    {EVENT_LABELS[e]}
-                  </button>
-                ))}
+                {roundEvents.map((e) => {
+                  const isDisabled = isEventDisabled(p.id, e);
+                  const tooltipText = isDisabled
+                    ? `${EVENT_LABELS[e]} (${e === "drop" ? rules.drop : rules.middleDrop} pts) would exceed the game target of ${targetScore}`
+                    : undefined;
+                  return (
+                    <span
+                      key={e}
+                      className={`rummyEventBtnWrapper${isDisabled ? " rummyEventBtnWrapperDisabled" : ""}`}
+                      title={tooltipText}
+                      aria-label={tooltipText}
+                    >
+                      <button
+                        type="button"
+                        className={`rummyEventBtn ${ev === e ? "active" : ""} ${EVENT_COLORS[e]} ${isDisabled ? "rummyEventBtnDisabled" : ""}`}
+                        aria-disabled={isDisabled ? "true" : undefined}
+                        tabIndex={isDisabled ? -1 : 0}
+                        onClick={() => !isDisabled && setEvent(p.id, e)}
+                        onKeyDown={(ev2) => {
+                          if (isDisabled && (ev2.key === "Enter" || ev2.key === " ")) ev2.preventDefault();
+                        }}
+                      >
+                        {EVENT_LABELS[e]}
+                      </button>
+                    </span>
+                  );
+                })}
               </div>
               <div className="rummyEntryScore">
                 {overridden ? (
@@ -980,6 +1012,16 @@ function PlayingScreen({
   const activeRounds = rounds.filter((r) => !r.cancelled);
   const nextRoundNum = rounds.length + 1;
 
+  // Current cumulative totals per player — passed to RoundEntryForm to disable bust-inducing events.
+  // In edit mode we exclude the round being edited so its existing penalty isn't double-counted.
+  const playerTotals = useMemo(() => {
+    const editingId = entryMode.type === "edit" ? entryMode.roundId : undefined;
+    const roundsForTotal = editingId
+      ? rounds.filter((r) => r.id !== editingId)
+      : rounds;
+    return Object.fromEntries(players.map((p) => [p.id, totalScore(roundsForTotal, p.id)]));
+  }, [players, rounds, entryMode]);
+
   function handleEditRound(roundId: string) {
     setEntryMode({ type: "edit", roundId });
   }
@@ -1099,6 +1141,8 @@ function PlayingScreen({
               players={players}
               rules={rules}
               roundLabel={`Round ${nextRoundNum}`}
+              playerTotals={playerTotals}
+              targetScore={targetScore}
               onSubmit={handleAddRound}
               onCancel={handleDiscard}
             />
@@ -1111,6 +1155,8 @@ function PlayingScreen({
               roundLabel={`Edit Round ${rounds.findIndex((r) => r.id === editRound.id) + 1}`}
               initialEvents={editInitialEvents}
               initialRaws={editInitialRaws}
+              playerTotals={playerTotals}
+              targetScore={targetScore}
               onSubmit={handleUpdateRound}
               onCancel={handleDiscard}
             />
