@@ -27,6 +27,30 @@
       }
     },
     {
+      "id": "tambola",
+      "packageName": "@money/tambola",
+      "folder": "app-tambola",
+      "displayName": "Tambola",
+      "category": "Scoreboards",
+      "route": "/apps/tambola",
+      "tile": {
+        "title": "Tambola",
+        "description": "Indian Housie number caller with stories (1–90)."
+      }
+    },
+    {
+      "id": "bingo",
+      "packageName": "@money/bingo",
+      "folder": "app-bingo",
+      "displayName": "Bingo",
+      "category": "Scoreboards",
+      "route": "/apps/bingo",
+      "tile": {
+        "title": "Bingo",
+        "description": "Classic Bingo caller with Indian stories (1–75)."
+      }
+    },
+    {
       "id": "splits",
       "packageName": "@money/splits",
       "folder": "app-splits",

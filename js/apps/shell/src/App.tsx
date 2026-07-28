@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { RummyScorecard } from "@money/rummy-scorecard";
+import { TambolaApp } from "@money/tambola";
+import { BingoApp } from "@money/bingo";
 import registry from "../../api/app-registry.json";
 
 type PortalApp = (typeof registry.apps)[number];
@@ -10,6 +12,8 @@ const allCategories = "All";
 const APP_ICONS: Record<string, string> = {
   "poker-scorecard": "♠",
   "rummy-scorecard": "🃏",
+  "tambola":         "🎱",
+  "bingo":           "🔢",
   "splits":          "⚖",
   "my-accounts":     "🏦",
   "deals":           "🏷",
@@ -250,6 +254,10 @@ function AppWorkspace({ app }: { app: PortalApp }) {
           <div style={{ padding: "0 22px" }}>
             <RummyScorecard />
           </div>
+        ) : app.id === "tambola" ? (
+          <TambolaApp />
+        ) : app.id === "bingo" ? (
+          <BingoApp />
         ) : (
           <div className="viewportBody">
             <span
