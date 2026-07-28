@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   TAMBOLA_DATA,
   STORY_THEMES,
   THEME_LABELS,
   type NumberStories,
 } from "./tambola-data";
+import { useGameSync, type GameSyncState } from "./useGameSync";
 import "./tambola.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -158,21 +159,96 @@ function TicketView({
   );
 }
 
+// ─── Persistence helpers ─────────────────────────────────────────────────────
+
+const TAMBOLA_STORAGE_KEY = "tambola-active-v1";
+const TAMBOLA_TTL_MS = 24 * 60 * 60 * 1000;
+
+interface TambolaPersistedState {
+  calledNumbers: number[];
+  remaining: number[];
+  currentNumber: number | null;
+  savedAt: number;
+}
+
+function freshTambolaRemaining(): number[] {
+  const arr = Array.from({ length: 90 }, (_, i) => i + 1);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function loadTambolaState(): TambolaPersistedState {
+  try {
+    const raw = localStorage.getItem(TAMBOLA_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as TambolaPersistedState;
+      if (parsed && typeof parsed.savedAt === "number") {
+        if (Date.now() - parsed.savedAt < TAMBOLA_TTL_MS) return parsed;
+        localStorage.removeItem(TAMBOLA_STORAGE_KEY);
+      }
+    }
+  } catch { /* ignore */ }
+  return { calledNumbers: [], remaining: freshTambolaRemaining(), currentNumber: null, savedAt: Date.now() };
+}
+
+function saveTambolaState(state: TambolaPersistedState) {
+  try {
+    localStorage.setItem(TAMBOLA_STORAGE_KEY, JSON.stringify({ ...state, savedAt: Date.now() }));
+  } catch { /* ignore */ }
+}
+
+// ─── Copy Link Button ─────────────────────────────────────────────────────────
+
+function CopyLinkBtn({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy() {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }).catch(() => { window.open(url, "_blank"); });
+  }
+  return (
+    <button
+      className="tambolaShareBtn"
+      type="button"
+      onClick={handleCopy}
+    >
+      {copied ? "✓ Link copied!" : "Copy read-only link"}
+    </button>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function TambolaApp() {
-  // Game state
-  const [calledNumbers, setCalledNumbers] = useState<number[]>([]);
-  const [remaining, setRemaining] = useState<number[]>(() => {
-    const arr = Array.from({ length: 90 }, (_, i) => i + 1);
-    // shuffle
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
+  // ─── SSE sync (host publishes, read-only viewer subscribes) ───────────────
+  const onRemoteUpdate = useCallback((remote: GameSyncState) => {
+    setCalledNumbers(remote.calledNumbers);
+    setCurrentNumber(remote.currentNumber);
+    setRemaining(Array.from({ length: remote.remaining }, (_, i) => i)); // placeholder
+    setPopKey((k) => k + 1);
+    if (remote.currentNumber) {
+      setActiveTheme(STORY_THEMES[Math.floor(Math.random() * STORY_THEMES.length)]);
     }
-    return arr;
+  }, []);
+
+  const { isReadOnly, shareUrl, publish } = useGameSync({
+    gameType: "tambola",
+    onRemoteUpdate,
   });
-  const [currentNumber, setCurrentNumber] = useState<number | null>(null);
+
+  // ─── Load persisted state (host only) ─────────────────────────────────────
+  const initialState = useMemo(() => isReadOnly
+    ? { calledNumbers: [], remaining: freshTambolaRemaining(), currentNumber: null, savedAt: Date.now() }
+    : loadTambolaState(), [isReadOnly]);
+
+  // Game state
+  const [calledNumbers, setCalledNumbers] = useState<number[]>(initialState.calledNumbers);
+  const [remaining, setRemaining] = useState<number[]>(initialState.remaining);
+  const [currentNumber, setCurrentNumber] = useState<number | null>(initialState.currentNumber);
   const [popKey, setPopKey] = useState(0);
 
   // Story state
@@ -192,6 +268,14 @@ export function TambolaApp() {
 
   const calledSet = new Set(calledNumbers);
   const isDone = remaining.length === 0;
+
+  // ─── Persist state on every change (host only) ───────────────────────────
+  useEffect(() => {
+    if (!isReadOnly) {
+      saveTambolaState({ calledNumbers, remaining, currentNumber, savedAt: Date.now() });
+      publish({ calledNumbers, currentNumber, remaining: remaining.length });
+    }
+  }, [calledNumbers, remaining, currentNumber, isReadOnly, publish]);
 
   // ─── Draw next number ──────────────────────────────────────────────────────
   const drawNext = useCallback(() => {
@@ -224,16 +308,12 @@ export function TambolaApp() {
   // ─── Reset game ────────────────────────────────────────────────────────────
   function resetGame() {
     setAutoDraw(false);
-    const arr = Array.from({ length: 90 }, (_, i) => i + 1);
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    setRemaining(arr);
+    setRemaining(freshTambolaRemaining());
     setCalledNumbers([]);
     setCurrentNumber(null);
     setTickets([]);
     setConfirmReset(false);
+    try { localStorage.removeItem(TAMBOLA_STORAGE_KEY); } catch { /* ignore */ }
   }
 
   // ─── Generate tickets ──────────────────────────────────────────────────────
@@ -324,8 +404,13 @@ export function TambolaApp() {
           {/* Caller panel */}
           <div className="tambolaCard callerPanel">
             <div className="tambolaCardHeader">
-              <h2 className="tambolaCardTitle">Number Caller</h2>
-              {confirmReset ? (
+              <h2 className="tambolaCardTitle">
+                Number Caller
+                {isReadOnly && (
+                  <span className="tambolaReadOnlyBadge">View only</span>
+                )}
+              </h2>
+              {!isReadOnly && confirmReset ? (
                 <span style={{ display: "flex", gap: "0.4rem" }}>
                   <button
                     className="newGameBtn"
@@ -341,14 +426,14 @@ export function TambolaApp() {
                     Cancel
                   </button>
                 </span>
-              ) : (
+              ) : !isReadOnly ? (
                 <button
                   className="newGameBtn"
                   onClick={() => setConfirmReset(true)}
                 >
                   New Game
                 </button>
-              )}
+              ) : null}
             </div>
 
             {/* Current number */}
@@ -390,52 +475,80 @@ export function TambolaApp() {
               </>
             )}
 
-            {/* Controls */}
-            <div className="callerControls">
-              <button
-                className="drawBtn"
-                onClick={drawNext}
-                disabled={isDone || autoDraw}
-              >
-                {isDone ? "Game Over" : "Draw Next Number"}
-              </button>
-
-              <div className="autoDrawRow">
-                <label className="autoDrawToggle">
-                  <input
-                    type="checkbox"
-                    checked={autoDraw}
-                    onChange={(e) => setAutoDraw(e.target.checked)}
-                    disabled={isDone}
-                  />
-                  Auto Draw
-                </label>
-                <span className="speedLabel">Speed:</span>
-                <select
-                  className="speedSelect"
-                  value={drawSpeed}
-                  onChange={(e) => setDrawSpeed(Number(e.target.value))}
+            {/* Controls — hidden for read-only viewers */}
+            {!isReadOnly && (
+              <div className="callerControls">
+                <button
+                  className="drawBtn"
+                  onClick={drawNext}
+                  disabled={isDone || autoDraw}
                 >
-                  <option value={3}>3s</option>
-                  <option value={5}>5s</option>
-                  <option value={8}>8s</option>
-                  <option value={12}>12s</option>
-                  <option value={20}>20s</option>
-                </select>
-              </div>
+                  {isDone ? "Game Over" : "Draw Next Number"}
+                </button>
 
-              <div className="progressRow">
-                <span>{calledNumbers.length}/90</span>
-                <div className="progressBar">
-                  <div
-                    className="progressFill"
-                    style={{ width: `${progress}%` }}
-                  />
+                <div className="autoDrawRow">
+                  <label className="autoDrawToggle">
+                    <input
+                      type="checkbox"
+                      checked={autoDraw}
+                      onChange={(e) => setAutoDraw(e.target.checked)}
+                      disabled={isDone}
+                    />
+                    Auto Draw
+                  </label>
+                  <span className="speedLabel">Speed:</span>
+                  <select
+                    className="speedSelect"
+                    value={drawSpeed}
+                    onChange={(e) => setDrawSpeed(Number(e.target.value))}
+                  >
+                    <option value={3}>3s</option>
+                    <option value={5}>5s</option>
+                    <option value={8}>8s</option>
+                    <option value={12}>12s</option>
+                    <option value={20}>20s</option>
+                  </select>
                 </div>
-                <span>{progress}%</span>
+
+                <div className="progressRow">
+                  <span>{calledNumbers.length}/90</span>
+                  <div className="progressBar">
+                    <div
+                      className="progressFill"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <span>{progress}%</span>
+                </div>
+              </div>
+            )}
+            {/* Progress bar for read-only viewers */}
+            {isReadOnly && calledNumbers.length > 0 && (
+              <div className="callerControls">
+                <div className="progressRow">
+                  <span>{calledNumbers.length}/90</span>
+                  <div className="progressBar">
+                    <div className="progressFill" style={{ width: `${progress}%` }} />
+                  </div>
+                  <span>{progress}%</span>
+                </div>
+              </div>
+            )}
+          </div>
+          {/* Share panel — only for host */}
+          {!isReadOnly && (
+            <div className="tambolaCard tambolaSharePanel">
+              <div className="tambolaCardHeader">
+                <h2 className="tambolaCardTitle">Share Game</h2>
+              </div>
+              <div className="tambolaShareBody">
+                <p className="tambolaShareDesc">
+                  Share this read-only link with players. It updates live as numbers are drawn.
+                </p>
+                <CopyLinkBtn url={shareUrl} />
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* ─── Right Column: Number Board ─── */}
@@ -471,8 +584,8 @@ export function TambolaApp() {
           )}
         </div>
 
-        {/* ─── Ticket Generator (full width) ─── */}
-        <div className="tambolaCard ticketPanel">
+        {/* ─── Ticket Generator (full width) — hidden for read-only ─── */}
+        {!isReadOnly && (<div className="tambolaCard ticketPanel">
           <div className="tambolaCardHeader">
             <h2 className="tambolaCardTitle">Ticket Generator</h2>
           </div>
@@ -512,7 +625,7 @@ export function TambolaApp() {
               ))}
             </div>
           )}
-        </div>
+        </div>)}
       </div>
     </div>
   );

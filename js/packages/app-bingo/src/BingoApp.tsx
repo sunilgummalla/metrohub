@@ -6,6 +6,7 @@ import {
   THEME_LABELS,
   type NumberStories,
 } from "./bingo-data";
+import { useGameSync, type GameSyncState } from "./useGameSync";
 import "./bingo.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -27,25 +28,7 @@ interface BingoGameState {
 // ─── Persistence helpers ──────────────────────────────────────────────────────
 
 const STORAGE_KEY = "bingo-active-v1";
-const LIVE_KEY = "bingo-live-v1"; // shared channel for read-only viewers
 const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-function toBase64(str: string): string {
-  return btoa(
-    encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) =>
-      String.fromCharCode(parseInt(p1, 16))
-    )
-  );
-}
-
-function fromBase64(b64: string): string {
-  return decodeURIComponent(
-    atob(b64)
-      .split("")
-      .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
-      .join("")
-  );
-}
 
 function freshRemaining(): number[] {
   const arr = Array.from({ length: 75 }, (_, i) => i + 1);
@@ -65,75 +48,26 @@ function freshState(): BingoGameState {
   };
 }
 
-/** Detect read-only mode: URL hash starts with "bingo-ro:" */
-function detectReadOnly(): boolean {
-  try {
-    return window.location.hash.slice(1).startsWith("bingo-ro:");
-  } catch {
-    return false;
-  }
-}
-
-/** Load state: URL hash first, then localStorage, then fresh */
-function loadState(): BingoGameState {
-  // 1. Try URL hash (read-only share link)
-  try {
-    const hash = window.location.hash.slice(1);
-    if (hash.startsWith("bingo-ro:")) {
-      const b64 = hash.slice(9);
-      const parsed = JSON.parse(fromBase64(b64)) as BingoGameState;
-      if (parsed && Array.isArray(parsed.calledNumbers)) {
-        return { ...parsed, savedAt: Date.now() };
-      }
-    }
-  } catch { /* ignore */ }
-
-  // 2. Try localStorage
+/** Load state from localStorage (host only; read-only viewers start fresh and receive via SSE) */
+function loadState(isReadOnly: boolean): BingoGameState {
+  if (isReadOnly) return freshState();
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as BingoGameState;
       if (parsed && typeof parsed.savedAt === "number") {
-        if (Date.now() - parsed.savedAt < TTL_MS) {
-          return parsed;
-        }
-        // Expired — clear it
+        if (Date.now() - parsed.savedAt < TTL_MS) return parsed;
         localStorage.removeItem(STORAGE_KEY);
       }
     }
   } catch { /* ignore */ }
-
   return freshState();
 }
 
 function saveState(state: BingoGameState) {
   try {
-    const payload = JSON.stringify({ ...state, savedAt: Date.now() });
-    localStorage.setItem(STORAGE_KEY, payload);
-    // Also write to the live channel so read-only viewers get the update
-    localStorage.setItem(LIVE_KEY, payload);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, savedAt: Date.now() }));
   } catch { /* ignore */ }
-}
-
-function readLiveState(): BingoGameState | null {
-  try {
-    const raw = localStorage.getItem(LIVE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as BingoGameState;
-    if (parsed && Array.isArray(parsed.calledNumbers)) return parsed;
-  } catch { /* ignore */ }
-  return null;
-}
-
-function buildShareUrl(state: BingoGameState): string {
-  try {
-    const payload: BingoGameState = { ...state, savedAt: Date.now() };
-    const b64 = toBase64(JSON.stringify(payload));
-    const base = window.location.href.split("#")[0];
-    return `${base}#bingo-ro:${b64}`;
-  } catch {
-    return window.location.href;
-  }
 }
 
 // ─── Bingo Card Generator ─────────────────────────────────────────────────────
@@ -232,10 +166,30 @@ function getColumnLetter(n: number): string {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function BingoApp() {
-  const readOnly = useMemo(() => detectReadOnly(), []);
+  // ─── SSE sync (host publishes, read-only viewer subscribes) ───────────────
+  const onRemoteUpdate = useCallback((remote: GameSyncState) => {
+    setGameState((prev) => {
+      const changed = prev.calledNumbers.length !== remote.calledNumbers.length;
+      if (changed) {
+        setPopKey((k) => k + 1);
+        setActiveTheme(STORY_THEMES[Math.floor(Math.random() * STORY_THEMES.length)]);
+      }
+      return {
+        calledNumbers: remote.calledNumbers,
+        remaining: prev.remaining, // viewer doesn't need the remaining pool
+        currentNumber: remote.currentNumber,
+        savedAt: Date.now(),
+      };
+    });
+  }, []);
 
-  // Load persisted state (or fresh state for read-only)
-  const [gameState, setGameState] = useState<BingoGameState>(() => loadState());
+  const { isReadOnly, shareUrl, publish } = useGameSync({
+    gameType: "bingo",
+    onRemoteUpdate,
+  });
+
+  // Load persisted state (host only; read-only starts fresh and receives via SSE)
+  const [gameState, setGameState] = useState<BingoGameState>(() => loadState(isReadOnly));
 
   const { calledNumbers, remaining, currentNumber } = gameState;
 
@@ -261,50 +215,13 @@ export function BingoApp() {
   const calledSet = new Set(calledNumbers);
   const isDone = remaining.length === 0;
 
-  // ─── Persist every state change (skip for read-only) ──────────────────────────
+  // ─── Persist every state change and publish to SSE (host only) ────────────
   useEffect(() => {
-    if (!readOnly) {
-      saveState(gameState); // also writes to LIVE_KEY
+    if (!isReadOnly) {
+      saveState(gameState);
+      publish({ calledNumbers, currentNumber, remaining: remaining.length });
     }
-  }, [gameState, readOnly]);
-
-  // ─── Live sync for read-only viewers via storage event + 2s poll fallback ───
-  useEffect(() => {
-    if (!readOnly) return;
-
-    function applyLive(state: BingoGameState) {
-      setGameState((prev) => {
-        if (prev.calledNumbers.length !== state.calledNumbers.length) {
-          setPopKey((k) => k + 1);
-          const randomTheme = STORY_THEMES[Math.floor(Math.random() * STORY_THEMES.length)];
-          setActiveTheme(randomTheme);
-        }
-        return { ...state, savedAt: Date.now() };
-      });
-    }
-
-    // Instant update via storage event (fires when host writes to LIVE_KEY)
-    function onStorage(e: StorageEvent) {
-      if (e.key === LIVE_KEY && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue) as BingoGameState;
-          if (parsed && Array.isArray(parsed.calledNumbers)) applyLive(parsed);
-        } catch { /* ignore */ }
-      }
-    }
-    window.addEventListener("storage", onStorage);
-
-    // 2s poll fallback (handles same-device tabs where storage events may not fire)
-    const interval = setInterval(() => {
-      const live = readLiveState();
-      if (live) applyLive(live);
-    }, 2000);
-
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      clearInterval(interval);
-    };
-  }, [readOnly]);
+  }, [gameState, isReadOnly, publish, calledNumbers, currentNumber, remaining]);
 
   // ─── Draw next number ──────────────────────────────────────────────────────
   const drawNext = useCallback(() => {
@@ -341,13 +258,8 @@ export function BingoApp() {
     setCards([]);
     setCardsVisible(false);
     setConfirmReset(false);
-    const next = freshState();
-    setGameState(next);
-    saveState(next);
-    // Clear hash if present
-    if (window.location.hash) {
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    }
+    setGameState(freshState());
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
   }
 
   // ─── Generate cards ────────────────────────────────────────────────────────
@@ -428,7 +340,6 @@ export function BingoApp() {
   const currentData = currentNumber ? BINGO_DATA[currentNumber] : null;
   const currentCol = currentNumber ? getColumnLetter(currentNumber) : null;
   const progress = Math.round((calledNumbers.length / 75) * 100);
-  const shareUrl = buildShareUrl(gameState);
 
   return (
     <div className="bingoApp">
@@ -439,11 +350,11 @@ export function BingoApp() {
             <div className="bingoCardHeader">
               <h2 className="bingoCardTitle">
                 Number Caller
-                {readOnly && (
+                {isReadOnly && (
                   <span className="bingoReadOnlyBadge">View only</span>
                 )}
               </h2>
-              {!readOnly && (
+              {!isReadOnly && (
                 confirmReset ? (
                   <span style={{ display: "flex", gap: "0.4rem" }}>
                     <button
@@ -487,7 +398,7 @@ export function BingoApp() {
                 <p className="bingoCurrentNumberEmpty">
                   {isDone
                     ? "🎉 All 75 numbers called!"
-                    : readOnly
+                    : isReadOnly
                     ? "Waiting for host to draw…"
                     : "Press Draw to start"}
                 </p>
@@ -520,7 +431,7 @@ export function BingoApp() {
             )}
 
             {/* Controls — hidden for read-only viewers */}
-            {!readOnly && (
+            {!isReadOnly && (
               <div className="bingoCallerControls">
                 <button
                   className="bingoDrawBtn"
@@ -568,7 +479,7 @@ export function BingoApp() {
             )}
 
             {/* Progress row for read-only viewers */}
-            {readOnly && (
+            {isReadOnly && (
               <div className="bingoCallerControls">
                 <div className="bingoProgressRow">
                   <span>{calledNumbers.length}/75</span>
@@ -585,7 +496,7 @@ export function BingoApp() {
           </div>
 
           {/* Share panel — only for host (non-read-only) */}
-          {!readOnly && (
+          {!isReadOnly && (
             <div className="bingoCard bingoSharePanel">
               <div className="bingoCardHeader">
                 <h2 className="bingoCardTitle">Share Game</h2>
@@ -651,7 +562,7 @@ export function BingoApp() {
         </div>
 
         {/* ─── Bingo Card Generator (full width) — hidden for read-only ─── */}
-        {!readOnly && (
+        {!isReadOnly && (
           <div className="bingoCard bingoTicketPanel">
             <div className="bingoCardHeader">
               <h2 className="bingoCardTitle">Bingo Card Generator</h2>
