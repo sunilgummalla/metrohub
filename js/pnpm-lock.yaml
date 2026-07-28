@@ -99,6 +99,9 @@ importers:
 
   apps/shell:
     dependencies:
+      '@money/poker-scorecard':
+        specifier: workspace:*
+        version: link:../../packages/app-poker-scorecard
       '@money/rummy-scorecard':
         specifier: workspace:*
         version: link:../../packages/app-rummy-scorecard
@@ -146,7 +149,14 @@ importers:
 
   packages/app-near-by: {}
 
-  packages/app-poker-scorecard: {}
+  packages/app-poker-scorecard:
+    dependencies:
+      react:
+        specifier: '>=18'
+        version: 18.3.1
+      react-dom:
+        specifier: '>=18'
+        version: 18.3.1(react@18.3.1)
 
   packages/app-rummy-scorecard:
     dependencies:

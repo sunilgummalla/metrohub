@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { PokerScorecard } from "@money/poker-scorecard";
 import { RummyScorecard } from "@money/rummy-scorecard";
 import registry from "../../api/app-registry.json";
 
@@ -246,7 +247,11 @@ function AppWorkspace({ app }: { app: PortalApp }) {
           <span>{app.route}</span>
           <span>{app.packageName}</span>
         </div>
-        {app.id === "rummy-scorecard" ? (
+        {app.id === "poker-scorecard" ? (
+          <div style={{ padding: "0 22px" }}>
+            <PokerScorecard />
+          </div>
+        ) : app.id === "rummy-scorecard" ? (
           <div style={{ padding: "0 22px" }}>
             <RummyScorecard />
           </div>

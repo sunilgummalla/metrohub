@@ -1,5 +1,7 @@
 # Poker Scorecard
 
-Category: Scoreboard
+Category: Scoreboards
 
-Empty placeholder for the Poker scorecard micro app.
+Cash-game poker scorecard micro-app.
+
+Use it to track players, buy-ins, rebuys, add-ons, cash-outs, net results, and table bank balance.
