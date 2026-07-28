@@ -45,7 +45,7 @@
 
 @media (min-width: 900px) {
   .bingoLayout {
-    grid-template-columns: 1fr 1.6fr;
+    grid-template-columns: 1fr auto;
     align-items: start;
   }
 }
@@ -315,11 +315,13 @@
   .bingoBoardPanel {
     grid-column: 2;
     grid-row: 1 / 3;
+    /* Fix width so cells stay small regardless of container */
+    width: 280px;
   }
 }
 
 .bingoBoard {
-  padding: 0.75rem;
+  padding: 0.5rem 0.6rem;
 }
 
 .bingoBoardHeader {
@@ -331,10 +333,10 @@
 
 .bingoBoardColLabel {
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 800;
   color: var(--bingo-brand);
-  padding: 2px 0;
+  padding: 1px 0;
 }
 
 .bingoBoardGrid {
@@ -344,12 +346,14 @@
 }
 
 .bingoBoardCell {
-  aspect-ratio: 1;
+  /* Fixed 36px cells — compact, like Tambola */
+  width: 100%;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 5px;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
   background: var(--bingo-uncalled);
   color: var(--bingo-uncalled-text);
@@ -637,24 +641,4 @@
   color: var(--bingo-danger);
 }
 
-/* ─── Print Styles ───────────────────────────────────────────────────────── */
-@media print {
-  .bingoApp > *:not(.bingoPrintArea) {
-    display: none !important;
-  }
-
-  .bingoPrintArea {
-    display: block !important;
-  }
-
-  .bingoTicketsGrid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    padding: 0;
-  }
-
-  .bingoCard5x5 {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-}
+/* Print styles are handled in the custom print window (BingoApp.tsx printCards) */

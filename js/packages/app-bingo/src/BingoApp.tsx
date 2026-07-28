@@ -335,9 +335,69 @@ export function BingoApp() {
     setCardsVisible(true);
   }
 
-  // ─── Print cards ───────────────────────────────────────────────────────────
+  // ─── Custom print renderer ──────────────────────────────────────────────────
   function printCards() {
-    window.print();
+    const cardHtml = cards
+      .map((card) => {
+        const rowsHtml = Array.from({ length: 5 }, (_, row) => {
+          const cells = COL_KEYS.map((_, colIdx) => {
+            const cell = card.columns[colIdx][row];
+            const isFree = cell === "FREE";
+            const isMarked = !isFree && calledSet.has(cell as number);
+            const bg = isFree ? "#f59e0b" : isMarked ? "#0f766e" : "#f0fdf4";
+            const color = isFree || isMarked ? "#fff" : "#475569";
+            const fontSize = isFree ? "9px" : "13px";
+            return `<td style="width:40px;height:40px;text-align:center;vertical-align:middle;border:1px solid #d1fae5;font-size:${fontSize};font-weight:700;background:${bg};color:${color};">${isFree ? "FREE" : cell}</td>`;
+          }).join("");
+          return `<tr>${cells}</tr>`;
+        }).join("");
+        const headerCells = COL_KEYS.map(
+          (col) =>
+            `<td style="width:40px;height:28px;text-align:center;vertical-align:middle;background:#0f766e;color:#fff;font-size:14px;font-weight:800;">${col}</td>`
+        ).join("");
+        return `<div style="display:inline-block;margin:8px;border:2px solid #0f766e;border-radius:8px;overflow:hidden;break-inside:avoid;page-break-inside:avoid;">
+          <table style="border-collapse:collapse;">
+            <thead><tr>${headerCells}</tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>`;
+      })
+      .join("");
+
+    const printWindow = window.open("", "_blank", "width=900,height=700");
+    if (!printWindow) return;
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Bingo Cards</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #fff; padding: 16px; }
+    h2 { font-size: 16px; color: #0f766e; margin-bottom: 12px; }
+    .cards-wrap { display: flex; flex-wrap: wrap; gap: 0; }
+    @media print {
+      body { padding: 8px; }
+      h2 { display: none; }
+      .no-print { display: none !important; }
+      .cards-wrap { display: grid; grid-template-columns: repeat(3, auto); gap: 6px; }
+    }
+    .no-print { margin-bottom: 14px; }
+    button { padding: 8px 20px; background: #0f766e; color: #fff; border: none;
+             border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; margin-right: 8px; }
+    button.cancel { background: #f1f5f9; color: #475569; }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <h2>Bingo Cards — ${cards.length} card${cards.length > 1 ? "s" : ""}</h2>
+    <button onclick="window.print()">🖨 Print</button>
+    <button class="cancel" onclick="window.close()">Close</button>
+  </div>
+  <div class="cards-wrap">${cardHtml}</div>
+</body>
+</html>`);
+    printWindow.document.close();
   }
 
   const currentData = currentNumber ? BINGO_DATA[currentNumber] : null;
