@@ -520,24 +520,5 @@
   color: var(--tambola-danger);
 }
 
-/* ─── Print Styles ───────────────────────────────────────────────────────── */
-@media print {
-  .tambolaApp > *:not(.ticketPrintArea) {
-    display: none !important;
-  }
-
-  .ticketPrintArea {
-    display: block !important;
-  }
-
-  .ticketsGrid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    padding: 0;
-  }
-
-  .tambolaTicket {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-}
+/* Print is handled by the custom print window in TambolaApp.tsx (printTickets).
+   No @media print rules are needed here. */

@@ -83,9 +83,28 @@ function generateTicket(id: number): TambolaTicket {
     }
   }
 
-  // Verify each row has exactly 5 — fix if needed
+  // Enforce exactly 5 numbers per row by rebalancing
+  // Compute current row totals
   for (let r = 0; r < 3; r++) {
     rowTotals[r] = colCounts.reduce((s, cc) => s + cc[r], 0);
+  }
+
+  // Iteratively fix rows that are over/under 5
+  let iterations = 0;
+  while (iterations++ < 200) {
+    const over = rowTotals.findIndex((t) => t > 5);
+    const under = rowTotals.findIndex((t) => t < 5);
+    if (over === -1 || under === -1) break;
+    // Find a column that has a number in the over-row but not in the under-row
+    const movable = Array.from({ length: 9 }, (_, c) => c).filter(
+      (c) => colCounts[c][over] === 1 && colCounts[c][under] === 0
+    );
+    if (movable.length === 0) break; // shouldn't happen with valid colTotals
+    const c = movable[Math.floor(Math.random() * movable.length)];
+    colCounts[c][over] = 0;
+    colCounts[c][under] = 1;
+    rowTotals[over]--;
+    rowTotals[under]++;
   }
 
   // Build the 3×9 grid
