@@ -226,9 +226,72 @@ export function TambolaApp() {
     setTickets(t);
   }
 
-  // ─── Print tickets ─────────────────────────────────────────────────────────
+  // ─── Custom print renderer ──────────────────────────────────────────────────
   function printTickets() {
-    window.print();
+    const ticketHtml = tickets
+      .map((ticket) => {
+        const cellsHtml = ticket.rows
+          .map((row) =>
+            row
+              .map((cell) => {
+                const isBlank = cell === null;
+                const isMarked = !isBlank && calledSet.has(cell!);
+                const bg = isBlank
+                  ? "#f8fafc"
+                  : isMarked
+                  ? "#7c3aed"
+                  : "#faf5ff";
+                const color = isMarked ? "#fff" : isBlank ? "transparent" : "#3b0764";
+                const border = isBlank ? "1px solid #e2e8f0" : "1px solid #ddd6fe";
+                return `<div style="width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:${bg};color:${color};border:${border};border-radius:4px;">${isBlank ? "" : cell}</div>`;
+              })
+              .join("")
+          )
+          .join("");
+        return `<div style="display:inline-block;margin:8px;border:2px solid #7c3aed;border-radius:8px;overflow:hidden;break-inside:avoid;page-break-inside:avoid;">
+          <div style="background:#7c3aed;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;display:flex;justify-content:space-between;">
+            <span>Ticket #${ticket.id}</span><span>Tambola</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(9,38px);gap:3px;padding:6px;background:#fff;">
+            ${cellsHtml}
+          </div>
+        </div>`;
+      })
+      .join("");
+
+    const printWindow = window.open("", "_blank", "width=1000,height=700");
+    if (!printWindow) return;
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Tambola Tickets</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #fff; padding: 16px; }
+    h2 { font-size: 16px; color: #7c3aed; margin-bottom: 12px; }
+    .tickets-wrap { display: flex; flex-wrap: wrap; gap: 0; }
+    @media print {
+      body { padding: 8px; }
+      .no-print { display: none !important; }
+      .tickets-wrap { display: grid; grid-template-columns: repeat(2, auto); gap: 8px; }
+    }
+    .no-print { margin-bottom: 14px; }
+    button { padding: 8px 20px; background: #7c3aed; color: #fff; border: none;
+             border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; margin-right: 8px; }
+    button.cancel { background: #f1f5f9; color: #475569; }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <h2>Tambola Tickets — ${tickets.length} ticket${tickets.length > 1 ? "s" : ""}</h2>
+    <button onclick="window.print()">🖨 Print</button>
+    <button class="cancel" onclick="window.close()">Close</button>
+  </div>
+  <div class="tickets-wrap">${ticketHtml}</div>
+</body>
+</html>`);
+    printWindow.document.close();
   }
 
   const currentData = currentNumber ? TAMBOLA_DATA[currentNumber] : null;
