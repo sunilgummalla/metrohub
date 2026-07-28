@@ -1,98 +1,98 @@
 import { Injectable, OnModuleDestroy } from "@nestjs/common";
 import { Subject } from "rxjs";
 
-export interface GameState {
+export interface GameEntry {
   gameId: string;
-  gameType: "tambola" | "bingo";
-  calledNumbers: number[];
-  currentNumber: number | null;
-  remaining: number;
+  gameType: string;
+  /** Arbitrary JSON payload — each app decides what to store */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  payload: Record<string, any>;
   updatedAt: number; // epoch ms
 }
 
-interface GameEntry {
-  state: GameState;
-  subject: Subject<GameState>;
+interface GameRecord {
+  entry: GameEntry;
+  subject: Subject<GameEntry>;
   expiresAt: number;
 }
 
-const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const TTL_MS = 24 * 60 * 60 * 1000;        // 24 hours
 const CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
 @Injectable()
 export class GameStateService implements OnModuleDestroy {
-  private readonly games = new Map<string, GameEntry>();
+  private readonly games = new Map<string, GameRecord>();
   private readonly cleanupTimer: NodeJS.Timeout;
 
   constructor() {
-    this.cleanupTimer = setInterval(
-      () => this.cleanup(),
-      CLEANUP_INTERVAL_MS
-    );
+    this.cleanupTimer = setInterval(() => this.cleanup(), CLEANUP_INTERVAL_MS);
   }
 
   onModuleDestroy() {
     clearInterval(this.cleanupTimer);
-    for (const entry of this.games.values()) {
-      entry.subject.complete();
+    for (const record of this.games.values()) {
+      record.subject.complete();
     }
     this.games.clear();
   }
 
-  /** Host pushes a new state snapshot */
-  publish(gameId: string, state: Omit<GameState, "gameId" | "updatedAt">): GameState {
-    const full: GameState = { ...state, gameId, updatedAt: Date.now() };
-    let entry = this.games.get(gameId);
-    if (!entry) {
-      entry = {
-        state: full,
-        subject: new Subject<GameState>(),
+  /**
+   * Host pushes a new state snapshot.
+   * `body` is the raw POST body — gameType is extracted, everything else is payload.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  publish(gameId: string, body: Record<string, any>): GameEntry {
+    const { gameType = "unknown", ...rest } = body;
+    const entry: GameEntry = {
+      gameId,
+      gameType: String(gameType),
+      payload: rest,
+      updatedAt: Date.now(),
+    };
+
+    let record = this.games.get(gameId);
+    if (!record) {
+      record = {
+        entry,
+        subject: new Subject<GameEntry>(),
         expiresAt: Date.now() + TTL_MS,
       };
-      this.games.set(gameId, entry);
+      this.games.set(gameId, record);
     } else {
-      entry.state = full;
-      entry.expiresAt = Date.now() + TTL_MS;
+      record.entry = entry;
+      record.expiresAt = Date.now() + TTL_MS;
     }
-    entry.subject.next(full);
-    return full;
+    record.subject.next(entry);
+    return entry;
   }
 
   /** Returns the latest snapshot, or null if not found / expired */
-  getLatest(gameId: string): GameState | null {
-    const entry = this.games.get(gameId);
-    if (!entry || Date.now() > entry.expiresAt) return null;
-    return entry.state;
+  getLatest(gameId: string): GameEntry | null {
+    const record = this.games.get(gameId);
+    if (!record || Date.now() > record.expiresAt) return null;
+    return record.entry;
   }
 
-  /** Returns an Observable of state updates for SSE streaming */
-  getStream(gameId: string): Subject<GameState> {
-    let entry = this.games.get(gameId);
-    if (!entry) {
+  /** Returns the Subject for SSE streaming */
+  getStream(gameId: string): Subject<GameEntry> {
+    let record = this.games.get(gameId);
+    if (!record) {
       // Create a placeholder so the viewer can connect before the host starts
-      const placeholder: GameState = {
-        gameId,
-        gameType: "tambola",
-        calledNumbers: [],
-        currentNumber: null,
-        remaining: 0,
-        updatedAt: Date.now(),
-      };
-      entry = {
-        state: placeholder,
-        subject: new Subject<GameState>(),
+      record = {
+        entry: { gameId, gameType: "unknown", payload: {}, updatedAt: Date.now() },
+        subject: new Subject<GameEntry>(),
         expiresAt: Date.now() + TTL_MS,
       };
-      this.games.set(gameId, entry);
+      this.games.set(gameId, record);
     }
-    return entry.subject;
+    return record.subject;
   }
 
   private cleanup() {
     const now = Date.now();
-    for (const [id, entry] of this.games.entries()) {
-      if (now > entry.expiresAt) {
-        entry.subject.complete();
+    for (const [id, record] of this.games.entries()) {
+      if (now > record.expiresAt) {
+        record.subject.complete();
         this.games.delete(id);
       }
     }

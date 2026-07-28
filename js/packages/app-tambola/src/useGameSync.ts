@@ -1,46 +1,66 @@
 /**
- * useGameSync — shared SSE-based live sync hook for Tambola and Bingo.
+ * useGameSync — generic SSE-based live share hook
  *
- * Host:
- *   - Generates a stable game ID (UUID stored in localStorage, scoped by game type)
- *   - Publishes state to POST /api/game/:id on every draw
- *   - Returns a shareUrl the host can copy and give to viewers
+ * Isolation guarantee:
+ *   Each game *session* has its own UUID. The UUID is stored in localStorage
+ *   under `game-id-<gameType>` but is REPLACED with a fresh UUID whenever
+ *   `resetGameId()` is called (i.e. when the host starts a New Game).
+ *   This means concurrent games of the same type on different devices never
+ *   collide because each device holds its own UUID, and a new game on the
+ *   same device gets a new UUID.
+ *
+ * Host flow:
+ *   1. `useGameSync` returns a stable `gameId` and a `publish(payload)` fn.
+ *   2. After every state change the host calls `publish(payload)`.
+ *   3. When the host starts a New Game they call `resetGameId()` — this
+ *      generates a fresh UUID so the old share link becomes stale.
+ *   4. The `shareUrl` (returned by the hook) always reflects the current gameId.
  *
  * Read-only viewer:
- *   - Detects ?game=<id>&ro=1 in the URL
- *   - Fetches the latest snapshot on mount (GET /api/game/:id)
- *   - Opens an SSE stream (GET /api/game/:id/stream) for live updates
+ *   - Detects `?game=<id>&ro=1` in the URL
+ *   - Fetches the latest snapshot on mount  (GET /api/game/:id)
+ *   - Opens an SSE stream                   (GET /api/game/:id/stream)
  *
- * The API base URL is resolved from:
- *   1. import.meta.env.VITE_API_URL (set at build time)
- *   2. window.location.origin (same-origin via nginx proxy /api/*)
+ * API base URL resolution:
+ *   1. import.meta.env.VITE_API_URL  (set at build time)
+ *   2. window.location.origin        (same-origin via nginx proxy /api/*)
  */
-
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export interface GameSyncState {
-  calledNumbers: number[];
-  currentNumber: number | null;
-  remaining: number;
+// ─── Public types ─────────────────────────────────────────────────────────────
+
+/** The shape of data the hook sends to / receives from the API. */
+export interface GameSyncPayload {
+  /** Arbitrary JSON payload — each app decides what to put here */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
 }
 
 interface UseGameSyncOptions {
-  gameType: "tambola" | "bingo";
+  gameType: "tambola" | "bingo" | "rummy";
   /** Called when the read-only viewer receives a live update from the host */
-  onRemoteUpdate?: (state: GameSyncState) => void;
+  onRemoteUpdate?: (payload: GameSyncPayload) => void;
 }
 
 interface UseGameSyncResult {
+  /** Current session's game UUID */
   gameId: string;
+  /** True when the URL contains ?game=<id>&ro=1 */
   isReadOnly: boolean;
+  /** Full URL to give to viewers — always current */
   shareUrl: string;
-  /** Host calls this after every draw to push state to the API */
-  publish: (state: GameSyncState) => void;
+  /** Host calls this after every state change */
+  publish: (payload: GameSyncPayload) => void;
+  /**
+   * Host calls this when starting a New Game.
+   * Generates a fresh UUID so old share links go stale.
+   */
+  resetGameId: () => void;
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function getApiBase(): string {
-  // VITE_API_URL is injected at build time (e.g. https://api.example.com)
-  // Falls back to same-origin (nginx proxies /api/* to the API service)
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const viteApiUrl = (import.meta as any).env?.VITE_API_URL as string | undefined;
@@ -59,8 +79,12 @@ function generateUUID(): string {
   });
 }
 
+function storageKey(gameType: string) {
+  return `game-id-${gameType}`;
+}
+
 function getOrCreateGameId(gameType: string): string {
-  const key = `game-id-${gameType}`;
+  const key = storageKey(gameType);
   try {
     const existing = localStorage.getItem(key);
     if (existing) return existing;
@@ -70,6 +94,10 @@ function getOrCreateGameId(gameType: string): string {
   } catch {
     return generateUUID();
   }
+}
+
+function persistGameId(gameType: string, id: string) {
+  try { localStorage.setItem(storageKey(gameType), id); } catch { /* ignore */ }
 }
 
 function detectReadOnly(): { isReadOnly: boolean; gameId: string | null } {
@@ -82,87 +110,78 @@ function detectReadOnly(): { isReadOnly: boolean; gameId: string | null } {
   return { isReadOnly: false, gameId: null };
 }
 
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+
 export function useGameSync({
   gameType,
   onRemoteUpdate,
 }: UseGameSyncOptions): UseGameSyncResult {
   const { isReadOnly, gameId: roGameId } = detectReadOnly();
 
-  const [gameId] = useState<string>(() =>
+  // gameId is mutable on the host (resetGameId replaces it)
+  const [gameId, setGameId] = useState<string>(() =>
     isReadOnly ? (roGameId ?? generateUUID()) : getOrCreateGameId(gameType)
   );
 
   const apiBase = getApiBase();
   const shareUrl = `${window.location.origin}${window.location.pathname}?game=${gameId}&ro=1`;
 
-  const publishRef = useRef<(state: GameSyncState) => void>(() => {});
-
-  // ─── Host: publish state to API ───────────────────────────────────────────
+  // ─── Host: publish payload to API ─────────────────────────────────────────
   const publish = useCallback(
-    (state: GameSyncState) => {
-      const url = `${apiBase}/api/game/${gameId}`;
-      fetch(url, {
+    (payload: GameSyncPayload) => {
+      fetch(`${apiBase}/api/game/${gameId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gameType, ...state }),
+        body: JSON.stringify({ gameType, ...payload }),
       }).catch(() => {
-        // Silently ignore network errors — game still works offline
+        // Silently ignore — game still works offline
       });
     },
     [apiBase, gameId, gameType]
   );
 
-  publishRef.current = publish;
+  // ─── Host: reset game ID (call on New Game) ────────────────────────────────
+  const resetGameId = useCallback(() => {
+    const newId = generateUUID();
+    persistGameId(gameType, newId);
+    setGameId(newId);
+  }, [gameType]);
 
   // ─── Read-only viewer: subscribe to SSE stream ────────────────────────────
+  const onRemoteUpdateRef = useRef(onRemoteUpdate);
+  onRemoteUpdateRef.current = onRemoteUpdate;
+
   useEffect(() => {
-    if (!isReadOnly || !onRemoteUpdate) return;
+    if (!isReadOnly || !gameId) return;
 
-    const apiBase = getApiBase();
-
-    // 1. Fetch the latest snapshot immediately so the viewer doesn't wait
+    // 1. Fetch latest snapshot immediately (no waiting for first SSE event)
     fetch(`${apiBase}/api/game/${gameId}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data && Array.isArray(data.calledNumbers)) {
-          onRemoteUpdate({
-            calledNumbers: data.calledNumbers,
-            currentNumber: data.currentNumber,
-            remaining: data.remaining,
-          });
+      .then((r) => (r.ok ? r.json() : null))
+      .then((entry) => {
+        // API returns GameEntry: { gameId, gameType, payload, updatedAt }
+        // Unwrap payload before forwarding to the caller
+        const payload = entry?.payload ?? entry;
+        if (payload && onRemoteUpdateRef.current) {
+          onRemoteUpdateRef.current(payload as GameSyncPayload);
         }
       })
       .catch(() => { /* ignore */ });
 
     // 2. Open SSE stream for live updates
     const es = new EventSource(`${apiBase}/api/game/${gameId}/stream`);
-
     es.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
-        if (data && Array.isArray(data.calledNumbers)) {
-          onRemoteUpdate({
-            calledNumbers: data.calledNumbers,
-            currentNumber: data.currentNumber,
-            remaining: data.remaining,
-          });
+        const entry = JSON.parse(event.data);
+        // Unwrap payload before forwarding to the caller
+        const payload = entry?.payload ?? entry;
+        if (payload && onRemoteUpdateRef.current) {
+          onRemoteUpdateRef.current(payload as GameSyncPayload);
         }
       } catch { /* ignore */ }
     };
+    // EventSource auto-reconnects on error — nothing to do
+    return () => { es.close(); };
+  }, [isReadOnly, gameId, apiBase]);
 
-    es.onerror = () => {
-      // EventSource auto-reconnects on error — nothing to do
-    };
-
-    return () => {
-      es.close();
-    };
-  }, [isReadOnly, gameId, onRemoteUpdate]);
-
-  return {
-    gameId,
-    isReadOnly,
-    shareUrl,
-    publish,
-  };
+  return { gameId, isReadOnly, shareUrl, publish, resetGameId };
 }

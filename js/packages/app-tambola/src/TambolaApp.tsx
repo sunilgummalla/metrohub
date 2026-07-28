@@ -5,7 +5,7 @@ import {
   THEME_LABELS,
   type NumberStories,
 } from "./tambola-data";
-import { useGameSync, type GameSyncState } from "./useGameSync";
+import { useGameSync, type GameSyncPayload } from "./useGameSync";
 import "./tambola.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -225,17 +225,19 @@ function CopyLinkBtn({ url }: { url: string }) {
 
 export function TambolaApp() {
   // ─── SSE sync (host publishes, read-only viewer subscribes) ───────────────
-  const onRemoteUpdate = useCallback((remote: GameSyncState) => {
-    setCalledNumbers(remote.calledNumbers);
-    setCurrentNumber(remote.currentNumber);
-    setRemaining(Array.from({ length: remote.remaining }, (_, i) => i)); // placeholder
+  const onRemoteUpdate = useCallback((remote: GameSyncPayload) => {
+    if (Array.isArray(remote.calledNumbers)) setCalledNumbers(remote.calledNumbers);
+    if (remote.currentNumber !== undefined) setCurrentNumber(remote.currentNumber);
+    if (typeof remote.remaining === "number") {
+      setRemaining(Array.from({ length: remote.remaining }, (_, i) => i));
+    }
     setPopKey((k) => k + 1);
     if (remote.currentNumber) {
       setActiveTheme(STORY_THEMES[Math.floor(Math.random() * STORY_THEMES.length)]);
     }
   }, []);
 
-  const { isReadOnly, shareUrl, publish } = useGameSync({
+  const { isReadOnly, shareUrl, publish, resetGameId } = useGameSync({
     gameType: "tambola",
     onRemoteUpdate,
   });
@@ -314,6 +316,7 @@ export function TambolaApp() {
     setTickets([]);
     setConfirmReset(false);
     try { localStorage.removeItem(TAMBOLA_STORAGE_KEY); } catch { /* ignore */ }
+    resetGameId(); // new session UUID — old share links go stale
   }
 
   // ─── Generate tickets ──────────────────────────────────────────────────────

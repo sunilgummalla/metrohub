@@ -6,7 +6,7 @@ import {
   THEME_LABELS,
   type NumberStories,
 } from "./bingo-data";
-import { useGameSync, type GameSyncState } from "./useGameSync";
+import { useGameSync, type GameSyncPayload } from "./useGameSync";
 import "./bingo.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -167,23 +167,24 @@ function getColumnLetter(n: number): string {
 
 export function BingoApp() {
   // ─── SSE sync (host publishes, read-only viewer subscribes) ───────────────
-  const onRemoteUpdate = useCallback((remote: GameSyncState) => {
+  const onRemoteUpdate = useCallback((remote: GameSyncPayload) => {
     setGameState((prev) => {
-      const changed = prev.calledNumbers.length !== remote.calledNumbers.length;
+      const calledNumbers = Array.isArray(remote.calledNumbers) ? remote.calledNumbers : prev.calledNumbers;
+      const changed = prev.calledNumbers.length !== calledNumbers.length;
       if (changed) {
         setPopKey((k) => k + 1);
         setActiveTheme(STORY_THEMES[Math.floor(Math.random() * STORY_THEMES.length)]);
       }
       return {
-        calledNumbers: remote.calledNumbers,
-        remaining: prev.remaining, // viewer doesn't need the remaining pool
-        currentNumber: remote.currentNumber,
+        calledNumbers,
+        remaining: prev.remaining,
+        currentNumber: remote.currentNumber !== undefined ? remote.currentNumber : prev.currentNumber,
         savedAt: Date.now(),
       };
     });
   }, []);
 
-  const { isReadOnly, shareUrl, publish } = useGameSync({
+  const { isReadOnly, shareUrl, publish, resetGameId } = useGameSync({
     gameType: "bingo",
     onRemoteUpdate,
   });
@@ -260,6 +261,7 @@ export function BingoApp() {
     setConfirmReset(false);
     setGameState(freshState());
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    resetGameId(); // new session UUID — old share links go stale
   }
 
   // ─── Generate cards ────────────────────────────────────────────────────────
