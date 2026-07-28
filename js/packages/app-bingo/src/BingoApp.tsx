@@ -6,7 +6,7 @@ import {
   THEME_LABELS,
   type NumberStories,
 } from "./bingo-data";
-import { useGameSync, type GameSyncPayload } from "./useGameSync";
+import { useGameSync, type GameSyncPayload } from "@money/shared";
 import "./bingo.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -175,9 +175,18 @@ export function BingoApp() {
         setPopKey((k) => k + 1);
         setActiveTheme(STORY_THEMES[Math.floor(Math.random() * STORY_THEMES.length)]);
       }
+      // Reconstruct remaining from the host's published count so isDone
+      // (remaining.length === 0) is correct for read-only viewers.
+      // The host publishes remaining as a count (number); we synthesise a
+      // dummy array of that length — the actual values don't matter for
+      // viewers since they never draw from it.
+      const remainingCount = typeof remote.remaining === "number" ? remote.remaining : prev.remaining.length;
+      const remaining = remainingCount !== prev.remaining.length
+        ? Array.from({ length: remainingCount }, (_, i) => i)
+        : prev.remaining;
       return {
         calledNumbers,
-        remaining: prev.remaining,
+        remaining,
         currentNumber: remote.currentNumber !== undefined ? remote.currentNumber : prev.currentNumber,
         savedAt: Date.now(),
       };

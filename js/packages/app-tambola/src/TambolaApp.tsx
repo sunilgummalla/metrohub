@@ -5,7 +5,7 @@ import {
   THEME_LABELS,
   type NumberStories,
 } from "./tambola-data";
-import { useGameSync, type GameSyncPayload } from "./useGameSync";
+import { useGameSync, type GameSyncPayload } from "@money/shared";
 import "./tambola.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
