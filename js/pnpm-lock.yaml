@@ -99,9 +99,15 @@ importers:
 
   apps/shell:
     dependencies:
+      '@money/bingo':
+        specifier: workspace:*
+        version: link:../../packages/app-bingo
       '@money/rummy-scorecard':
         specifier: workspace:*
         version: link:../../packages/app-rummy-scorecard
+      '@money/tambola':
+        specifier: workspace:*
+        version: link:../../packages/app-tambola
       react:
         specifier: 18.3.1
         version: 18.3.1
@@ -140,6 +146,15 @@ importers:
         specifier: 5.3.3
         version: 5.3.3(@types/node@20.14.10)(terser@5.48.0)
 
+  packages/app-bingo:
+    dependencies:
+      react:
+        specifier: '>=18'
+        version: 18.3.1
+      react-dom:
+        specifier: '>=18'
+        version: 18.3.1(react@18.3.1)
+
   packages/app-deals: {}
 
   packages/app-my-accounts: {}
@@ -158,6 +173,15 @@ importers:
         version: 18.3.1(react@18.3.1)
 
   packages/app-splits: {}
+
+  packages/app-tambola:
+    dependencies:
+      react:
+        specifier: '>=18'
+        version: 18.3.1
+      react-dom:
+        specifier: '>=18'
+        version: 18.3.1(react@18.3.1)
 
   packages/shared: {}
 

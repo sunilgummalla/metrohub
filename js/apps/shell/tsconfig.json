@@ -20,6 +20,11 @@
       "react/jsx-runtime": ["./node_modules/@types/react"]
     }
   },
-  "include": ["src", "../../packages/app-rummy-scorecard/src"],
+  "include": [
+    "src",
+    "../../packages/app-rummy-scorecard/src",
+    "../../packages/app-tambola/src",
+    "../../packages/app-bingo/src"
+  ],
   "references": []
 }
