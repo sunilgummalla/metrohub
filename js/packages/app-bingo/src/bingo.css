@@ -60,21 +60,26 @@
 }
 
 .bingoCardHeader {
-  padding: 1rem 1.25rem 0.75rem;
+  padding: 0.75rem 1rem 0.6rem;
   border-bottom: 1px solid var(--bingo-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .bingoCardTitle {
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   color: var(--bingo-muted);
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bingoCardBody {
