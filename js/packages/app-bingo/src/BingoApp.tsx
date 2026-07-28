@@ -27,11 +27,8 @@ interface BingoGameState {
 // ─── Persistence helpers ──────────────────────────────────────────────────────
 
 const STORAGE_KEY = "bingo-active-v1";
+const LIVE_KEY = "bingo-live-v1"; // shared channel for read-only viewers
 const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-function uid(): string {
-  return Math.random().toString(36).slice(2, 10);
-}
 
 function toBase64(str: string): string {
   return btoa(
@@ -111,8 +108,21 @@ function loadState(): BingoGameState {
 
 function saveState(state: BingoGameState) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, savedAt: Date.now() }));
+    const payload = JSON.stringify({ ...state, savedAt: Date.now() });
+    localStorage.setItem(STORAGE_KEY, payload);
+    // Also write to the live channel so read-only viewers get the update
+    localStorage.setItem(LIVE_KEY, payload);
   } catch { /* ignore */ }
+}
+
+function readLiveState(): BingoGameState | null {
+  try {
+    const raw = localStorage.getItem(LIVE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as BingoGameState;
+    if (parsed && Array.isArray(parsed.calledNumbers)) return parsed;
+  } catch { /* ignore */ }
+  return null;
 }
 
 function buildShareUrl(state: BingoGameState): string {
@@ -251,34 +261,49 @@ export function BingoApp() {
   const calledSet = new Set(calledNumbers);
   const isDone = remaining.length === 0;
 
-  // ─── Persist every state change (skip for read-only) ──────────────────────
+  // ─── Persist every state change (skip for read-only) ──────────────────────────
   useEffect(() => {
     if (!readOnly) {
-      saveState(gameState);
+      saveState(gameState); // also writes to LIVE_KEY
     }
   }, [gameState, readOnly]);
 
-  // ─── Poll for updates when read-only (every 3s) ────────────────────────────
+  // ─── Live sync for read-only viewers via storage event + 2s poll fallback ───
   useEffect(() => {
     if (!readOnly) return;
-    const interval = setInterval(() => {
-      const hash = window.location.hash.slice(1);
-      if (hash.startsWith("bingo-ro:")) {
+
+    function applyLive(state: BingoGameState) {
+      setGameState((prev) => {
+        if (prev.calledNumbers.length !== state.calledNumbers.length) {
+          setPopKey((k) => k + 1);
+          const randomTheme = STORY_THEMES[Math.floor(Math.random() * STORY_THEMES.length)];
+          setActiveTheme(randomTheme);
+        }
+        return { ...state, savedAt: Date.now() };
+      });
+    }
+
+    // Instant update via storage event (fires when host writes to LIVE_KEY)
+    function onStorage(e: StorageEvent) {
+      if (e.key === LIVE_KEY && e.newValue) {
         try {
-          const b64 = hash.slice(9);
-          const parsed = JSON.parse(fromBase64(b64)) as BingoGameState;
-          if (parsed && Array.isArray(parsed.calledNumbers)) {
-            setGameState((prev) => {
-              if (prev.calledNumbers.length !== parsed.calledNumbers.length) {
-                setPopKey((k) => k + 1);
-              }
-              return { ...parsed, savedAt: Date.now() };
-            });
-          }
+          const parsed = JSON.parse(e.newValue) as BingoGameState;
+          if (parsed && Array.isArray(parsed.calledNumbers)) applyLive(parsed);
         } catch { /* ignore */ }
       }
-    }, 3000);
-    return () => clearInterval(interval);
+    }
+    window.addEventListener("storage", onStorage);
+
+    // 2s poll fallback (handles same-device tabs where storage events may not fire)
+    const interval = setInterval(() => {
+      const live = readLiveState();
+      if (live) applyLive(live);
+    }, 2000);
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      clearInterval(interval);
+    };
   }, [readOnly]);
 
   // ─── Draw next number ──────────────────────────────────────────────────────
