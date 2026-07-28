@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   BINGO_DATA,
   BINGO_COLUMNS,
@@ -14,13 +14,119 @@ type StoryTheme = keyof NumberStories;
 
 interface BingoCard {
   id: number;
-  // 5 columns (B,I,N,G,O), 5 rows each
   columns: (number | "FREE")[][];
 }
 
+interface BingoGameState {
+  calledNumbers: number[];
+  remaining: number[];
+  currentNumber: number | null;
+  savedAt: number;
+}
+
+// ─── Persistence helpers ──────────────────────────────────────────────────────
+
+const STORAGE_KEY = "bingo-active-v1";
+const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+function uid(): string {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+function toBase64(str: string): string {
+  return btoa(
+    encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) =>
+      String.fromCharCode(parseInt(p1, 16))
+    )
+  );
+}
+
+function fromBase64(b64: string): string {
+  return decodeURIComponent(
+    atob(b64)
+      .split("")
+      .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
+      .join("")
+  );
+}
+
+function freshRemaining(): number[] {
+  const arr = Array.from({ length: 75 }, (_, i) => i + 1);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function freshState(): BingoGameState {
+  return {
+    calledNumbers: [],
+    remaining: freshRemaining(),
+    currentNumber: null,
+    savedAt: Date.now(),
+  };
+}
+
+/** Detect read-only mode: URL hash starts with "bingo-ro:" */
+function detectReadOnly(): boolean {
+  try {
+    return window.location.hash.slice(1).startsWith("bingo-ro:");
+  } catch {
+    return false;
+  }
+}
+
+/** Load state: URL hash first, then localStorage, then fresh */
+function loadState(): BingoGameState {
+  // 1. Try URL hash (read-only share link)
+  try {
+    const hash = window.location.hash.slice(1);
+    if (hash.startsWith("bingo-ro:")) {
+      const b64 = hash.slice(9);
+      const parsed = JSON.parse(fromBase64(b64)) as BingoGameState;
+      if (parsed && Array.isArray(parsed.calledNumbers)) {
+        return { ...parsed, savedAt: Date.now() };
+      }
+    }
+  } catch { /* ignore */ }
+
+  // 2. Try localStorage
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as BingoGameState;
+      if (parsed && typeof parsed.savedAt === "number") {
+        if (Date.now() - parsed.savedAt < TTL_MS) {
+          return parsed;
+        }
+        // Expired — clear it
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  } catch { /* ignore */ }
+
+  return freshState();
+}
+
+function saveState(state: BingoGameState) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, savedAt: Date.now() }));
+  } catch { /* ignore */ }
+}
+
+function buildShareUrl(state: BingoGameState): string {
+  try {
+    const payload: BingoGameState = { ...state, savedAt: Date.now() };
+    const b64 = toBase64(JSON.stringify(payload));
+    const base = window.location.href.split("#")[0];
+    return `${base}#bingo-ro:${b64}`;
+  } catch {
+    return window.location.href;
+  }
+}
+
 // ─── Bingo Card Generator ─────────────────────────────────────────────────────
-// Standard Bingo card: 5×5 grid, FREE center (row 2, col 2)
-// B: 1-15 (5 numbers), I: 16-30 (5), N: 31-45 (4+FREE), G: 46-60 (5), O: 61-75 (5)
 
 const COL_KEYS = ["B", "I", "N", "G", "O"] as const;
 
@@ -29,17 +135,13 @@ function generateBingoCard(id: number): BingoCard {
     const [lo, hi] = BINGO_COLUMNS[col];
     const pool: number[] = [];
     for (let n = lo; n <= hi; n++) pool.push(n);
-    // shuffle
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
     return pool.slice(0, 5);
   });
-
-  // Place FREE in center: column N (index 2), row 2 (0-indexed)
   columns[2][2] = "FREE";
-
   return { id, columns };
 }
 
@@ -62,7 +164,6 @@ function BingoCardView({
         ))}
       </div>
       <div className="bingoCard5x5Grid">
-        {/* Render row by row */}
         {Array.from({ length: 5 }, (_, row) =>
           COL_KEYS.map((_, colIdx) => {
             const cell = card.columns[colIdx][row];
@@ -83,7 +184,32 @@ function BingoCardView({
   );
 }
 
-// ─── Helper: get BINGO column letter for a number ─────────────────────────────
+// ─── Copy Link Button ─────────────────────────────────────────────────────────
+
+function CopyLinkBtn({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }).catch(() => {
+      window.open(url, "_blank");
+    });
+  }
+
+  return (
+    <button
+      className={`bingoShareBtn${copied ? " bingoShareBtnCopied" : ""}`}
+      type="button"
+      onClick={handleCopy}
+    >
+      {copied ? "✓ Link copied!" : "Copy read-only link"}
+    </button>
+  );
+}
+
+// ─── Helper: get BINGO column letter ─────────────────────────────────────────
 
 function getColumnLetter(n: number): string {
   if (n >= 1 && n <= 15) return "B";
@@ -96,17 +222,14 @@ function getColumnLetter(n: number): string {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function BingoApp() {
-  // Game state
-  const [calledNumbers, setCalledNumbers] = useState<number[]>([]);
-  const [remaining, setRemaining] = useState<number[]>(() => {
-    const arr = Array.from({ length: 75 }, (_, i) => i + 1);
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  });
-  const [currentNumber, setCurrentNumber] = useState<number | null>(null);
+  const readOnly = useMemo(() => detectReadOnly(), []);
+
+  // Load persisted state (or fresh state for read-only)
+  const [gameState, setGameState] = useState<BingoGameState>(() => loadState());
+
+  const { calledNumbers, remaining, currentNumber } = gameState;
+
+  // Pop animation key
   const [popKey, setPopKey] = useState(0);
 
   // Story state
@@ -120,6 +243,7 @@ export function BingoApp() {
   // Cards
   const [cardCount, setCardCount] = useState(6);
   const [cards, setCards] = useState<BingoCard[]>([]);
+  const [cardsVisible, setCardsVisible] = useState(false);
 
   // Confirm reset
   const [confirmReset, setConfirmReset] = useState(false);
@@ -127,18 +251,50 @@ export function BingoApp() {
   const calledSet = new Set(calledNumbers);
   const isDone = remaining.length === 0;
 
+  // ─── Persist every state change (skip for read-only) ──────────────────────
+  useEffect(() => {
+    if (!readOnly) {
+      saveState(gameState);
+    }
+  }, [gameState, readOnly]);
+
+  // ─── Poll for updates when read-only (every 3s) ────────────────────────────
+  useEffect(() => {
+    if (!readOnly) return;
+    const interval = setInterval(() => {
+      const hash = window.location.hash.slice(1);
+      if (hash.startsWith("bingo-ro:")) {
+        try {
+          const b64 = hash.slice(9);
+          const parsed = JSON.parse(fromBase64(b64)) as BingoGameState;
+          if (parsed && Array.isArray(parsed.calledNumbers)) {
+            setGameState((prev) => {
+              if (prev.calledNumbers.length !== parsed.calledNumbers.length) {
+                setPopKey((k) => k + 1);
+              }
+              return { ...parsed, savedAt: Date.now() };
+            });
+          }
+        } catch { /* ignore */ }
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [readOnly]);
+
   // ─── Draw next number ──────────────────────────────────────────────────────
   const drawNext = useCallback(() => {
-    setRemaining((prev) => {
-      if (prev.length === 0) return prev;
-      const [next, ...rest] = prev;
-      setCurrentNumber(next);
-      setCalledNumbers((c) => [next, ...c]);
+    setGameState((prev) => {
+      if (prev.remaining.length === 0) return prev;
+      const [next, ...rest] = prev.remaining;
       setPopKey((k) => k + 1);
-      const randomTheme =
-        STORY_THEMES[Math.floor(Math.random() * STORY_THEMES.length)];
+      const randomTheme = STORY_THEMES[Math.floor(Math.random() * STORY_THEMES.length)];
       setActiveTheme(randomTheme);
-      return rest;
+      return {
+        calledNumbers: [next, ...prev.calledNumbers],
+        remaining: rest,
+        currentNumber: next,
+        savedAt: Date.now(),
+      };
     });
   }, []);
 
@@ -157,16 +313,16 @@ export function BingoApp() {
   // ─── Reset game ────────────────────────────────────────────────────────────
   function resetGame() {
     setAutoDraw(false);
-    const arr = Array.from({ length: 75 }, (_, i) => i + 1);
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    setRemaining(arr);
-    setCalledNumbers([]);
-    setCurrentNumber(null);
     setCards([]);
+    setCardsVisible(false);
     setConfirmReset(false);
+    const next = freshState();
+    setGameState(next);
+    saveState(next);
+    // Clear hash if present
+    if (window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
   }
 
   // ─── Generate cards ────────────────────────────────────────────────────────
@@ -176,6 +332,7 @@ export function BingoApp() {
       c.push(generateBingoCard(i));
     }
     setCards(c);
+    setCardsVisible(true);
   }
 
   // ─── Print cards ───────────────────────────────────────────────────────────
@@ -186,6 +343,7 @@ export function BingoApp() {
   const currentData = currentNumber ? BINGO_DATA[currentNumber] : null;
   const currentCol = currentNumber ? getColumnLetter(currentNumber) : null;
   const progress = Math.round((calledNumbers.length / 75) * 100);
+  const shareUrl = buildShareUrl(gameState);
 
   return (
     <div className="bingoApp">
@@ -194,30 +352,37 @@ export function BingoApp() {
         <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
           <div className="bingoCard bingoCallerPanel">
             <div className="bingoCardHeader">
-              <h2 className="bingoCardTitle">Number Caller</h2>
-              {confirmReset ? (
-                <span style={{ display: "flex", gap: "0.4rem" }}>
+              <h2 className="bingoCardTitle">
+                Number Caller
+                {readOnly && (
+                  <span className="bingoReadOnlyBadge">View only</span>
+                )}
+              </h2>
+              {!readOnly && (
+                confirmReset ? (
+                  <span style={{ display: "flex", gap: "0.4rem" }}>
+                    <button
+                      className="bingoNewGameBtn"
+                      style={{ color: "var(--bingo-danger)", borderColor: "var(--bingo-danger)" }}
+                      onClick={resetGame}
+                    >
+                      Confirm Reset
+                    </button>
+                    <button
+                      className="bingoNewGameBtn"
+                      onClick={() => setConfirmReset(false)}
+                    >
+                      Cancel
+                    </button>
+                  </span>
+                ) : (
                   <button
                     className="bingoNewGameBtn"
-                    style={{ color: "var(--bingo-danger)", borderColor: "var(--bingo-danger)" }}
-                    onClick={resetGame}
+                    onClick={() => setConfirmReset(true)}
                   >
-                    Confirm Reset
+                    New Game
                   </button>
-                  <button
-                    className="bingoNewGameBtn"
-                    onClick={() => setConfirmReset(false)}
-                  >
-                    Cancel
-                  </button>
-                </span>
-              ) : (
-                <button
-                  className="bingoNewGameBtn"
-                  onClick={() => setConfirmReset(true)}
-                >
-                  New Game
-                </button>
+                )
               )}
             </div>
 
@@ -235,7 +400,11 @@ export function BingoApp() {
                 </>
               ) : (
                 <p className="bingoCurrentNumberEmpty">
-                  {isDone ? "🎉 All 75 numbers called!" : "Press Draw to start"}
+                  {isDone
+                    ? "🎉 All 75 numbers called!"
+                    : readOnly
+                    ? "Waiting for host to draw…"
+                    : "Press Draw to start"}
                 </p>
               )}
             </div>
@@ -265,52 +434,85 @@ export function BingoApp() {
               </>
             )}
 
-            {/* Controls */}
-            <div className="bingoCallerControls">
-              <button
-                className="bingoDrawBtn"
-                onClick={drawNext}
-                disabled={isDone || autoDraw}
-              >
-                {isDone ? "Game Over" : "Draw Next Number"}
-              </button>
-
-              <div className="bingoAutoDrawRow">
-                <label className="bingoAutoDrawToggle">
-                  <input
-                    type="checkbox"
-                    checked={autoDraw}
-                    onChange={(e) => setAutoDraw(e.target.checked)}
-                    disabled={isDone}
-                  />
-                  Auto Draw
-                </label>
-                <span className="bingoSpeedLabel">Speed:</span>
-                <select
-                  className="bingoSpeedSelect"
-                  value={drawSpeed}
-                  onChange={(e) => setDrawSpeed(Number(e.target.value))}
+            {/* Controls — hidden for read-only viewers */}
+            {!readOnly && (
+              <div className="bingoCallerControls">
+                <button
+                  className="bingoDrawBtn"
+                  onClick={drawNext}
+                  disabled={isDone || autoDraw}
                 >
-                  <option value={3}>3s</option>
-                  <option value={5}>5s</option>
-                  <option value={8}>8s</option>
-                  <option value={12}>12s</option>
-                  <option value={20}>20s</option>
-                </select>
-              </div>
+                  {isDone ? "Game Over" : "Draw Next Number"}
+                </button>
 
-              <div className="bingoProgressRow">
-                <span>{calledNumbers.length}/75</span>
-                <div className="bingoProgressBar">
-                  <div
-                    className="bingoProgressFill"
-                    style={{ width: `${progress}%` }}
-                  />
+                <div className="bingoAutoDrawRow">
+                  <label className="bingoAutoDrawToggle">
+                    <input
+                      type="checkbox"
+                      checked={autoDraw}
+                      onChange={(e) => setAutoDraw(e.target.checked)}
+                      disabled={isDone}
+                    />
+                    Auto Draw
+                  </label>
+                  <span className="bingoSpeedLabel">Speed:</span>
+                  <select
+                    className="bingoSpeedSelect"
+                    value={drawSpeed}
+                    onChange={(e) => setDrawSpeed(Number(e.target.value))}
+                  >
+                    <option value={3}>3s</option>
+                    <option value={5}>5s</option>
+                    <option value={8}>8s</option>
+                    <option value={12}>12s</option>
+                    <option value={20}>20s</option>
+                  </select>
                 </div>
-                <span>{progress}%</span>
+
+                <div className="bingoProgressRow">
+                  <span>{calledNumbers.length}/75</span>
+                  <div className="bingoProgressBar">
+                    <div
+                      className="bingoProgressFill"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <span>{progress}%</span>
+                </div>
+              </div>
+            )}
+
+            {/* Progress row for read-only viewers */}
+            {readOnly && (
+              <div className="bingoCallerControls">
+                <div className="bingoProgressRow">
+                  <span>{calledNumbers.length}/75</span>
+                  <div className="bingoProgressBar">
+                    <div
+                      className="bingoProgressFill"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <span>{progress}%</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Share panel — only for host (non-read-only) */}
+          {!readOnly && (
+            <div className="bingoCard bingoSharePanel">
+              <div className="bingoCardHeader">
+                <h2 className="bingoCardTitle">Share Game</h2>
+              </div>
+              <div className="bingoShareBody">
+                <p className="bingoShareDesc">
+                  Share this read-only link with players. It updates live as numbers are drawn.
+                </p>
+                <CopyLinkBtn url={shareUrl} />
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* ─── Right Column: Number Board (5×15 BINGO layout) ─── */}
@@ -330,9 +532,8 @@ export function BingoApp() {
               ))}
             </div>
             <div className="bingoBoardGrid">
-              {/* Render 15 rows × 5 columns */}
               {Array.from({ length: 15 }, (_, row) =>
-                COL_KEYS.map((col, colIdx) => {
+                COL_KEYS.map((col) => {
                   const [lo] = BINGO_COLUMNS[col];
                   const n = lo + row;
                   const isCalled = calledSet.has(n);
@@ -364,48 +565,59 @@ export function BingoApp() {
           )}
         </div>
 
-        {/* ─── Bingo Card Generator (full width) ─── */}
-        <div className="bingoCard bingoTicketPanel">
-          <div className="bingoCardHeader">
-            <h2 className="bingoCardTitle">Bingo Card Generator</h2>
-          </div>
-          <div className="bingoTicketControls">
-            <label className="bingoTicketCountLabel" htmlFor="bingoCardCount">
-              Number of cards:
-            </label>
-            <input
-              id="bingoCardCount"
-              type="number"
-              className="bingoTicketCountInput"
-              min={1}
-              max={24}
-              value={cardCount}
-              onChange={(e) =>
-                setCardCount(Math.min(24, Math.max(1, Number(e.target.value))))
-              }
-            />
-            <button className="bingoGenerateBtn" onClick={generateCards}>
-              Generate
-            </button>
-            {cards.length > 0 && (
-              <button className="bingoPrintBtn" onClick={printCards}>
-                🖨 Print
+        {/* ─── Bingo Card Generator (full width) — hidden for read-only ─── */}
+        {!readOnly && (
+          <div className="bingoCard bingoTicketPanel">
+            <div className="bingoCardHeader">
+              <h2 className="bingoCardTitle">Bingo Card Generator</h2>
+              {cardsVisible && cards.length > 0 && (
+                <button
+                  className="bingoCloseCardsBtn"
+                  onClick={() => setCardsVisible(false)}
+                  title="Hide cards"
+                >
+                  ✕ Close
+                </button>
+              )}
+            </div>
+            <div className="bingoTicketControls">
+              <label className="bingoTicketCountLabel" htmlFor="bingoCardCount">
+                Number of cards:
+              </label>
+              <input
+                id="bingoCardCount"
+                type="number"
+                className="bingoTicketCountInput"
+                min={1}
+                max={24}
+                value={cardCount}
+                onChange={(e) =>
+                  setCardCount(Math.min(24, Math.max(1, Number(e.target.value))))
+                }
+              />
+              <button className="bingoGenerateBtn" onClick={generateCards}>
+                Generate
               </button>
+              {cardsVisible && cards.length > 0 && (
+                <button className="bingoPrintBtn" onClick={printCards}>
+                  🖨 Print
+                </button>
+              )}
+            </div>
+
+            {cardsVisible && cards.length > 0 && (
+              <div className="bingoTicketsGrid bingoPrintArea">
+                {cards.map((card) => (
+                  <BingoCardView
+                    key={card.id}
+                    card={card}
+                    calledNumbers={calledSet}
+                  />
+                ))}
+              </div>
             )}
           </div>
-
-          {cards.length > 0 && (
-            <div className="bingoTicketsGrid bingoPrintArea">
-              {cards.map((card) => (
-                <BingoCardView
-                  key={card.id}
-                  card={card}
-                  calledNumbers={calledSet}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );

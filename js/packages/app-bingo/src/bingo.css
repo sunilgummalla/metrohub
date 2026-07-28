@@ -319,28 +319,28 @@
 }
 
 .bingoBoard {
-  padding: 1rem;
+  padding: 0.75rem;
 }
 
 .bingoBoardHeader {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: 3px;
+  margin-bottom: 3px;
 }
 
 .bingoBoardColLabel {
   text-align: center;
-  font-size: 1.1rem;
+  font-size: 0.85rem;
   font-weight: 800;
   color: var(--bingo-brand);
-  padding: 4px 0;
+  padding: 2px 0;
 }
 
 .bingoBoardGrid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
+  gap: 3px;
 }
 
 .bingoBoardCell {
@@ -348,8 +348,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  font-size: 0.78rem;
+  border-radius: 5px;
+  font-size: 0.72rem;
   font-weight: 700;
   background: var(--bingo-uncalled);
   color: var(--bingo-uncalled-text);
@@ -537,6 +537,86 @@
 .bingoCard5x5Cell.marked {
   background: var(--bingo-called);
   color: #fff;
+}
+
+/* ─── Close Cards Button ────────────────────────────────────────────────── */
+.bingoCloseCardsBtn {
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--bingo-border);
+  background: var(--bingo-surface);
+  color: var(--bingo-muted);
+  transition: all 0.15s;
+}
+
+.bingoCloseCardsBtn:hover {
+  border-color: var(--bingo-danger);
+  color: var(--bingo-danger);
+}
+
+/* ─── Share Panel ────────────────────────────────────────────────────────── */
+.bingoSharePanel {
+  /* inherits .bingoCard */
+}
+
+.bingoShareBody {
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bingoShareDesc {
+  font-size: 0.82rem;
+  color: var(--bingo-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.bingoShareBtn {
+  align-self: flex-start;
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 1.5px solid var(--bingo-brand);
+  background: transparent;
+  color: var(--bingo-brand);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.bingoShareBtn:hover {
+  background: var(--bingo-brand);
+  color: #fff;
+}
+
+.bingoShareBtnCopied {
+  border-color: #16a34a;
+  color: #16a34a;
+}
+
+.bingoShareBtnCopied:hover {
+  background: #16a34a;
+  color: #fff;
+}
+
+/* ─── Read-only Badge ────────────────────────────────────────────────────── */
+.bingoReadOnlyBadge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+  text-transform: none;
 }
 
 /* ─── New Game Button ────────────────────────────────────────────────────── */
