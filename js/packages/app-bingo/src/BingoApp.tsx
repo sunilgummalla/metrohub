@@ -6,7 +6,7 @@ import {
   THEME_LABELS,
   type NumberStories,
 } from "./bingo-data";
-import { useGameSync, type GameSyncPayload } from "@money/shared";
+import { useGameSync, type GameSyncPayload } from "@metrohub/shared";
 import "./bingo.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────

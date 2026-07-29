@@ -1,5 +1,5 @@
 {
-  "name": "@money/tambola",
+  "name": "@metrohub/tambola",
   "version": "0.1.0",
   "private": true,
   "description": "Tambola (Housie) number caller micro-app for the Money Money portal.",
@@ -12,6 +12,6 @@
     "react-dom": ">=18"
   },
   "dependencies": {
-    "@money/shared": "workspace:*"
+    "@metrohub/shared": "workspace:*"
   }
 }

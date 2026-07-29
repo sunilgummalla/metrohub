@@ -11,8 +11,8 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-      "@money/shared": ["../../packages/shared/src"],
-      "@money/shared/wordlists": ["../../packages/shared/src/wordlists"]
+      "@metrohub/shared": ["../../packages/shared/src"],
+      "@metrohub/shared/wordlists": ["../../packages/shared/src/wordlists"]
     },
     "incremental": true,
     "skipLibCheck": true,

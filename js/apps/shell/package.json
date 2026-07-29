@@ -1,5 +1,5 @@
 {
-  "name": "@money-money/shell",
+  "name": "@metrohub/shell",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,10 +11,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@money/bingo": "workspace:*",
-    "@money/rummy-scorecard": "workspace:*",
-    "@money/plans": "workspace:*",
-    "@money/tambola": "workspace:*",
+    "@metrohub/bingo": "workspace:*",
+    "@metrohub/rummy-scorecard": "workspace:*",
+    "@metrohub/plans": "workspace:*",
+    "@metrohub/tambola": "workspace:*",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },

@@ -11,7 +11,7 @@ The app registry starts in `app-registry.json`. The API should expose it to the 
 ```powershell
 cd js
 pnpm install
-pnpm --filter @money-money/api dev
+pnpm --filter @metrohub/api dev
 ```
 
 The service exposes `GET /health` on port **3000** by default (overridable via the `PORT` environment variable).

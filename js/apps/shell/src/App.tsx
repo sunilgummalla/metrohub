@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { RummyScorecard } from "@money/rummy-scorecard";
-import { TambolaApp } from "@money/tambola";
-import { BingoApp } from "@money/bingo";
-import { PlansApp } from "@money/plans";
+import { RummyScorecard } from "@metrohub/rummy-scorecard";
+import { TambolaApp } from "@metrohub/tambola";
+import { BingoApp } from "@metrohub/bingo";
+import { PlansApp } from "@metrohub/plans";
 import registry from "../../api/app-registry.json";
 
 type PortalApp = (typeof registry.apps)[number];

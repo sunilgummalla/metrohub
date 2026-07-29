@@ -5,8 +5,8 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@money/shared": path.resolve(__dirname, "../../packages/shared/src/index.ts"),
-      "@money/plans": path.resolve(__dirname, "../../packages/app-plans/src/index.ts"),
+      "@metrohub/shared": path.resolve(__dirname, "../../packages/shared/src/index.ts"),
+      "@metrohub/plans": path.resolve(__dirname, "../../packages/app-plans/src/index.ts"),
     },
   },
   server: {

@@ -10,10 +10,10 @@ import {
   GameArchive,
   GameArchiveDocument,
 } from "../database";
-// Import from the @money/shared/wordlists subpath.
+// Import from the @metrohub/shared/wordlists subpath.
 // The shared package.json exports map now exposes "./wordlists" so this is
 // safe at runtime (no ERR_PACKAGE_PATH_NOT_EXPORTED).
-import { generateJoinCode, generateGuestHandle } from "@money/shared/wordlists";
+import { generateJoinCode, generateGuestHandle } from "@metrohub/shared/wordlists";
 
 export interface GameEntry {
   gameId: string;
@@ -155,21 +155,38 @@ export class GameStateService implements OnModuleInit, OnModuleDestroy {
       throw new ConflictException(`Game ${gameId} has already ended and cannot be updated`);
     }
 
-    let joinCode: string;
+    let joinCode = ""; // assigned in both branches below
     if (!session) {
-      // First publish — create the session and host participant
-      joinCode = await this.uniqueJoinCode();
+      // First publish — create the session and host participant.
+      // Retry on E11000 (duplicate joinCode) to handle the rare race where two
+      // concurrent first-publishes generate the same code between the collision
+      // check and the insert.
+      const MAX_CREATE_ATTEMPTS = 5;
+      let newSession: GameSessionDocument | null = null;
+      for (let attempt = 0; attempt < MAX_CREATE_ATTEMPTS; attempt++) {
+        joinCode = await this.uniqueJoinCode();
+        try {
+          newSession = await this.sessionModel.create({
+            gameId,
+            joinCode,
+            gameType,
+            payload: rest,
+            status: "active",
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          });
+          break; // success
+        } catch (err: unknown) {
+          const mongoErr = err as { code?: number };
+          if (mongoErr?.code === 11000 && attempt < MAX_CREATE_ATTEMPTS - 1) {
+            this.logger.warn(`joinCode collision on attempt ${attempt + 1}, retrying…`);
+            continue;
+          }
+          throw err; // non-duplicate error or exhausted retries
+        }
+      }
+      if (!newSession) throw new Error("Failed to create game session after retries");
+
       const hostHandle = generateGuestHandle();
-
-      const newSession = await this.sessionModel.create({
-        gameId,
-        joinCode,
-        gameType,
-        payload: rest,
-        status: "active",
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      });
-
       await this.participantModel.create({
         gameId,
         userId: null,

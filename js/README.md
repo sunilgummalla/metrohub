@@ -22,7 +22,7 @@ pnpm test
 - `apps/api` also owns the JSON app registry listing supported Money-Money apps.
 - `apps/experience` owns request shaping for client experiences, UI-specific API composition, authentication handoff, server-rendered Next.js routes where needed, and fetching the supported app registry from the API.
 - `apps/shell` owns the React shell, sticky header, sticky footer, tile grid, category navigation, and clickable entry points for micro apps.
-- `packages/*` contains independently packaged micro apps and shared TypeScript libraries. Micro-app folders use the `app-` prefix, but package names use the internal `@money` namespace. Each micro app should expose portal metadata such as display name, category, route, and tile details.
+- `packages/*` contains independently packaged micro apps and shared TypeScript libraries. Micro-app folders use the `app-` prefix, but package names use the internal `@metrohub` namespace. Each micro app should expose portal metadata such as display name, category, route, and tile details.
 
 Initial micro-app examples:
 

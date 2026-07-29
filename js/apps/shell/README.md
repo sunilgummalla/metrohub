@@ -13,7 +13,7 @@ Money-Money is the current app code name and may change in the future.
 ```powershell
 cd js
 pnpm install
-pnpm --filter @money-money/shell dev
+pnpm --filter @metrohub/shell dev
 ```
 
 The Vite app runs on port `3002` by default.
