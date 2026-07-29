@@ -1,0 +1,22 @@
+{
+  "name": "Metro Hub",
+  "short_name": "MetroHub",
+  "description": "Personal finance · Game nights · All in one hub",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "icons": [
+    { "src": "/brand/icon-72x72.png",            "sizes": "72x72",     "type": "image/png" },
+    { "src": "/brand/icon-96x96.png",            "sizes": "96x96",     "type": "image/png" },
+    { "src": "/brand/icon-128x128.png",          "sizes": "128x128",   "type": "image/png" },
+    { "src": "/brand/icon-144x144.png",          "sizes": "144x144",   "type": "image/png" },
+    { "src": "/brand/icon-152x152.png",          "sizes": "152x152",   "type": "image/png" },
+    { "src": "/icon-192x192.png",                "sizes": "192x192",   "type": "image/png" },
+    { "src": "/brand/icon-384x384.png",          "sizes": "384x384",   "type": "image/png" },
+    { "src": "/icon-512x512.png",                "sizes": "512x512",   "type": "image/png" },
+    { "src": "/brand/icon-maskable-192x192.png", "sizes": "192x192",   "type": "image/png", "purpose": "maskable" },
+    { "src": "/brand/icon-maskable-512x512.png", "sizes": "512x512",   "type": "image/png", "purpose": "maskable" }
+  ]
+}
