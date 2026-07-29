@@ -5,6 +5,7 @@
   "description": "Shared TypeScript contracts and utilities for Money-Money.",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./wordlists": "./src/wordlists.ts"
   }
 }

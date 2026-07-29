@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleDestroy } from "@nestjs/common";
+import { ConflictException, Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { Subject } from "rxjs";
@@ -10,6 +10,9 @@ import {
   GameArchive,
   GameArchiveDocument,
 } from "../database";
+// Import from the @money/shared/wordlists subpath.
+// The shared package.json exports map now exposes "./wordlists" so this is
+// safe at runtime (no ERR_PACKAGE_PATH_NOT_EXPORTED).
 import { generateJoinCode, generateGuestHandle } from "@money/shared/wordlists";
 
 export interface GameEntry {
@@ -38,10 +41,14 @@ interface SseChannel {
  *
  * Game state (snapshots) is persisted to MongoDB and survives API restarts.
  */
+/** Interval between SSE channel cleanup sweeps (5 minutes) */
+const CHANNEL_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
 @Injectable()
-export class GameStateService implements OnModuleDestroy {
+export class GameStateService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(GameStateService.name);
   private readonly channels = new Map<string, SseChannel>();
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     @InjectModel(GameSession.name)
@@ -52,11 +59,53 @@ export class GameStateService implements OnModuleDestroy {
     private readonly archiveModel: Model<GameArchiveDocument>,
   ) {}
 
+  onModuleInit() {
+    // Periodically evict SSE channels whose backing session no longer exists
+    // (ended or TTL-deleted). Prevents unbounded memory growth from scan traffic
+    // or channels created for games that were never published.
+    this.cleanupTimer = setInterval(
+      () => void this.cleanupStaleChannels(),
+      CHANNEL_CLEANUP_INTERVAL_MS,
+    );
+  }
+
   onModuleDestroy() {
+    if (this.cleanupTimer) clearInterval(this.cleanupTimer);
     for (const channel of this.channels.values()) {
       channel.subject.complete();
     }
     this.channels.clear();
+  }
+
+  /**
+   * Sweep the in-memory channel map and complete + remove any channel whose
+   * backing session is missing, ended, or past its expiresAt timestamp.
+   */
+  private async cleanupStaleChannels(): Promise<void> {
+    if (this.channels.size === 0) return;
+    const now = new Date();
+    const gameIds = [...this.channels.keys()];
+    const activeSessions = await this.sessionModel
+      .find(
+        { gameId: { $in: gameIds }, status: "active", expiresAt: { $gt: now } },
+        { gameId: 1 },
+      )
+      .lean();
+    const activeSet = new Set(activeSessions.map((s) => s.gameId));
+    let evicted = 0;
+    for (const gameId of gameIds) {
+      if (!activeSet.has(gameId)) {
+        const ch = this.channels.get(gameId);
+        if (ch) {
+          ch.subject.complete();
+          this.channels.delete(gameId);
+          evicted++;
+        }
+      }
+    }
+    if (evicted > 0) {
+      this.logger.debug(`SSE channel cleanup: evicted ${evicted} stale channel(s)`);
+    }
   }
 
   // ─── Join code ─────────────────────────────────────────────────────────────
@@ -100,9 +149,10 @@ export class GameStateService implements OnModuleDestroy {
     // Check if this is the first publish for this gameId
     let session = await this.sessionModel.findOne({ gameId }).lean();
 
-    // Reject publishes on ended sessions to avoid inconsistent SSE/read state
+    // Reject publishes on ended sessions to avoid inconsistent SSE/read state.
+    // ConflictException gives clients a deterministic 409 instead of a 500.
     if (session && session.status !== "active") {
-      throw new Error(`Game ${gameId} has already ended and cannot be updated`);
+      throw new ConflictException(`Game ${gameId} has already ended and cannot be updated`);
     }
 
     let joinCode: string;

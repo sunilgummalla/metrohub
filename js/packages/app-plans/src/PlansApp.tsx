@@ -93,15 +93,32 @@ function parseCurrency(raw: string | null): Currency {
   return "INR";
 }
 
+/** Safe localStorage helpers — no-op in Safari private mode or restricted envs */
+function lsGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function lsSet(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* storage unavailable — ignore */
+  }
+}
+
 export function PlansApp() {
   const [currency, setCurrency] = useState<Currency>(() =>
-    parseCurrency(localStorage.getItem("plans-currency"))
+    parseCurrency(lsGet("plans-currency"))
   );
   const [plans, setPlans] = useState<Plan[]>(STATIC_PLANS);
 
   // Persist currency preference
   useEffect(() => {
-    localStorage.setItem("plans-currency", currency);
+    lsSet("plans-currency", currency);
   }, [currency]);
 
   // Try to fetch live plans from the API; fall back to static data silently
