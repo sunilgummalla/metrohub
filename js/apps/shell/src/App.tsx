@@ -24,9 +24,9 @@ const APP_ICONS: Record<string, string> = {
 
 // ─── Gradient map per category ────────────────────────────────────────────────
 const CATEGORY_GRADIENTS: Record<string, string> = {
-  Scoreboards: "linear-gradient(135deg,#7c3aed,#a855f7)",
-  Accounting:  "linear-gradient(135deg,#0f766e,#14b8a6)",
-  Shopping:    "linear-gradient(135deg,#b45309,#f59e0b)",
+  Scoreboards:   "linear-gradient(135deg,#7c3aed,#a855f7)",
+  Accounting:    "linear-gradient(135deg,#0f766e,#14b8a6)",
+  Shopping:      "linear-gradient(135deg,#b45309,#f59e0b)",
   "Site Seeing": "linear-gradient(135deg,#2563eb,#60a5fa)",
 };
 
@@ -46,12 +46,19 @@ function getInitialApp() {
 function ShellHeader({ onHome }: { onHome?: () => void }) {
   return (
     <header className="shellHeader">
-      <a className="brand" href="/" aria-label="Money Money home" onClick={onHome ? (e) => { e.preventDefault(); onHome(); } : undefined}>
-        <span className="brandMark" aria-hidden="true">MM</span>
-        <span className="brandText">
-          <strong>Money Money</strong>
-          <small>Personal portal</small>
-        </span>
+      <a
+        className="brand"
+        href="/"
+        aria-label="Metro Hub home"
+        onClick={onHome ? (e) => { e.preventDefault(); onHome(); } : undefined}
+      >
+        <img
+          src="/brand/logo-horizontal-dark-400x133.png"
+          alt="Metro Hub"
+          className="brandLogo"
+          width={134}
+          height={45}
+        />
       </a>
       <nav className="topNav" aria-label="Shell navigation">
         <a href="/">Apps</a>
@@ -66,9 +73,18 @@ function ShellHeader({ onHome }: { onHome?: () => void }) {
 function ShellFooter() {
   return (
     <footer className="shellFooter">
-      <span className="footerBrand">Money Money</span>
+      <div className="footerLeft">
+        <img
+          src="/brand/icon-72x72.png"
+          alt="Metro Hub"
+          className="footerIcon"
+          width={24}
+          height={24}
+        />
+        <span className="footerBrand">Metro Hub</span>
+      </div>
       <span className="footerMeta">
-        {new Date().getFullYear()} · {registry.apps.length} apps · Personal portal
+        {new Date().getFullYear()} · {registry.apps.length} apps · Personal finance &amp; game nights portal
       </span>
     </footer>
   );
@@ -121,7 +137,7 @@ function CategoryPill({
 
 // ─── Stats strip ─────────────────────────────────────────────────────────────
 function StatsStrip() {
-  const categories = Array.from(new Set(registry.apps.map((a) => a.category)));
+  const cats = Array.from(new Set(registry.apps.map((a) => a.category)));
   return (
     <div className="statsStrip">
       <div className="statItem">
@@ -130,17 +146,25 @@ function StatsStrip() {
       </div>
       <div className="statDivider" />
       <div className="statItem">
-        <span className="statValue">{categories.length}</span>
+        <span className="statValue">{cats.length}</span>
         <span className="statLabel">Categories</span>
       </div>
       <div className="statDivider" />
       <div className="statItem">
         <span className="statValue">1</span>
-        <span className="statLabel">Shell</span>
+        <span className="statLabel">Hub</span>
       </div>
     </div>
   );
 }
+
+// ─── Feature pills ────────────────────────────────────────────────────────────
+const FEATURES = [
+  { icon: "📊", label: "Finance tracking" },
+  { icon: "🃏", label: "Game scorecards" },
+  { icon: "⚖",  label: "Bill splitting" },
+  { icon: "📍", label: "Nearby discovery" },
+];
 
 // ─── Portal Home ──────────────────────────────────────────────────────────────
 function PortalHome() {
@@ -165,33 +189,68 @@ function PortalHome() {
 
   return (
     <main className="portalMain">
+
       {/* ── Hero ── */}
       <section className="portalHero">
+        {/* Decorative background blobs */}
+        <div className="heroBlobGold" aria-hidden="true" />
+        <div className="heroBlobTeal" aria-hidden="true" />
+
         <div className="heroInner">
-          <div className="heroBadge">Personal finance portal</div>
+          {/* Logo mark */}
+          <div className="heroLogoWrap">
+            <img
+              src="/brand/icon-192x192.png"
+              alt="Metro Hub"
+              className="heroLogoMark"
+              width={72}
+              height={72}
+            />
+          </div>
+
+          <div className="heroBadge">Personal finance &amp; game nights portal</div>
+
           <h1 className="heroTitle">
-            One shell for<br />
-            <span className="heroAccent">every money app.</span>
+            Your hub for<br />
+            <span className="heroAccentGold">finance</span>
+            <span className="heroAccentSep"> &amp; </span>
+            <span className="heroAccentTeal">game nights.</span>
           </h1>
+
           <p className="heroSubtitle">
             Track accounts, split costs, score game nights, and discover nearby
-            places — all in one consistent shell.
+            places — all in one consistent hub.
           </p>
+
+          {/* Feature pills */}
+          <div className="heroFeatures">
+            {FEATURES.map((f) => (
+              <span key={f.label} className="heroFeaturePill">
+                <span>{f.icon}</span> {f.label}
+              </span>
+            ))}
+          </div>
+
           <div className="heroButtons">
             <a className="heroBtnPrimary" href="/apps/rummy-scorecard">Open Rummy Scorecard</a>
             <a className="heroBtnSecondary" href="#apps">Browse all apps</a>
           </div>
         </div>
+
         <div className="heroVisual">
           <StatsStrip />
           <div className="heroAppPreview">
-            {registry.apps.slice(0, 3).map((app) => (
-              <div key={app.id} className="heroPreviewChip">
+            {registry.apps.slice(0, 4).map((app) => (
+              <a key={app.id} className="heroPreviewChip" href={app.route}>
                 <span style={{ background: categoryGradient(app.category) }} className="heroPreviewIcon">
                   {APP_ICONS[app.id] ?? app.tile.title[0]}
                 </span>
-                <span>{app.tile.title}</span>
-              </div>
+                <div className="heroPreviewChipBody">
+                  <span className="heroPreviewChipTitle">{app.tile.title}</span>
+                  <span className="heroPreviewChipCat">{app.category}</span>
+                </div>
+                <span className="heroPreviewChipArrow">→</span>
+              </a>
             ))}
           </div>
         </div>
