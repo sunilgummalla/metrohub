@@ -84,10 +84,19 @@ const STATIC_PLANS: Plan[] = [
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
+const VALID_CURRENCIES: Currency[] = ["INR", "USD", "CAD"];
+
+function parseCurrency(raw: string | null): Currency {
+  if (raw && VALID_CURRENCIES.includes(raw as Currency)) {
+    return raw as Currency;
+  }
+  return "INR";
+}
+
 export function PlansApp() {
-  const [currency, setCurrency] = useState<Currency>(() => {
-    return (localStorage.getItem("plans-currency") as Currency) ?? "INR";
-  });
+  const [currency, setCurrency] = useState<Currency>(() =>
+    parseCurrency(localStorage.getItem("plans-currency"))
+  );
   const [plans, setPlans] = useState<Plan[]>(STATIC_PLANS);
 
   // Persist currency preference

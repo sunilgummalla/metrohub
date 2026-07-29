@@ -31,6 +31,34 @@ export class GameStateController {
   constructor(private readonly gameStateService: GameStateService) {}
 
   /**
+   * Participant joins a game by its human-readable join code.
+   * POST /api/game/join
+   * Body: { joinCode: string; handle?: string }
+   *
+   * IMPORTANT: this route MUST be declared before @Post(':id') so that NestJS
+   * matches the literal segment 'join' before the wildcard ':id' param.
+   */
+  @Post("join")
+  @HttpCode(200)
+  async joinByCode(
+    @Body() body: { joinCode?: string; handle?: string },
+  ): Promise<{ gameId: string; joinCode: string; handle: string }> {
+    if (!body.joinCode?.trim()) {
+      throw new BadRequestException("joinCode is required");
+    }
+    const result = await this.gameStateService.joinByCode(
+      body.joinCode.trim(),
+      body.handle,
+    );
+    if (!result) {
+      throw new NotFoundException(
+        `No active game found for join code "${body.joinCode}"`,
+      );
+    }
+    return result;
+  }
+
+  /**
    * Host pushes a new state snapshot.
    * POST /api/game/:id
    *
@@ -126,28 +154,4 @@ export class GameStateController {
     return { ok: true };
   }
 
-  /**
-   * Participant joins a game by its human-readable join code.
-   * POST /api/game/join
-   * Body: { joinCode: string; handle?: string }
-   */
-  @Post("join")
-  @HttpCode(200)
-  async joinByCode(
-    @Body() body: { joinCode?: string; handle?: string },
-  ): Promise<{ gameId: string; joinCode: string; handle: string }> {
-    if (!body.joinCode?.trim()) {
-      throw new BadRequestException("joinCode is required");
-    }
-    const result = await this.gameStateService.joinByCode(
-      body.joinCode.trim(),
-      body.handle,
-    );
-    if (!result) {
-      throw new NotFoundException(
-        `No active game found for join code "${body.joinCode}"`,
-      );
-    }
-    return result;
-  }
 }

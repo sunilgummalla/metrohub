@@ -68,10 +68,11 @@ export class GameStateService implements OnModuleDestroy {
   private async uniqueJoinCode(): Promise<string> {
     for (let i = 0; i < 10; i++) {
       const code = generateJoinCode();
-      const exists = await this.sessionModel.exists({
-        joinCode: code,
-        status: "active",
-      });
+      // Check against ALL sessions (not just active) because joinCode has a
+      // unique index and ended sessions are only removed by the TTL job, which
+      // is not immediate. Filtering by status:active would allow a duplicate
+      // key error if the code exists on an ended-but-not-yet-deleted session.
+      const exists = await this.sessionModel.exists({ joinCode: code });
       if (!exists) return code;
     }
     // Extremely unlikely — fall back to a timestamped code
@@ -87,10 +88,22 @@ export class GameStateService implements OnModuleDestroy {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async publish(gameId: string, body: Record<string, any>): Promise<GameEntry> {
-    const { gameType = "unknown", ...rest } = body;
+    const { gameType: rawGameType, ...rest } = body;
+    // Validate gameType against the schema enum; reject unknown values early
+    // so the MongoDB write never fails with a validation error.
+    const VALID_GAME_TYPES = ["tambola", "bingo", "rummy"] as const;
+    type ValidGameType = (typeof VALID_GAME_TYPES)[number];
+    const gameType: ValidGameType = VALID_GAME_TYPES.includes(rawGameType)
+      ? (rawGameType as ValidGameType)
+      : "rummy";
 
     // Check if this is the first publish for this gameId
     let session = await this.sessionModel.findOne({ gameId }).lean();
+
+    // Reject publishes on ended sessions to avoid inconsistent SSE/read state
+    if (session && session.status !== "active") {
+      throw new Error(`Game ${gameId} has already ended and cannot be updated`);
+    }
 
     let joinCode: string;
     if (!session) {
@@ -101,7 +114,7 @@ export class GameStateService implements OnModuleDestroy {
       const newSession = await this.sessionModel.create({
         gameId,
         joinCode,
-        gameType: String(gameType),
+        gameType,
         payload: rest,
         status: "active",
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -153,8 +166,9 @@ export class GameStateService implements OnModuleDestroy {
    * or has ended.
    */
   async getLatest(gameId: string): Promise<GameEntry | null> {
+    const now = new Date();
     const session = await this.sessionModel
-      .findOne({ gameId, status: "active" })
+      .findOne({ gameId, status: "active", expiresAt: { $gt: now } })
       .lean();
     if (!session) return null;
 
@@ -241,8 +255,13 @@ export class GameStateService implements OnModuleDestroy {
     joinCode: string,
     handle?: string,
   ): Promise<{ gameId: string; joinCode: string; handle: string } | null> {
+    const now = new Date();
     const session = await this.sessionModel
-      .findOne({ joinCode: joinCode.toLowerCase(), status: "active" })
+      .findOne({
+        joinCode: joinCode.toLowerCase(),
+        status: "active",
+        expiresAt: { $gt: now },
+      })
       .lean();
 
     if (!session) return null;

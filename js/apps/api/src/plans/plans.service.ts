@@ -3,6 +3,9 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { SubscriptionPlan, SubscriptionPlanDocument } from "../database";
 
+/** Plain-object shape returned by .lean() — no Mongoose Document methods */
+export type SubscriptionPlanLean = Omit<SubscriptionPlanDocument, keyof import("mongoose").Document>;
+
 const SEED_PLANS = [
   {
     planId: "free",
@@ -71,7 +74,10 @@ export class PlansService implements OnModuleInit {
     this.logger.log("Subscription plans seeded");
   }
 
-  async findAll(): Promise<SubscriptionPlanDocument[]> {
-    return this.planModel.find({ isActive: true }).sort({ intervalDays: 1 }).lean();
+  async findAll(): Promise<SubscriptionPlanLean[]> {
+    // .lean() returns plain JS objects, not Mongoose Documents.
+    // Return type is SubscriptionPlanLean (plain shape) rather than
+    // SubscriptionPlanDocument to avoid a type/runtime mismatch.
+    return this.planModel.find({ isActive: true }).sort({ intervalDays: 1 }).lean() as unknown as SubscriptionPlanLean[];
   }
 }
