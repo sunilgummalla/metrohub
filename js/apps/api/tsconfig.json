@@ -10,6 +10,10 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
+    "paths": {
+      "@money/shared": ["../../packages/shared/src"],
+      "@money/shared/wordlists": ["../../packages/shared/src/wordlists"]
+    },
     "incremental": true,
     "skipLibCheck": true,
     "strict": true,

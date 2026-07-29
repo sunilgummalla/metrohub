@@ -26,6 +26,7 @@
     "../../packages/app-rummy-scorecard/src",
     "../../packages/app-tambola/src",
     "../../packages/app-bingo/src",
+    "../../packages/app-plans/src",
     "../../packages/shared/src"
   ],
   "references": []

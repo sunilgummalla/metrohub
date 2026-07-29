@@ -87,6 +87,18 @@
       }
     },
     {
+      "id": "plans",
+      "packageName": "@money/plans",
+      "folder": "app-plans",
+      "displayName": "Plans & Pricing",
+      "category": "Account",
+      "route": "/plans",
+      "tile": {
+        "title": "Plans & Pricing",
+        "description": "View subscription plans and pricing."
+      }
+    },
+    {
       "id": "near-by",
       "packageName": "@money/near-by",
       "folder": "app-near-by",

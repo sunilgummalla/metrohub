@@ -6,6 +6,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@money/shared": path.resolve(__dirname, "../../packages/shared/src/index.ts"),
+      "@money/plans": path.resolve(__dirname, "../../packages/app-plans/src/index.ts"),
     },
   },
   server: {
