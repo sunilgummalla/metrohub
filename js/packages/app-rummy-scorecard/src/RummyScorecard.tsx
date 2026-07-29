@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import "./rummy.css";
+import { useGameSync, type GameSyncPayload } from "@money/shared";
 
 // ─── Persistence: localStorage (7-day TTL) + URL share ───────────────────────
 
@@ -46,40 +47,8 @@ function archiveGame(state: GameState, gameId: string) {
 
 type ActiveEnvelope = { id: string; savedAt: number; state: GameState };
 
-// ─── UTF-8 safe base64 helpers ──────────────────────────────────────────────
-function toBase64(str: string): string {
-  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) =>
-    String.fromCharCode(parseInt(p1, 16))
-  ));
-}
-
-function fromBase64(b64: string): string {
-  return decodeURIComponent(
-    atob(b64).split("").map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0")).join("")
-  );
-}
-
 function loadGame(): GameState {
-  // 1. Try URL hash first (shared link — both owner and read-only)
-  try {
-    const hash = window.location.hash.slice(1);
-    const isOwner = hash.startsWith("rummy:");
-    const isRO    = hash.startsWith("rummy-ro:");
-    if (isOwner || isRO) {
-      const b64  = isOwner ? hash.slice(6) : hash.slice(9);
-      const json = fromBase64(b64);
-      const parsed = JSON.parse(json) as GameState;
-      if (parsed && (parsed.phase === "setup" || parsed.phase === "playing" || parsed.phase === "finished")) {
-        if (isOwner) {
-          saveActiveGame(parsed, uid());
-          window.history.replaceState(null, "", window.location.pathname + window.location.search);
-        }
-        return parsed;
-      }
-    }
-  } catch { /* ignore */ }
-
-  // 2. Fall back to active localStorage slot
+  // Load from active localStorage slot
   try {
     const raw = localStorage.getItem(ACTIVE_KEY);
     if (raw) {
@@ -112,29 +81,6 @@ function clearActive() {
   localStorage.removeItem("rummy-scorecard-v1"); // remove old key if present
 }
 
-// Keep saveGame as a thin alias so existing call-sites still compile
-function saveGame(state: GameState) { saveActiveGame(state, currentGameId); }
-let currentGameId = uid();
-
-function buildShareUrl(state: GameState, readOnly = false): string {
-  try {
-    const b64 = toBase64(JSON.stringify(state));
-    const base = window.location.href.split("#")[0];
-    const prefix = readOnly ? "rummy-ro" : "rummy";
-    return `${base}#${prefix}:${b64}`;
-  } catch {
-    return window.location.href;
-  }
-}
-
-// Detect read-only mode from URL hash (rummy-ro: prefix)
-function detectReadOnly(): boolean {
-  try {
-    return window.location.hash.slice(1).startsWith("rummy-ro:");
-  } catch {
-    return false;
-  }
-}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -937,14 +883,12 @@ function CopyLinkBtn({ url, label }: { url: string; label: string }) {
   );
 }
 
-function SharePanel({ game, readOnly }: { game: GameState; readOnly: boolean }) {
+function SharePanel({ shareUrl, readOnly }: { shareUrl: string; readOnly: boolean }) {
   const [open, setOpen] = useState(false);
-  const ownerUrl = buildShareUrl(game, false);
-  const roUrl = buildShareUrl(game, true);
 
   if (readOnly) {
     // Read-only viewers only see a single copy button for the read-only link
-    return <CopyLinkBtn url={roUrl} label="View link" />;
+    return <CopyLinkBtn url={shareUrl} label="View link" />;
   }
 
   return (
@@ -960,17 +904,10 @@ function SharePanel({ game, readOnly }: { game: GameState; readOnly: boolean }) 
         <div className="rummyShareDropdown">
           <div className="rummyShareDropdownItem">
             <div>
-              <strong>Owner link</strong>
-              <p>Full access — can record &amp; edit rounds</p>
-            </div>
-            <CopyLinkBtn url={ownerUrl} label="Owner link" />
-          </div>
-          <div className="rummyShareDropdownItem">
-            <div>
               <strong>View-only link</strong>
-              <p>Spectators can follow the scorecard live</p>
+              <p>Spectators can follow the scorecard live in real time</p>
             </div>
-            <CopyLinkBtn url={roUrl} label="View link" />
+            <CopyLinkBtn url={shareUrl} label="View link" />
           </div>
         </div>
       )}
@@ -985,6 +922,7 @@ function PlayingScreen({
   targetScore,
   game,
   readOnly,
+  shareUrl,
   onAddRound,
   onUpdateRound,
   onCancelRound,
@@ -998,6 +936,7 @@ function PlayingScreen({
   targetScore: number;
   game: GameState;
   readOnly: boolean;
+  shareUrl: string;
   onAddRound: (entries: Record<string, RoundEntry>) => void;
   onUpdateRound: (roundId: string, entries: Record<string, RoundEntry>) => void;
   onCancelRound: (roundId: string) => void;
@@ -1100,7 +1039,7 @@ function PlayingScreen({
         <div className="rummySectionHeader">
           <h3>Scorecard {readOnly && <span className="rummyReadOnlyBadge">View only</span>}</h3>
           <div className="rummyActions">
-            <SharePanel game={game} readOnly={readOnly} />
+            <SharePanel shareUrl={shareUrl} readOnly={readOnly} />
             {!readOnly && <button className="rummyDangerBtn" onClick={onEndGame} type="button">End game</button>}
           </div>
         </div>
@@ -1176,6 +1115,7 @@ function FinishedScreen({
   targetScore,
   game,
   readOnly,
+  shareUrl,
   onNewGame,
 }: {
   players: Player[];
@@ -1184,6 +1124,7 @@ function FinishedScreen({
   targetScore: number;
   game: GameState;
   readOnly: boolean;
+  shareUrl: string;
   onNewGame: () => void;
 }) {
   // Winner = player with lowest total (original order preserved)
@@ -1203,7 +1144,7 @@ function FinishedScreen({
           Final score: <strong>{winner.total}</strong> pts across {activeRounds.length} rounds
         </p>
         <div className="rummyFinishedActions">
-          <SharePanel game={game} readOnly={readOnly} />
+          <SharePanel shareUrl={shareUrl} readOnly={readOnly} />
           {!readOnly && (
             <button className="rummyPrimaryBtn rummyNewGameBtn" onClick={onNewGame} type="button">
               ↺ New Game
@@ -1227,34 +1168,38 @@ function FinishedScreen({
 
 export function RummyScorecard() {
   const [game, setGame] = useState<GameState>(() => loadGame());
-  const readOnly = detectReadOnly();
 
-  // Stable game ID — recovered from the active envelope or freshly generated
-  const gameIdRef = useMemo<{ current: string }>(() => {
-    try {
-      const raw = localStorage.getItem(ACTIVE_KEY);
-      if (raw) {
-        const env = JSON.parse(raw) as ActiveEnvelope;
-        if (env.id) return { current: env.id };
-      }
-    } catch { /* ignore */ }
-    return { current: uid() };
+  // ─── SSE sync (host publishes, read-only viewer subscribes) ─────────────────
+  const onRemoteUpdate = useCallback((remote: GameSyncPayload) => {
+    // remote is the raw game state published by the host
+    const parsed = remote as unknown as GameState;
+    if (parsed && (parsed.phase === "playing" || parsed.phase === "finished")) {
+      setGame(parsed);
+    }
   }, []);
 
-  // Persist every state change to localStorage (skip for read-only viewers)
+  const { gameId, isReadOnly, shareUrl, publish, resetGameId } = useGameSync({
+    gameType: "rummy",
+    onRemoteUpdate,
+  });
+
+  const readOnly = isReadOnly;
+
+  // Persist every state change to localStorage and publish to SSE (host only)
   useEffect(() => {
     if (!readOnly) {
-      saveActiveGame(game, gameIdRef.current);
+      saveActiveGame(game, gameId);
+      publish(game as unknown as GameSyncPayload);
       // Archive whenever the game reaches finished state
       if (game.phase === "finished") {
-        archiveGame(game, gameIdRef.current);
+        archiveGame(game, gameId);
       }
     }
-  }, [game, readOnly, gameIdRef]);
+  }, [game, readOnly, gameId, publish]);
 
   function startGame(players: Player[], targetScore: number, rules: RuleConfig) {
-    // Assign a fresh id for this new game
-    gameIdRef.current = uid();
+    // Fresh game ID so old share links go stale
+    resetGameId();
     setGame({ phase: "playing", players, rounds: [], rules, targetScore });
   }
 
@@ -1328,7 +1273,7 @@ export function RummyScorecard() {
   function endGame() {
     if (game.phase !== "playing") return;
     const finished = { ...game, phase: "finished" as const };
-    archiveGame(finished, gameIdRef.current);
+    archiveGame(finished, gameId);
     setGame(finished);
   }
 
@@ -1363,24 +1308,24 @@ export function RummyScorecard() {
   }
 
   function resumeGame(entry: HistoryEntry) {
-    gameIdRef.current = entry.id;
+    // Restore the archived game ID so the share link stays consistent
+    try { localStorage.setItem(`game-id-rummy`, entry.id); } catch { /* ignore */ }
     saveActiveGame(entry.state, entry.id);
     setGame(entry.state);
   }
 
   function viewGame(entry: HistoryEntry) {
     // Load the historical game in read-only-like view (finished screen)
-    gameIdRef.current = entry.id;
     setGame(entry.state);
   }
 
   function newGame() {
     // Archive current game if it was in progress before clearing
     if (game.phase === "playing" || game.phase === "finished") {
-      archiveGame(game, gameIdRef.current);
+      archiveGame(game, gameId);
     }
     clearActive();
-    gameIdRef.current = uid();
+    resetGameId(); // new session UUID — old share links go stale
     setGame({ phase: "setup" });
   }
 
@@ -1397,6 +1342,7 @@ export function RummyScorecard() {
         targetScore={game.targetScore}
         game={game}
         readOnly={readOnly}
+        shareUrl={shareUrl}
         onAddRound={addRound}
         onUpdateRound={updateRound}
         onCancelRound={cancelRound}
@@ -1415,6 +1361,7 @@ export function RummyScorecard() {
       targetScore={game.targetScore}
       game={game}
       readOnly={readOnly}
+      shareUrl={shareUrl}
       onNewGame={newGame}
     />
   );

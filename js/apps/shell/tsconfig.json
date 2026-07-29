@@ -17,14 +17,16 @@
     "jsx": "react-jsx",
     "paths": {
       "react": ["./node_modules/@types/react"],
-      "react/jsx-runtime": ["./node_modules/@types/react"]
+      "react/jsx-runtime": ["./node_modules/@types/react"],
+      "@money/shared": ["../../packages/shared/src/index.ts"]
     }
   },
   "include": [
     "src",
     "../../packages/app-rummy-scorecard/src",
     "../../packages/app-tambola/src",
-    "../../packages/app-bingo/src"
+    "../../packages/app-bingo/src",
+    "../../packages/shared/src"
   ],
   "references": []
 }
