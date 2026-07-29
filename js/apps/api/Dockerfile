@@ -9,8 +9,8 @@ COPY js/apps/api/package.json apps/api/package.json
 RUN pnpm install --frozen-lockfile
 
 COPY js/apps/api apps/api
-RUN pnpm --filter @money-money/api build \
-  && pnpm --filter @money-money/api deploy --prod /prod/api \
+RUN pnpm --filter @metrohub/api build \
+  && pnpm --filter @metrohub/api deploy --prod /prod/api \
   && cp -R apps/api/dist /prod/api/dist
 
 FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS runtime

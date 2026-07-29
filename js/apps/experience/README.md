@@ -11,7 +11,7 @@ The experience layer calls the API for the supported app registry and passes tha
 ```powershell
 cd js
 pnpm install
-pnpm --filter @money-money/experience dev
+pnpm --filter @metrohub/experience dev
 ```
 
 The app runs on Next.js with the App Router under `src/app`.

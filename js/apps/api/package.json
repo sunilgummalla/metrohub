@@ -1,5 +1,5 @@
 {
-  "name": "@money-money/api",
+  "name": "@metrohub/api",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,9 +12,12 @@
   "dependencies": {
     "@nestjs/common": "10.3.10",
     "@nestjs/core": "10.3.10",
+    "@nestjs/mongoose": "^11.0.4",
     "@nestjs/platform-express": "10.3.10",
+    "mongoose": "^9.8.1",
     "reflect-metadata": "0.2.2",
-    "rxjs": "7.8.1"
+    "rxjs": "7.8.1",
+    "@metrohub/shared": "workspace:*"
   },
   "devDependencies": {
     "@nestjs/cli": "10.4.2",

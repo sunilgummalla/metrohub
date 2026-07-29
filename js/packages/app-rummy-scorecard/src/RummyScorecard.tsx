@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import "./rummy.css";
-import { useGameSync, type GameSyncPayload } from "@money/shared";
+import { useGameSync, type GameSyncPayload } from "@metrohub/shared";
 
 // ─── Persistence: localStorage (7-day TTL) + URL share ───────────────────────
 

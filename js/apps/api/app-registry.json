@@ -4,7 +4,7 @@
   "apps": [
     {
       "id": "poker-scorecard",
-      "packageName": "@money/poker-scorecard",
+      "packageName": "@metrohub/poker-scorecard",
       "folder": "app-poker-scorecard",
       "displayName": "Poker scorecard",
       "category": "Scoreboards",
@@ -16,7 +16,7 @@
     },
     {
       "id": "rummy-scorecard",
-      "packageName": "@money/rummy-scorecard",
+      "packageName": "@metrohub/rummy-scorecard",
       "folder": "app-rummy-scorecard",
       "displayName": "Rummy scorecard",
       "category": "Scoreboards",
@@ -28,7 +28,7 @@
     },
     {
       "id": "tambola",
-      "packageName": "@money/tambola",
+      "packageName": "@metrohub/tambola",
       "folder": "app-tambola",
       "displayName": "Tambola",
       "category": "Scoreboards",
@@ -40,7 +40,7 @@
     },
     {
       "id": "bingo",
-      "packageName": "@money/bingo",
+      "packageName": "@metrohub/bingo",
       "folder": "app-bingo",
       "displayName": "Bingo",
       "category": "Scoreboards",
@@ -52,7 +52,7 @@
     },
     {
       "id": "splits",
-      "packageName": "@money/splits",
+      "packageName": "@metrohub/splits",
       "folder": "app-splits",
       "displayName": "Splits",
       "category": "Accounting",
@@ -64,7 +64,7 @@
     },
     {
       "id": "my-accounts",
-      "packageName": "@money/my-accounts",
+      "packageName": "@metrohub/my-accounts",
       "folder": "app-my-accounts",
       "displayName": "My Accounts",
       "category": "Accounting",
@@ -76,7 +76,7 @@
     },
     {
       "id": "deals",
-      "packageName": "@money/deals",
+      "packageName": "@metrohub/deals",
       "folder": "app-deals",
       "displayName": "Deals",
       "category": "Shopping",
@@ -87,8 +87,20 @@
       }
     },
     {
+      "id": "plans",
+      "packageName": "@metrohub/plans",
+      "folder": "app-plans",
+      "displayName": "Plans & Pricing",
+      "category": "Account",
+      "route": "/plans",
+      "tile": {
+        "title": "Plans & Pricing",
+        "description": "View subscription plans and pricing."
+      }
+    },
+    {
       "id": "near-by",
-      "packageName": "@money/near-by",
+      "packageName": "@metrohub/near-by",
       "folder": "app-near-by",
       "displayName": "Near By",
       "category": "Site Seeing",
