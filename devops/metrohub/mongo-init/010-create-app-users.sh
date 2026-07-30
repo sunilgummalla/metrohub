@@ -37,6 +37,10 @@ for triple in $MONGO_APP_USERS; do
 
   APP_U="$(tr -d '\r\n' < "$user_file")"
   APP_P="$(tr -d '\r\n' < "$pass_file")"
+  # Fail fast on an empty secret file — otherwise mongosh would try to create a
+  # user with an empty username/password and fail in a confusing way downstream.
+  [ -n "$APP_U" ] || { echo "[mongo-init] empty app username (file: $user_file)" >&2; exit 1; }
+  [ -n "$APP_P" ] || { echo "[mongo-init] empty app password (file: $pass_file)" >&2; exit 1; }
   APP_DB="$db"
   export APP_U APP_P APP_DB
 

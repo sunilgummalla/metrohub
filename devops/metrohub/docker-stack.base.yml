@@ -22,7 +22,10 @@ x-json-file-logging: &json-file-logging
 services:
   # ── MongoDB (shared; auth on; no host ports) ─────────────────────
   mongo:
-    image: mongo:7.0.14
+    # mongo 7.0.14, pinned by digest (repo convention — matches dozzle/cloudflared —
+    # so a retagged upstream tag can't shift the image). Digest is the multi-arch
+    # manifest list (incl. linux/amd64). Bump both together on a version change.
+    image: mongo:7.0.14@sha256:0032d2ca20db5fa34926f196c8a43b74e34ed239a7f2453ff1505b6f12ba8ea6
     logging: *json-file-logging
     command: ["mongod", "--auth", "--bind_ip_all"]
     # Root + every env's app credentials are file-mounted secrets. The image
