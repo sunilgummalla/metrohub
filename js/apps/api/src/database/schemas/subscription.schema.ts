@@ -21,15 +21,15 @@ export class Subscription {
   declare status: string;
 
   /** When the current billing period ends; null for the free plan */
-  @Prop({ default: null })
+  @Prop({ type: Date, default: null })
   declare currentPeriodEnd: Date | null;
 
   /** "stripe" | "razorpay" | null (free plan) */
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   declare paymentProvider: string | null;
 
   /** ID of the subscription object in the payment provider's system */
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   declare externalSubscriptionId: string | null;
 
   declare createdAt: Date;

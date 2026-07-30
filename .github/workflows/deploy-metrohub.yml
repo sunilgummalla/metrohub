@@ -15,7 +15,7 @@ on:
           - dev
           - prod
       redeploy_base:
-        description: Also (re)deploy the shared base tier (Dozzle). Off by default so routine app deploys don't restart it.
+        description: Also (re)deploy the shared base tier (Mongo + Dozzle). Off by default so routine app deploys never touch the shared datastore.
         required: false
         default: false
         type: boolean
@@ -41,6 +41,7 @@ jobs:
       stack: ${{ steps.target.outputs.stack }}
       app_domain: ${{ steps.target.outputs.app_domain }}
       cors_origins: ${{ steps.target.outputs.cors_origins }}
+      mongo_db: ${{ steps.target.outputs.mongo_db }}
     steps:
       - id: target
         run: |
@@ -58,15 +59,18 @@ jobs:
           if [ "$environment" = "dev" ]; then
             stack="mh-dev"
             app_domain="dev.metrohub.io"
+            mongo_db="metrohub_dev"
           else
             stack="mh-prod"
             app_domain="www.metrohub.io"
+            mongo_db="metrohub_prod"
           fi
 
           echo "environment=$environment" >> "$GITHUB_OUTPUT"
           echo "stack=$stack" >> "$GITHUB_OUTPUT"
           echo "app_domain=$app_domain" >> "$GITHUB_OUTPUT"
           echo "cors_origins=https://$app_domain" >> "$GITHUB_OUTPUT"
+          echo "mongo_db=$mongo_db" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build and publish images
@@ -159,27 +163,29 @@ jobs:
 
       - name: Copy deployment files
         run: |
-          ssh -i ~/.ssh/metrohub "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "mkdir -p /opt/money-money/deploy"
+          ssh -i ~/.ssh/metrohub "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "mkdir -p /opt/metrohub/deploy"
           scp -i ~/.ssh/metrohub -r \
             devops/metrohub/docker-stack.yml \
             devops/metrohub/docker-stack.base.yml \
             devops/metrohub/deploy.sh \
             devops/metrohub/scripts \
-            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/money-money/deploy/"
+            devops/metrohub/mongo-init \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/metrohub/deploy/"
 
       - name: Deploy Swarm stack
         # The Cloudflare tunnel token is NOT piped from CI — it lives on the box in
-        # /opt/money-money/shared/<stack>.secrets.yaml and is provisioned by
+        # /opt/metrohub/shared/<stack>.secrets.yaml and is provisioned by
         # sync-secrets.sh inside deploy.sh (fleet secrets standard).
         env:
           STACK_NAME: ${{ needs.target.outputs.stack }}
           APP_DOMAIN: ${{ needs.target.outputs.app_domain }}
           CORS_ORIGINS: ${{ needs.target.outputs.cors_origins }}
+          MONGO_DB: ${{ needs.target.outputs.mongo_db }}
           API_IMAGE: ${{ env.IMAGE_PREFIX }}-api:${{ github.sha }}
           EXPERIENCE_IMAGE: ${{ env.IMAGE_PREFIX }}-experience:${{ github.sha }}
           SHELL_IMAGE: ${{ env.IMAGE_PREFIX }}-shell:${{ github.sha }}
-          # Only (re)deploy the shared base tier (Dozzle) on an explicit dispatch.
+          # Only (re)deploy the shared base tier (Mongo + Dozzle) on an explicit dispatch.
           REDEPLOY_BASE: ${{ github.event_name == 'workflow_dispatch' && inputs.redeploy_base || 'false' }}
         run: |
           ssh -i ~/.ssh/metrohub "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            "cd /opt/money-money/deploy && chmod +x deploy.sh scripts/sync-secrets.sh && STACK_NAME='$STACK_NAME' APP_DOMAIN='$APP_DOMAIN' CORS_ORIGINS='$CORS_ORIGINS' REDEPLOY_BASE='$REDEPLOY_BASE' API_IMAGE='$API_IMAGE' EXPERIENCE_IMAGE='$EXPERIENCE_IMAGE' SHELL_IMAGE='$SHELL_IMAGE' ./deploy.sh"
+            "cd /opt/metrohub/deploy && chmod +x deploy.sh scripts/sync-secrets.sh && STACK_NAME='$STACK_NAME' APP_DOMAIN='$APP_DOMAIN' CORS_ORIGINS='$CORS_ORIGINS' MONGO_DB='$MONGO_DB' REDEPLOY_BASE='$REDEPLOY_BASE' API_IMAGE='$API_IMAGE' EXPERIENCE_IMAGE='$EXPERIENCE_IMAGE' SHELL_IMAGE='$SHELL_IMAGE' ./deploy.sh"

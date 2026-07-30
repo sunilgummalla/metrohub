@@ -14,11 +14,11 @@ export class Session {
   declare tokenHash: string;
 
   /** User-agent string for display in "active sessions" UI */
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   declare userAgent: string | null;
 
   /** IP address at login time */
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   declare ipAddress: string | null;
 
   /** TTL field — auto-deleted after 30 days of inactivity */

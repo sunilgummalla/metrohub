@@ -1,10 +1,17 @@
 # MetroHub — SHARED per-VPS base stack. Deployed ONCE per box:
-#   docker stack deploy -c docker-stack.base.yml metrohub-base
+#   MONGO_INIT_SHA=<sha> docker stack deploy -c docker-stack.base.yml metrohub-base
 #
-# Fleet rule (nirmaan devops/vps-baseline/BASELINE.md): one VPS → one Dozzle,
-# whether the box runs one stack or many. MetroHub has no datastore, so the base
-# tier is Dozzle only (unlike ata, which also runs one shared Mongo here). The
-# per-env app stacks (mh-dev, mh-prod — docker-stack.yml) drop their own Dozzle.
+# Fleet rule (nirmaan devops/vps-baseline/BASELINE.md): one VPS → one MongoDB +
+# one Dozzle, whether the box runs one stack or many. This one Mongo attaches to
+# EACH env's own data overlay (mh-dev-data / mh-prod-data — both created here); the
+# per-env app stacks (mh-dev, mh-prod — docker-stack.yml) each join only their own
+# overlay, so dev and prod both reach Mongo (mongo:27017) but never each other.
+# Root lives ONLY here; env stacks connect as their own least-privilege app user.
+#
+# External Swarm secrets (namespaced metrohub-base_<name>, from sync-secrets.sh
+# --stack metrohub-base --file /opt/metrohub/shared/metrohub-base.secrets.yaml):
+#   mongo_root_username, mongo_root_password,
+#   app_dev_username, app_dev_password, app_prod_username, app_prod_password
 
 x-json-file-logging: &json-file-logging
   driver: json-file
@@ -13,6 +20,66 @@ x-json-file-logging: &json-file-logging
     max-file: "7"
 
 services:
+  # ── MongoDB (shared; auth on; no host ports) ─────────────────────
+  mongo:
+    # mongo 7.0.14, pinned by digest (repo convention — matches dozzle/cloudflared —
+    # so a retagged upstream tag can't shift the image). Digest is the multi-arch
+    # manifest list (incl. linux/amd64). Bump both together on a version change.
+    image: mongo:7.0.14@sha256:0032d2ca20db5fa34926f196c8a43b74e34ed239a7f2453ff1505b6f12ba8ea6
+    logging: *json-file-logging
+    command: ["mongod", "--auth", "--bind_ip_all"]
+    # Root + every env's app credentials are file-mounted secrets. The image
+    # resolves root from *_FILE (file_env); the init script creates one app user
+    # per env from MONGO_APP_USERS (db:userFile:passFile triples).
+    secrets:
+      - mongo_root_username
+      - mongo_root_password
+      - app_dev_username
+      - app_dev_password
+      - app_prod_username
+      - app_prod_password
+    environment:
+      MONGO_INITDB_ROOT_USERNAME_FILE: /run/secrets/mongo_root_username
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo_root_password
+      # One triple per app user to ensure on first init: <db>:<user_file>:<pass_file>
+      MONGO_APP_USERS: "metrohub_dev:/run/secrets/app_dev_username:/run/secrets/app_dev_password metrohub_prod:/run/secrets/app_prod_username:/run/secrets/app_prod_password"
+    configs:
+      - source: mongo_init_app_users
+        target: /docker-entrypoint-initdb.d/010-create-app-users.sh
+        mode: 0555
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      # Authenticated root ping. Creds are read from the mounted files into the
+      # mongosh process ENV (not -u/-p, which would put the password in argv);
+      # db.auth() reads them via process.env inside --eval.
+      test:
+        ["CMD-SHELL",
+         "U=\"$$(tr -d '\\r\\n' < /run/secrets/mongo_root_username)\" P=\"$$(tr -d '\\r\\n' < /run/secrets/mongo_root_password)\" mongosh --host 127.0.0.1 --quiet --eval 'quit(db.getSiblingDB(\"admin\").auth(process.env.U, process.env.P) ? 0 : 1)'"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      # Attach to EACH env's data overlay so dev and prod app stacks stay mutually
+      # unreachable while both reach this one Mongo. Alias `mongo` on each.
+      mh-dev-data:
+        aliases:
+          - mongo
+      mh-prod-data:
+        aliases:
+          - mongo
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 15s
+        max_attempts: 10
+        window: 90s
+
   # ── Dozzle (shared log viewer; ALL containers on the box; SSH-tunnel only) ─
   dozzle:
     image: amir20/dozzle@sha256:2e14180fa14c195b8e86705b7ab2234b87599215bcf06f7f56396cb45f57f963
@@ -38,7 +105,48 @@ services:
         max_attempts: 10
         window: 60s
 
+secrets:
+  mongo_root_username:
+    external: true
+    name: metrohub-base_mongo_root_username
+  mongo_root_password:
+    external: true
+    name: metrohub-base_mongo_root_password
+  app_dev_username:
+    external: true
+    name: metrohub-base_app_dev_username
+  app_dev_password:
+    external: true
+    name: metrohub-base_app_dev_password
+  app_prod_username:
+    external: true
+    name: metrohub-base_app_prod_username
+  app_prod_password:
+    external: true
+    name: metrohub-base_app_prod_password
+
+configs:
+  mongo_init_app_users:
+    # Content-hash the name so Swarm accepts in-place updates when the init
+    # script changes (configs are immutable under a fixed name).
+    name: metrohub-base_mongo_init_${MONGO_INIT_SHA:?}
+    file: ./mongo-init/010-create-app-users.sh
+
 networks:
+  # One data-tier overlay PER ENV (owned by this base stack; referenced external
+  # by the env app stacks — base always deploys first). Attachable for debug.
+  mh-dev-data:
+    name: mh-dev-data
+    driver: overlay
+    attachable: true
+  mh-prod-data:
+    name: mh-prod-data
+    driver: overlay
+    attachable: true
   host:
     name: host
     external: true
+
+volumes:
+  mongo-data:
+    name: metrohub-base_mongo-data

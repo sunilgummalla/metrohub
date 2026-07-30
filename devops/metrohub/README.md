@@ -58,17 +58,31 @@ Then open `http://127.0.0.1:9002` locally for dev logs. Use port `9001` for prod
 
 ## VPS Layout
 
-The workflow copies deployment files to `/opt/money-money/deploy` on the VPS (the directory intentionally keeps the legacy `money-money` code name for now — a follow-up will migrate it to `/opt/metrohub`):
+The workflow copies deployment files to `/opt/metrohub/deploy` on the VPS. Server-local secret files live under `/opt/metrohub/shared/` (chmod 600, owned by `deploy`, never committed):
 
 ```text
-/opt/money-money/deploy
+/opt/metrohub/deploy
+/opt/metrohub/shared/metrohub-base.secrets.yaml   # shared base tier (Mongo root + per-env app creds)
+/opt/metrohub/shared/mh-dev.secrets.yaml          # dev app stack (tunnel token + mongo_uri)
+/opt/metrohub/shared/mh-prod.secrets.yaml         # prod app stack (tunnel token + mongo_uri)
 ```
 
-It creates one Swarm secret per stack:
+`sync-secrets.sh` provisions namespaced Swarm secrets from those files — for the shared base tier:
 
 ```text
-mh-dev_cloudflare_tunnel_token
-mh-prod_cloudflare_tunnel_token
+metrohub-base_mongo_root_username
+metrohub-base_mongo_root_password
+metrohub-base_app_dev_username
+metrohub-base_app_dev_password
+metrohub-base_app_prod_username
+metrohub-base_app_prod_password
+```
+
+and one set per env app stack:
+
+```text
+mh-dev_cloudflare_tunnel_token    mh-dev_mongo_uri
+mh-prod_cloudflare_tunnel_token   mh-prod_mongo_uri
 ```
 
 ## Manual Workflow Dispatch
