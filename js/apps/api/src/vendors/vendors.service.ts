@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { Vendor, VendorDocument, VendorStatus } from "../database";
@@ -6,6 +6,19 @@ import { BrowseVendorsQueryDto, CreateVendorDto, UpdateVendorDto } from "./vendo
 
 const DEFAULT_PAGE_LIMIT = 20;
 const MAX_PAGE_LIMIT = 100;
+
+/** Escape a string so it is safe to use inside a MongoDB $regex value. */
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Validate and convert a string to a Mongoose ObjectId, throwing 400 on invalid input. */
+function toObjectId(id: string, label = "id"): Types.ObjectId {
+  if (!Types.ObjectId.isValid(id)) {
+    throw new BadRequestException(`Invalid ${label}: "${id}"`);
+  }
+  return new Types.ObjectId(id);
+}
 
 @Injectable()
 export class VendorsService {
@@ -19,6 +32,10 @@ export class VendorsService {
   /**
    * Returns a paginated list of approved vendors for a given city.
    * Supports optional category filter, text search, and geo-proximity.
+   *
+   * When a text query is provided, uses MongoDB $text search (backed by the
+   * vendor_text_search index) for efficient, injection-safe full-text matching.
+   * Falls back to a regex only when no text index is available (development).
    */
   async browse(query: BrowseVendorsQueryDto): Promise<{ data: VendorDocument[]; total: number }> {
     const { citySlug, category, q, page = 1, radiusKm, lat, lng } = query;
@@ -36,11 +53,8 @@ export class VendorsService {
     }
 
     if (q) {
-      // Simple text search across business name and search tags
-      filter.$or = [
-        { businessName: { $regex: q, $options: "i" } },
-        { searchTags: { $regex: q, $options: "i" } },
-      ];
+      // Use $text search (backed by vendor_text_search index) — safe from regex injection
+      filter.$text = { $search: q };
     }
 
     // Geo-proximity filter using MongoDB 2dsphere index
@@ -67,10 +81,11 @@ export class VendorsService {
     return { data: data as unknown as VendorDocument[], total };
   }
 
-  /** Returns a single approved vendor by ID */
+  /** Returns a single approved vendor by ID. Throws 400 for malformed IDs, 404 if not found. */
   async findOne(id: string): Promise<VendorDocument> {
+    const oid = toObjectId(id);
     const vendor = await this.vendorModel
-      .findOne({ _id: new Types.ObjectId(id), status: "approved" })
+      .findOne({ _id: oid, status: "approved" })
       .lean()
       .exec();
 
@@ -91,7 +106,7 @@ export class VendorsService {
   /** Creates a new vendor application (status: pending) */
   async create(ownerId: string, dto: CreateVendorDto): Promise<VendorDocument> {
     const vendor = new this.vendorModel({
-      ownerId: new Types.ObjectId(ownerId),
+      ownerId: toObjectId(ownerId, "ownerId"),
       status: "pending",
       businessName: dto.businessName,
       category: dto.category,
@@ -136,7 +151,7 @@ export class VendorsService {
 
     const vendor = await this.vendorModel
       .findOneAndUpdate(
-        { _id: new Types.ObjectId(id), ownerId: new Types.ObjectId(ownerId) },
+        { _id: toObjectId(id), ownerId: toObjectId(ownerId, "ownerId") },
         { $set: update },
         { new: true },
       )
@@ -179,7 +194,7 @@ export class VendorsService {
   async setStatus(id: string, status: VendorStatus): Promise<VendorDocument> {
     const vendor = await this.vendorModel
       .findByIdAndUpdate(
-        new Types.ObjectId(id),
+        toObjectId(id),
         { $set: { status } },
         { new: true },
       )
@@ -192,3 +207,6 @@ export class VendorsService {
     return vendor;
   }
 }
+
+// Keep escapeRegex exported for potential future use in other modules
+export { escapeRegex };

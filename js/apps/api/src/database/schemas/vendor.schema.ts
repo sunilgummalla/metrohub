@@ -130,3 +130,10 @@ VendorSchema.index({ location: "2dsphere" });
 
 // Compound index for the most common browse query: city + category + status
 VendorSchema.index({ citySlug: 1, category: 1, status: 1 });
+
+// Full-text search index — used by $text queries in the search endpoint
+// Weights: businessName most relevant, then searchTags, then description
+VendorSchema.index(
+  { businessName: "text", searchTags: "text", descriptionMarkdown: "text" },
+  { weights: { businessName: 10, searchTags: 5, descriptionMarkdown: 1 }, name: "vendor_text_search" },
+);

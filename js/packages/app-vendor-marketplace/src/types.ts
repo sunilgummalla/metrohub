@@ -10,14 +10,15 @@ export interface Vendor {
   citySlug: string;
   address: string;
   contact: {
-    phone?: string;
-    email?: string;
-    website?: string;
+    phone: string | null;
+    email: string | null;
+    website: string | null;
   };
-  location?: {
+  /** null when the vendor has not provided a location yet */
+  location: {
     type: "Point";
     coordinates: [number, number]; // [lng, lat]
-  };
+  } | null;
   activeBoosters: Array<{ type: string; expiresAt: string }>;
   createdAt: string;
   updatedAt: string;

@@ -1,7 +1,7 @@
 import type { BrowseFilters, BrowseResponse, Vendor } from "./types";
 
-// Vite replaces import.meta.env at build time; fall back to /api for SSR/test environments
-declare const __VITE_API_URL__: string | undefined;
+// Vite replaces import.meta.env.VITE_API_URL at build time.
+// Fall back to /api for SSR / test environments where import.meta is unavailable.
 const API_BASE: string = (() => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

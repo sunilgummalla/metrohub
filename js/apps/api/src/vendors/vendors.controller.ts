@@ -1,15 +1,53 @@
 import {
   Body,
+  CanActivate,
   Controller,
+  ExecutionContext,
+  ForbiddenException,
   Get,
+  Injectable,
   Param,
   Patch,
   Post,
   Query,
+  UseGuards,
 } from "@nestjs/common";
 import { VendorsService } from "./vendors.service";
 import { BrowseVendorsQueryDto, CreateVendorDto, UpdateVendorDto } from "./vendors.dto";
 import { VendorStatus } from "../database";
+
+/**
+ * Temporary admin guard that blocks all admin routes until a real JWT-based
+ * admin auth guard is implemented. Reads the `x-admin-token` header and
+ * compares it to the `ADMIN_API_TOKEN` environment variable.
+ *
+ * Replace this with a proper Passport/JWT guard once admin auth is in place.
+ */
+@Injectable()
+class AdminGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const expectedToken = process.env["ADMIN_API_TOKEN"];
+
+    // If no token is configured, block all admin access in production.
+    // In development (NODE_ENV !== "production") allow through so the
+    // admin portal can be tested without setting up a token.
+    if (!expectedToken) {
+      if (process.env["NODE_ENV"] === "production") {
+        throw new ForbiddenException("Admin access is not configured");
+      }
+      return true;
+    }
+
+    const request = context.switchToHttp().getRequest<{ headers: Record<string, string> }>();
+    const provided = request.headers["x-admin-token"];
+
+    if (provided !== expectedToken) {
+      throw new ForbiddenException("Invalid admin token");
+    }
+
+    return true;
+  }
+}
 
 /**
  * Vendors REST API
@@ -23,8 +61,8 @@ import { VendorStatus } from "../database";
  *   POST  /api/vendors             Create a vendor application
  *   PATCH /api/vendors/:id         Update own vendor profile
  *
- * Admin routes (admin auth required — auth guard to be added):
- *   GET   /api/vendors/admin/list  List all vendors (any status)
+ * Admin routes (protected by AdminGuard — replace with JWT guard):
+ *   GET   /api/vendors/admin/list        List all vendors (any status)
  *   PATCH /api/vendors/admin/:id/status  Approve / reject a vendor
  */
 @Controller("api/vendors")
@@ -43,8 +81,11 @@ export class VendorsController {
     return this.vendorsService.getCategories(citySlug ?? "seattle");
   }
 
-  // Admin routes must come before :id to avoid NestJS route shadowing
+  // ─── Admin (AdminGuard protected) ─────────────────────────────────────────
+  // These routes are declared before :id to avoid NestJS route shadowing.
+
   @Get("admin/list")
+  @UseGuards(AdminGuard)
   adminList(
     @Query("status") status: VendorStatus | undefined,
     @Query("page") page: string,
@@ -54,12 +95,15 @@ export class VendorsController {
   }
 
   @Patch("admin/:id/status")
+  @UseGuards(AdminGuard)
   setStatus(
     @Param("id") id: string,
     @Body("status") status: VendorStatus,
   ) {
     return this.vendorsService.setStatus(id, status);
   }
+
+  // ─── Public (by ID) ───────────────────────────────────────────────────────
 
   @Get(":id")
   findOne(@Param("id") id: string) {
