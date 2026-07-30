@@ -10,7 +10,7 @@ importers:
 
   apps/api:
     dependencies:
-      '@money/shared':
+      '@metrohub/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@nestjs/common':
@@ -111,16 +111,16 @@ importers:
 
   apps/shell:
     dependencies:
-      '@money/bingo':
+      '@metrohub/bingo':
         specifier: workspace:*
         version: link:../../packages/app-bingo
-      '@money/plans':
+      '@metrohub/plans':
         specifier: workspace:*
         version: link:../../packages/app-plans
-      '@money/rummy-scorecard':
+      '@metrohub/rummy-scorecard':
         specifier: workspace:*
         version: link:../../packages/app-rummy-scorecard
-      '@money/tambola':
+      '@metrohub/tambola':
         specifier: workspace:*
         version: link:../../packages/app-tambola
       react:
@@ -163,7 +163,7 @@ importers:
 
   packages/app-bingo:
     dependencies:
-      '@money/shared':
+      '@metrohub/shared':
         specifier: workspace:*
         version: link:../shared
       react:
@@ -189,7 +189,7 @@ importers:
 
   packages/app-rummy-scorecard:
     dependencies:
-      '@money/shared':
+      '@metrohub/shared':
         specifier: workspace:*
         version: link:../shared
       react:
@@ -203,7 +203,7 @@ importers:
 
   packages/app-tambola:
     dependencies:
-      '@money/shared':
+      '@metrohub/shared':
         specifier: workspace:*
         version: link:../shared
       react:
