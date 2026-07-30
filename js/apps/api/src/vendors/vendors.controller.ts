@@ -16,22 +16,20 @@ import { VendorsService } from "./vendors.service";
 import { BrowseVendorsQueryDto, CreateVendorDto, UpdateVendorDto } from "./vendors.dto";
 import { VendorStatus } from "../database";
 
+// ─── Guards ───────────────────────────────────────────────────────────────────
+
 /**
- * Temporary admin guard that blocks all admin routes until a real JWT-based
- * admin auth guard is implemented. Reads the `x-admin-token` header and
- * compares it to the `ADMIN_API_TOKEN` environment variable.
- *
- * Replace this with a proper Passport/JWT guard once admin auth is in place.
+ * Temporary admin guard.
+ * Reads `x-admin-token` header and compares to `ADMIN_API_TOKEN` env var.
+ * Replace with a proper Passport/JWT guard once admin auth (Entra) is wired.
  */
 @Injectable()
 class AdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const expectedToken = process.env["ADMIN_API_TOKEN"];
 
-    // If no token is configured, block all admin access in production.
-    // In development (NODE_ENV !== "production") allow through so the
-    // admin portal can be tested without setting up a token.
     if (!expectedToken) {
+      // Block in production when the env var is not set; allow in dev for convenience
       if (process.env["NODE_ENV"] === "production") {
         throw new ForbiddenException("Admin access is not configured");
       }
@@ -50,6 +48,42 @@ class AdminGuard implements CanActivate {
 }
 
 /**
+ * Temporary member guard.
+ * Reads `x-member-token` header and compares to `MEMBER_API_TOKEN` env var.
+ *
+ * This is a placeholder until real member auth (Google / Facebook / Microsoft
+ * OAuth via the member portal) is implemented. It prevents unauthenticated
+ * callers from creating or editing vendor records by guessing owner IDs.
+ *
+ * Replace with a proper JWT guard once member auth is wired.
+ */
+@Injectable()
+class MemberGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const expectedToken = process.env["MEMBER_API_TOKEN"];
+
+    if (!expectedToken) {
+      // Block in production when the env var is not set; allow in dev for convenience
+      if (process.env["NODE_ENV"] === "production") {
+        throw new ForbiddenException("Member access is not configured");
+      }
+      return true;
+    }
+
+    const request = context.switchToHttp().getRequest<{ headers: Record<string, string> }>();
+    const provided = request.headers["x-member-token"];
+
+    if (provided !== expectedToken) {
+      throw new ForbiddenException("Invalid member token");
+    }
+
+    return true;
+  }
+}
+
+// ─── Controller ───────────────────────────────────────────────────────────────
+
+/**
  * Vendors REST API
  *
  * `main.ts` sets `app.setGlobalPrefix("api")`, so the effective URLs are:
@@ -59,11 +93,11 @@ class AdminGuard implements CanActivate {
  *   GET  /api/vendors/categories   List distinct categories for a city
  *   GET  /api/vendors/:id          Get a single approved vendor
  *
- * Member routes (vendor auth required — auth guard to be added):
+ * Member routes (MemberGuard — replace with JWT guard):
  *   POST  /api/vendors             Create a vendor application
  *   PATCH /api/vendors/:id         Update own vendor profile
  *
- * Admin routes (protected by AdminGuard — replace with JWT guard):
+ * Admin routes (AdminGuard — replace with JWT guard):
  *   GET   /api/vendors/admin/list        List all vendors (any status)
  *   PATCH /api/vendors/admin/:id/status  Approve / reject a vendor
  */
@@ -84,7 +118,7 @@ export class VendorsController {
   }
 
   // ─── Admin (AdminGuard protected) ─────────────────────────────────────────
-  // These routes are declared before :id to avoid NestJS route shadowing.
+  // Declared before :id to avoid NestJS route shadowing.
 
   @Get("admin/list")
   @UseGuards(AdminGuard)
@@ -112,22 +146,24 @@ export class VendorsController {
     return this.vendorsService.findOne(id);
   }
 
-  // ─── Member (Vendor Self-Service) ─────────────────────────────────────────
+  // ─── Member (MemberGuard protected) ───────────────────────────────────────
 
   @Post()
+  @UseGuards(MemberGuard)
   create(
     @Body() dto: CreateVendorDto,
-    // TODO: replace with real auth guard — extract ownerId from JWT
+    // TODO: replace with real auth guard — extract ownerId from JWT claims
     @Query("ownerId") ownerId: string,
   ) {
     return this.vendorsService.create(ownerId, dto);
   }
 
   @Patch(":id")
+  @UseGuards(MemberGuard)
   update(
     @Param("id") id: string,
     @Body() dto: UpdateVendorDto,
-    // TODO: replace with real auth guard — extract ownerId from JWT
+    // TODO: replace with real auth guard — extract ownerId from JWT claims
     @Query("ownerId") ownerId: string,
   ) {
     return this.vendorsService.update(id, ownerId, dto);

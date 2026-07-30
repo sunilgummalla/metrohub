@@ -8,7 +8,41 @@ interface VendorDetailProps {
   onBack: () => void;
 }
 
+/**
+ * Normalise a vendor-supplied website URL so it is safe to use as an `href`.
+ *
+ * Rules applied:
+ *  1. Trim whitespace.
+ *  2. Only allow `http:` and `https:` schemes — any other scheme (e.g.
+ *     `javascript:`, `data:`, `vbscript:`) is rejected and `null` is returned.
+ *  3. If the value has no scheme at all (plain domain like "example.com"),
+ *     prepend `https://` so the browser treats it as an absolute URL rather
+ *     than a relative path.
+ *
+ * Returns `null` when the value is falsy or carries a dangerous scheme.
+ */
+function sanitiseWebsiteUrl(raw: string | null): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  // If the value already contains a scheme, validate it
+  if (/^[a-zA-Z][a-zA-Z0-9+\-.]*:/.test(trimmed)) {
+    const lower = trimmed.toLowerCase();
+    if (!lower.startsWith("https://") && !lower.startsWith("http://")) {
+      // Dangerous scheme — reject entirely
+      return null;
+    }
+    return trimmed;
+  }
+
+  // No scheme — treat as a plain domain and prepend https://
+  return `https://${trimmed}`;
+}
+
 export function VendorDetail({ vendor, onBack }: VendorDetailProps) {
+  const safeWebsite = sanitiseWebsiteUrl(vendor.contact.website);
+
   return (
     <div className="vm-detail">
       <button className="vm-detail__back" onClick={onBack} aria-label="Back to listings">
@@ -57,10 +91,10 @@ export function VendorDetail({ vendor, onBack }: VendorDetailProps) {
               </a>
             </p>
           )}
-          {vendor.contact.website && (
+          {safeWebsite && (
             <p>
               <a
-                href={vendor.contact.website}
+                href={safeWebsite}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="vm-detail__link"
