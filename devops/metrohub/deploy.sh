@@ -54,7 +54,10 @@ bash scripts/sync-secrets.sh --file "$SEC" --catalog scripts/secrets.catalog --s
 #    compose file (e.g. the per-env Dozzle that moved to the shared base tier);
 #    without it a removed service lingers.
 CORS_ORIGINS="${CORS_ORIGINS:-}"
-export STACK_NAME APP_DOMAIN API_IMAGE EXPERIENCE_IMAGE SHELL_IMAGE CORS_ORIGINS
+# Export every var docker-stack.yml substitutes — including MONGO_DB (${MONGO_DB:?})
+# — so `docker stack deploy` sees them even when deploy.sh is sourced rather than
+# executed (a child process only inherits EXPORTED vars).
+export STACK_NAME APP_DOMAIN API_IMAGE EXPERIENCE_IMAGE SHELL_IMAGE CORS_ORIGINS MONGO_DB
 docker stack deploy --with-registry-auth --prune -c docker-stack.yml "$STACK_NAME"
 
 docker service ls --filter "label=com.docker.stack.namespace=$STACK_NAME"
