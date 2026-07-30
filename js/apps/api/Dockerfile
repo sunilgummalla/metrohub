@@ -6,9 +6,11 @@ RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 COPY js/package.json js/pnpm-lock.yaml js/pnpm-workspace.yaml ./
 COPY js/apps/api/package.json apps/api/package.json
+COPY js/packages/shared/package.json packages/shared/package.json
 RUN pnpm install --frozen-lockfile
 
 COPY js/apps/api apps/api
+COPY js/packages/shared packages/shared
 RUN pnpm --filter @metrohub/api build \
   && pnpm --filter @metrohub/api deploy --prod /prod/api \
   && cp -R apps/api/dist /prod/api/dist
