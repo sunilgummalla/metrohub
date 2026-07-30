@@ -58,7 +58,7 @@ Then open `http://127.0.0.1:9002` locally for dev logs. Use port `9001` for prod
 
 ## VPS Layout
 
-The workflow copies deployment files to the deploy user's home directory by default:
+The workflow copies deployment files to `/opt/money-money/deploy` on the VPS:
 
 ```text
 /opt/money-money/deploy
