@@ -28,7 +28,7 @@ export class User {
   declare defaultHandle: string;
 
   /** Null for OAuth-only accounts */
-  @Prop({ default: null, select: false })
+  @Prop({ type: String, default: null, select: false })
   declare passwordHash: string | null;
 
   @Prop({ type: [OAuthProvider], default: [] })

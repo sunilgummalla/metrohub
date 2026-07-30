@@ -28,7 +28,7 @@ export class GameArchive {
   declare players: string[];
 
   /** Display name of the winner (if applicable) */
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   declare winner: string | null;
 
   @Prop({ required: true })
