@@ -2,10 +2,26 @@
   "name": "@metrohub/shared",
   "version": "0.0.0",
   "private": true,
-  "description": "Shared TypeScript contracts and utilities for Money-Money.",
-  "type": "module",
+  "description": "Shared TypeScript contracts and utilities for MetroHub.",
+  "main": "./dist/index.node.js",
+  "types": "./dist/index.node.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./wordlists": "./src/wordlists.ts"
+    ".": {
+      "require": "./dist/index.node.js",
+      "types": "./dist/index.node.d.ts",
+      "default": "./src/index.ts"
+    },
+    "./wordlists": {
+      "require": "./dist/wordlists.js",
+      "types": "./dist/wordlists.d.ts",
+      "default": "./src/wordlists.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
   }
 }
