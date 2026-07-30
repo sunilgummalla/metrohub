@@ -99,6 +99,18 @@
       }
     },
     {
+      "id": "vendor-marketplace",
+      "packageName": "@metrohub/vendor-marketplace",
+      "folder": "app-vendor-marketplace",
+      "displayName": "Vendor Marketplace",
+      "category": "Marketplace",
+      "route": "/apps/vendor-marketplace",
+      "tile": {
+        "title": "Vendor Marketplace",
+        "description": "Discover local vendors, businesses, and service providers near you."
+      }
+    },
+    {
       "id": "near-by",
       "packageName": "@metrohub/near-by",
       "folder": "app-near-by",

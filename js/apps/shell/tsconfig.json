@@ -18,7 +18,8 @@
     "paths": {
       "react": ["./node_modules/@types/react"],
       "react/jsx-runtime": ["./node_modules/@types/react"],
-      "@metrohub/shared": ["../../packages/shared/src/index.ts"]
+      "@metrohub/shared": ["../../packages/shared/src/index.ts"],
+      "@metrohub/vendor-marketplace": ["../../packages/app-vendor-marketplace/src/index.ts"]
     }
   },
   "include": [
@@ -27,6 +28,7 @@
     "../../packages/app-tambola/src",
     "../../packages/app-bingo/src",
     "../../packages/app-plans/src",
+    "../../packages/app-vendor-marketplace/src",
     "../../packages/shared/src"
   ],
   "references": []
