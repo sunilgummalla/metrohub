@@ -3,9 +3,11 @@
 # with STACK_NAME=mh-dev or mh-prod. Each env owns its Traefik + cloudflared +
 # tunnel + edge overlay + secret namespace.
 #
-# Dozzle is NOT here — it's a per-VPS shared singleton in the base stack
-# (docker-stack.base.yml, deployed once). Fleet rule: one VPS → one Dozzle.
-# MetroHub has no datastore, so there is no shared Mongo tier.
+# MongoDB and Dozzle are NOT here — they are per-VPS shared singletons in the base
+# stack (docker-stack.base.yml, deployed once). Fleet rule: one VPS → one Mongo +
+# one Dozzle. This env's `api` joins its own data overlay (<STACK_NAME>-data) and
+# connects to the shared `mongo:27017` as this env's app user (via the file-mounted
+# mongo_uri secret + MONGO_DB).
 #
 # Traefik↔Docker API compat (Docker Engine >=25 requires API >=1.44 but Traefik
 # hard-pins 1.24) is handled at the DAEMON level by provision-vps.sh
@@ -67,12 +69,21 @@ services:
   api:
     image: ${API_IMAGE:?API_IMAGE_required}
     logging: *json-file-logging
+    # The Mongo connection string is a file-mounted secret the app reads via
+    # MONGO_URI_FILE (never a container env var). It points at the shared base
+    # Mongo (mongo:27017 on this env's data overlay) as this env's app user; the
+    # app forces the db to MONGO_DB.
+    secrets:
+      - mongo_uri
     environment:
       - NODE_ENV=production
       - PORT=3000
       - CORS_ORIGINS=${CORS_ORIGINS:-}
+      - MONGO_URI_FILE=/run/secrets/mongo_uri
+      - MONGO_DB=${MONGO_DB:?}
     networks:
       - edge
+      - data
     deploy:
       replicas: 1
       restart_policy:
@@ -119,9 +130,18 @@ secrets:
   cloudflare_tunnel_token:
     external: true
     name: ${STACK_NAME}_cloudflare_tunnel_token
+  mongo_uri:
+    external: true
+    name: ${STACK_NAME}_mongo_uri
 
 networks:
   edge:
     name: ${STACK_NAME}_edge
     driver: overlay
     attachable: true
+  # THIS env's data overlay (created by the base stack, which attaches the shared
+  # Mongo to it). The api joins it to reach Mongo at mongo:27017. dev and prod each
+  # get their own → they can't reach each other's services.
+  data:
+    name: ${STACK_NAME}-data
+    external: true
