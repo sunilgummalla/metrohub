@@ -1,0 +1,44 @@
+# MetroHub — SHARED per-VPS base stack. Deployed ONCE per box:
+#   docker stack deploy -c docker-stack.base.yml metrohub-base
+#
+# Fleet rule (nirmaan devops/vps-baseline/BASELINE.md): one VPS → one Dozzle,
+# whether the box runs one stack or many. MetroHub has no datastore, so the base
+# tier is Dozzle only (unlike ata, which also runs one shared Mongo here). The
+# per-env app stacks (mh-dev, mh-prod — docker-stack.yml) drop their own Dozzle.
+
+x-json-file-logging: &json-file-logging
+  driver: json-file
+  options:
+    max-size: "25m"
+    max-file: "7"
+
+services:
+  # ── Dozzle (shared log viewer; ALL containers on the box; SSH-tunnel only) ─
+  dozzle:
+    image: amir20/dozzle@sha256:2e14180fa14c195b8e86705b7ab2234b87599215bcf06f7f56396cb45f57f963
+    logging: *json-file-logging
+    environment:
+      - DOZZLE_ADDR=127.0.0.1:9000
+      - DOZZLE_HOSTNAME=metrohub
+      - DOZZLE_NO_ANALYTICS=true
+      # No DOZZLE_FILTER → shows every container on the box (dev + prod + base).
+      # Binds loopback only; never published — reach it with `ssh -L 9000:127.0.0.1:9000`.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - host
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 10
+        window: 60s
+
+networks:
+  host:
+    name: host
+    external: true
