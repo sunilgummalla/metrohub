@@ -42,9 +42,11 @@ SEC="/opt/money-money/shared/${STACK_NAME}.secrets.yaml"
 bash scripts/sync-secrets.sh --file "$SEC" --catalog scripts/secrets.catalog --stack "$STACK_NAME"
 bash scripts/sync-secrets.sh --file "$SEC" --catalog scripts/secrets.catalog --stack "$STACK_NAME" --check
 
-# ── 2) Deploy this env's app stack.
+# ── 2) Deploy this env's app stack. --prune removes services no longer in the
+#    compose file (e.g. the per-env Dozzle that moved to the shared base tier);
+#    without it a removed service lingers.
 CORS_ORIGINS="${CORS_ORIGINS:-}"
 export STACK_NAME APP_DOMAIN API_IMAGE EXPERIENCE_IMAGE SHELL_IMAGE CORS_ORIGINS
-docker stack deploy --with-registry-auth -c docker-stack.yml "$STACK_NAME"
+docker stack deploy --with-registry-auth --prune -c docker-stack.yml "$STACK_NAME"
 
 docker service ls --filter "label=com.docker.stack.namespace=$STACK_NAME"
