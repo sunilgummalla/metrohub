@@ -9,7 +9,7 @@
 # Root lives ONLY here; env stacks connect as their own least-privilege app user.
 #
 # External Swarm secrets (namespaced metrohub-base_<name>, from sync-secrets.sh
-# --stack metrohub-base --file /opt/money-money/shared/metrohub-base.secrets.yaml):
+# --stack metrohub-base --file /opt/metrohub/shared/metrohub-base.secrets.yaml):
 #   mongo_root_username, mongo_root_password,
 #   app_dev_username, app_dev_password, app_prod_username, app_prod_password
 

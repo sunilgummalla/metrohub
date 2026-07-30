@@ -34,7 +34,7 @@ else
 fi
 if [ "$base_present" = 0 ] || [ "${REDEPLOY_BASE:-false}" = "true" ]; then
   echo "Deploying shared base tier (metrohub-base: Mongo + Dozzle)…"
-  BASE_SEC="/opt/money-money/shared/metrohub-base.secrets.yaml"
+  BASE_SEC="/opt/metrohub/shared/metrohub-base.secrets.yaml"
   bash scripts/sync-secrets.sh --file "$BASE_SEC" --catalog scripts/secrets.base.catalog --stack metrohub-base
   bash scripts/sync-secrets.sh --file "$BASE_SEC" --catalog scripts/secrets.base.catalog --stack metrohub-base --check
   MONGO_INIT_SHA="$(sha256sum mongo-init/010-create-app-users.sh | cut -c1-12)"
@@ -46,7 +46,7 @@ fi
 
 # ── 1) Provision this env's Swarm secrets from its server-local secrets.yaml
 #    (namespaced <stack>_<name>), then gate the deploy fail-closed.
-SEC="/opt/money-money/shared/${STACK_NAME}.secrets.yaml"
+SEC="/opt/metrohub/shared/${STACK_NAME}.secrets.yaml"
 bash scripts/sync-secrets.sh --file "$SEC" --catalog scripts/secrets.catalog --stack "$STACK_NAME"
 bash scripts/sync-secrets.sh --file "$SEC" --catalog scripts/secrets.catalog --stack "$STACK_NAME" --check
 

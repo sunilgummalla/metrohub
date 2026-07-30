@@ -163,18 +163,18 @@ jobs:
 
       - name: Copy deployment files
         run: |
-          ssh -i ~/.ssh/metrohub "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "mkdir -p /opt/money-money/deploy"
+          ssh -i ~/.ssh/metrohub "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "mkdir -p /opt/metrohub/deploy"
           scp -i ~/.ssh/metrohub -r \
             devops/metrohub/docker-stack.yml \
             devops/metrohub/docker-stack.base.yml \
             devops/metrohub/deploy.sh \
             devops/metrohub/scripts \
             devops/metrohub/mongo-init \
-            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/money-money/deploy/"
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/metrohub/deploy/"
 
       - name: Deploy Swarm stack
         # The Cloudflare tunnel token is NOT piped from CI — it lives on the box in
-        # /opt/money-money/shared/<stack>.secrets.yaml and is provisioned by
+        # /opt/metrohub/shared/<stack>.secrets.yaml and is provisioned by
         # sync-secrets.sh inside deploy.sh (fleet secrets standard).
         env:
           STACK_NAME: ${{ needs.target.outputs.stack }}
@@ -188,4 +188,4 @@ jobs:
           REDEPLOY_BASE: ${{ github.event_name == 'workflow_dispatch' && inputs.redeploy_base || 'false' }}
         run: |
           ssh -i ~/.ssh/metrohub "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            "cd /opt/money-money/deploy && chmod +x deploy.sh scripts/sync-secrets.sh && STACK_NAME='$STACK_NAME' APP_DOMAIN='$APP_DOMAIN' CORS_ORIGINS='$CORS_ORIGINS' MONGO_DB='$MONGO_DB' REDEPLOY_BASE='$REDEPLOY_BASE' API_IMAGE='$API_IMAGE' EXPERIENCE_IMAGE='$EXPERIENCE_IMAGE' SHELL_IMAGE='$SHELL_IMAGE' ./deploy.sh"
+            "cd /opt/metrohub/deploy && chmod +x deploy.sh scripts/sync-secrets.sh && STACK_NAME='$STACK_NAME' APP_DOMAIN='$APP_DOMAIN' CORS_ORIGINS='$CORS_ORIGINS' MONGO_DB='$MONGO_DB' REDEPLOY_BASE='$REDEPLOY_BASE' API_IMAGE='$API_IMAGE' EXPERIENCE_IMAGE='$EXPERIENCE_IMAGE' SHELL_IMAGE='$SHELL_IMAGE' ./deploy.sh"
