@@ -1,6 +1,6 @@
 {
-  "appName": "Money-Money",
-  "codeName": true,
+  "appName": "MetroHub",
+  "codeName": false,
   "apps": [
     {
       "id": "poker-scorecard",

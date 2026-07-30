@@ -1,7 +1,7 @@
 [project]
-name = "money-money-py"
+name = "metrohub-py"
 version = "0.1.0"
-description = "Python workspace for money-money projects."
+description = "Python workspace for MetroHub."
 requires-python = ">=3.11"
 dependencies = []
 
