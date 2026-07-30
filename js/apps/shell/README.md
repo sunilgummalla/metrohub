@@ -6,7 +6,7 @@ This app hosts multiple micro apps. Each micro app appears as a clickable tile i
 
 The shell owns the sticky header, sticky footer, category navigation, tile rendering, micro-app entry routing, client state, and user interactions.
 
-MetroHub is the application name. (The repository code name is money-money and may change.)
+MetroHub is the application name. (Formerly code-named money-money.)
 
 ## Local development
 
