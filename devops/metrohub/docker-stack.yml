@@ -1,3 +1,17 @@
+# MetroHub — per-environment APP stack (shell + experience + api + edge).
+# Deployed ONCE PER ENV: docker stack deploy -c docker-stack.yml "$STACK_NAME"
+# with STACK_NAME=mh-dev or mh-prod. Each env owns its Traefik + cloudflared +
+# tunnel + edge overlay + secret namespace.
+#
+# Dozzle is NOT here — it's a per-VPS shared singleton in the base stack
+# (docker-stack.base.yml, deployed once). Fleet rule: one VPS → one Dozzle.
+# MetroHub has no datastore, so there is no shared Mongo tier.
+#
+# Traefik↔Docker API compat (Docker Engine >=25 requires API >=1.44 but Traefik
+# hard-pins 1.24) is handled at the DAEMON level by provision-vps.sh
+# (DOCKER_MIN_API_VERSION=1.24) — NOT via a per-service DOCKER_API_VERSION env,
+# which Traefik ignores.
+
 x-json-file-logging: &json-file-logging
   driver: json-file
   options:
@@ -6,7 +20,9 @@ x-json-file-logging: &json-file-logging
 
 services:
   cloudflared:
-    image: cloudflare/cloudflared@sha256:6d91c121b803126f7a5344005d17a9324788fc09d305b6e2560ec6040a7ae283
+    # 2026.6.1 — supports --token-file / $TUNNEL_TOKEN_FILE (older builds ignore it
+    # and cycle). Fleet-aligned with ata.
+    image: cloudflare/cloudflared:2026.6.1
     logging: *json-file-logging
     environment:
       - TUNNEL_TOKEN_FILE=/run/secrets/cloudflare_tunnel_token
@@ -29,8 +45,6 @@ services:
   traefik:
     image: traefik@sha256:e4d98158c01ad752fc1071d4e9573788747230d902cdde00a772516e692d07c9
     logging: *json-file-logging
-    environment:
-      - DOCKER_API_VERSION=1.40
     command:
       - --providers.swarm.endpoint=unix:///var/run/docker.sock
       - --providers.swarm.exposedByDefault=false
@@ -50,61 +64,6 @@ services:
       restart_policy:
         condition: any
 
-  dozzle:
-    image: amir20/dozzle@sha256:2e14180fa14c195b8e86705b7ab2234b87599215bcf06f7f56396cb45f57f963
-    logging: *json-file-logging
-    environment:
-      - DOZZLE_ADDR=127.0.0.1:${DOZZLE_PORT:?DOZZLE_PORT_required}
-      - DOZZLE_FILTER=label=com.docker.stack.namespace=${STACK_NAME}
-      - DOZZLE_HOSTNAME=${STACK_NAME}
-      - DOZZLE_NO_ANALYTICS=true
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - host
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == manager
-      restart_policy:
-        condition: any
-        delay: 10s
-        max_attempts: 10
-        window: 60s
-
-  # ── MongoDB ──────────────────────────────────────────────────────────────────
-  # One MongoDB instance shared by mh-dev and mh-prod stacks.
-  # Each stack uses a separate database (MONGO_DB env var on the api service).
-  # Data is persisted in a named volume on the Swarm manager node.
-  # NOTE: Only one stack should own this service definition to avoid two
-  #       containers fighting over the same volume. By convention the mh-prod
-  #       stack owns it; mh-dev connects to the same container via the shared
-  #       "mongo" overlay network.
-  mongodb:
-    image: mongo:7
-    logging: *json-file-logging
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME_FILE=/run/secrets/mongo_root_user
-      - MONGO_INITDB_ROOT_PASSWORD_FILE=/run/secrets/mongo_root_password
-    secrets:
-      - mongo_root_user
-      - mongo_root_password
-    volumes:
-      - mongo_data:/data/db
-    networks:
-      - mongo
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == manager
-      restart_policy:
-        condition: any
-        delay: 10s
-        max_attempts: 10
-        window: 60s
-
   api:
     image: ${API_IMAGE:?API_IMAGE_required}
     logging: *json-file-logging
@@ -112,15 +71,8 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - CORS_ORIGINS=${CORS_ORIGINS:-}
-      # Database — MONGO_URI points to the shared MongoDB container.
-      # MONGO_DB is set per-environment by the CI workflow (mh-dev or mh-prod).
-      - MONGO_URI_FILE=/run/secrets/mongo_uri
-      - MONGO_DB=${MONGO_DB:?MONGO_DB_required}
-    secrets:
-      - mongo_uri
     networks:
       - edge
-      - mongo
     deploy:
       replicas: 1
       restart_policy:
@@ -167,35 +119,9 @@ secrets:
   cloudflare_tunnel_token:
     external: true
     name: ${STACK_NAME}_cloudflare_tunnel_token
-  # Shared MongoDB secrets — created once on the VPS, used by both stacks.
-  mongo_root_user:
-    external: true
-    name: mongo_root_user
-  mongo_root_password:
-    external: true
-    name: mongo_root_password
-  # Connection string: mongodb://user:pass@mongodb:27017
-  # Stored as a Docker secret so it is never in env vars or logs.
-  mongo_uri:
-    external: true
-    name: mongo_uri
-
-volumes:
-  mongo_data:
-    external: true
-    name: mongo_data
 
 networks:
   edge:
     name: ${STACK_NAME}_edge
     driver: overlay
     attachable: true
-  host:
-    name: host
-    external: true
-  # Shared overlay network that both stacks' api services join to reach MongoDB.
-  mongo:
-    name: mongo_net
-    driver: overlay
-    attachable: true
-    external: true
