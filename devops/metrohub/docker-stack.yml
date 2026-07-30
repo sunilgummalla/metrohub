@@ -20,9 +20,9 @@ x-json-file-logging: &json-file-logging
 
 services:
   cloudflared:
-    # 2026.6.1 — supports --token-file / $TUNNEL_TOKEN_FILE (older builds ignore it
-    # and cycle). Fleet-aligned with ata.
-    image: cloudflare/cloudflared:2026.6.1
+    # cloudflared 2026.6.1, pinned by digest (repo convention; a mutable tag can be
+    # retagged upstream). This build supports --token-file / $TUNNEL_TOKEN_FILE.
+    image: cloudflare/cloudflared@sha256:6d91c121b803126f7a5344005d17a9324788fc09d305b6e2560ec6040a7ae283
     logging: *json-file-logging
     environment:
       - TUNNEL_TOKEN_FILE=/run/secrets/cloudflare_tunnel_token

@@ -182,4 +182,4 @@ jobs:
           REDEPLOY_BASE: ${{ github.event_name == 'workflow_dispatch' && inputs.redeploy_base || 'false' }}
         run: |
           ssh -i ~/.ssh/metrohub "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            "cd /opt/money-money/deploy && chmod +x deploy.sh scripts/sync-secrets.sh && STACK_NAME='$STACK_NAME' APP_DOMAIN='$APP_DOMAIN' CORS_ORIGINS='$CORS_ORIGINS' REDEPLOY_BASE='$REDEPLOY_BASE' API_IMAGE='$API_IMAGE' EXPERIENCE_IMAGE='$EXPERIENCE_IMAGE' SHELL_IMAGE='$SHELL_IMAGE' sh deploy.sh"
+            "cd /opt/money-money/deploy && chmod +x deploy.sh scripts/sync-secrets.sh && STACK_NAME='$STACK_NAME' APP_DOMAIN='$APP_DOMAIN' CORS_ORIGINS='$CORS_ORIGINS' REDEPLOY_BASE='$REDEPLOY_BASE' API_IMAGE='$API_IMAGE' EXPERIENCE_IMAGE='$EXPERIENCE_IMAGE' SHELL_IMAGE='$SHELL_IMAGE' ./deploy.sh"
