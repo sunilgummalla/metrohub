@@ -10,6 +10,7 @@ COPY js/packages/app-rummy-scorecard/package.json packages/app-rummy-scorecard/p
 COPY js/packages/app-tambola/package.json packages/app-tambola/package.json
 COPY js/packages/app-bingo/package.json packages/app-bingo/package.json
 COPY js/packages/app-plans/package.json packages/app-plans/package.json
+COPY js/packages/shared/package.json packages/shared/package.json
 RUN pnpm install --frozen-lockfile
 
 COPY js/apps/api/app-registry.json apps/api/app-registry.json
@@ -18,6 +19,7 @@ COPY js/packages/app-rummy-scorecard packages/app-rummy-scorecard
 COPY js/packages/app-tambola packages/app-tambola
 COPY js/packages/app-bingo packages/app-bingo
 COPY js/packages/app-plans packages/app-plans
+COPY js/packages/shared packages/shared
 RUN pnpm --filter @metrohub/shell build
 
 FROM nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10 AS runtime

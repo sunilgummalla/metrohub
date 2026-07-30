@@ -6,12 +6,18 @@ RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 COPY js/package.json js/pnpm-lock.yaml js/pnpm-workspace.yaml ./
 COPY js/apps/api/package.json apps/api/package.json
+COPY js/packages/shared/package.json packages/shared/package.json
 RUN pnpm install --frozen-lockfile
 
 COPY js/apps/api apps/api
-RUN pnpm --filter @metrohub/api build \
+COPY js/packages/shared packages/shared
+RUN pnpm --filter @metrohub/shared build \
+  && pnpm --filter @metrohub/api build \
   && pnpm --filter @metrohub/api deploy --prod /prod/api \
-  && cp -R apps/api/dist /prod/api/dist
+  && cp -R apps/api/dist /prod/api/dist \
+  && mkdir -p /prod/api/node_modules/@metrohub/shared \
+  && cp -R packages/shared/dist /prod/api/node_modules/@metrohub/shared/dist \
+  && cp packages/shared/package.json /prod/api/node_modules/@metrohub/shared/package.json
 
 FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS runtime
 
