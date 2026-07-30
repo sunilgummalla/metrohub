@@ -24,14 +24,14 @@ The experience layer calls the API for the supported app registry and passes the
 - Framework: React
 - Responsibility: host shell, sticky header, sticky footer, category navigation, micro-app tile rendering, micro-app entry routing, client state, and user interactions.
 
-The shell hosts multiple micro apps for the Money-Money code name. Each micro app appears as a clickable tile and is grouped by category.
+The shell hosts multiple micro apps for MetroHub. Each micro app appears as a clickable tile and is grouped by category.
 
 ## App Registry Flow
 
 1. The API maintains a JSON registry of supported apps.
 2. The experience layer calls the API and gets the supported app list.
 3. The shell renders one clickable tile for each app, organized by category.
-4. The shell keeps the Money-Money header and footer sticky while users browse app categories.
+4. The shell keeps the MetroHub header and footer sticky while users browse app categories.
 
 ## Micro Apps
 

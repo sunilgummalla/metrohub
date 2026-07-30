@@ -61,7 +61,7 @@ Then open `http://127.0.0.1:9002` locally for dev logs. Use port `9001` for prod
 The workflow copies deployment files to the deploy user's home directory by default:
 
 ```text
-~/money-money/<stack-name>
+/opt/money-money/deploy
 ```
 
 It creates one Swarm secret per stack:

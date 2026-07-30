@@ -5,7 +5,7 @@ export class AppService {
   getHealth() {
     return {
       status: "ok",
-      service: "money-money-api"
+      service: "metrohub-api"
     };
   }
 }

@@ -1,6 +1,6 @@
-# Money-Money
+# MetroHub
 
-Money-Money is the current code name and may change in the future.
+MetroHub is the application. (The repository code name is **money-money** and may change in the future.)
 
 This is a multi-technology repository organized by platform:
 
