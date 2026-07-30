@@ -20,6 +20,18 @@ function toObjectId(id: string, label = "id"): Types.ObjectId {
   return new Types.ObjectId(id);
 }
 
+/**
+ * Coerce a query-string value to a finite number.
+ * Returns `undefined` when the value is absent or not a finite number.
+ * This is necessary because NestJS does not apply `transform: true` globally,
+ * so all query params arrive as strings.
+ */
+function toFiniteNumber(value: number | string | undefined): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 @Injectable()
 export class VendorsService {
   constructor(
@@ -35,11 +47,20 @@ export class VendorsService {
    *
    * When a text query is provided, uses MongoDB $text search (backed by the
    * vendor_text_search index) for efficient, injection-safe full-text matching.
-   * Falls back to a regex only when no text index is available (development).
+   *
+   * Geo params (lat, lng, radiusKm) arrive as strings from the query string and
+   * are coerced to finite numbers before use; the geo filter is silently skipped
+   * when any value is missing or non-numeric.
    */
   async browse(query: BrowseVendorsQueryDto): Promise<{ data: VendorDocument[]; total: number }> {
-    const { citySlug, category, q, page = 1, radiusKm, lat, lng } = query;
-    const limit = Math.min(query.limit ?? DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT);
+    const { citySlug, category, q } = query;
+
+    // Coerce numeric query params — they arrive as strings without a global transform pipe
+    const page = toFiniteNumber(query.page) ?? 1;
+    const limit = Math.min(toFiniteNumber(query.limit) ?? DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT);
+    const lat = toFiniteNumber(query.lat);
+    const lng = toFiniteNumber(query.lng);
+    const radiusKm = toFiniteNumber(query.radiusKm);
     const skip = (page - 1) * limit;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,7 +78,8 @@ export class VendorsService {
       filter.$text = { $search: q };
     }
 
-    // Geo-proximity filter using MongoDB 2dsphere index
+    // Geo-proximity filter using MongoDB 2dsphere index.
+    // Only applied when all three values are present and finite numbers.
     if (lat !== undefined && lng !== undefined && radiusKm !== undefined) {
       filter.location = {
         $near: {

@@ -42,18 +42,30 @@ export class UpdateVendorDto {
   declare images?: string[];
 }
 
+/**
+ * Query parameters for the vendor browse endpoint.
+ *
+ * Note: NestJS does not apply `transform: true` globally in this project, so
+ * all query params arrive as strings. Numeric fields (page, limit, lat, lng,
+ * radiusKm) are coerced explicitly in the service layer using `Number()` and
+ * validated with `Number.isFinite()` before use.
+ */
 export class BrowseVendorsQueryDto {
   /** City slug to filter by, e.g. "seattle" */
   declare citySlug: string;
   /** Optional category filter */
   declare category?: string;
-  /** Optional free-text search across businessName and searchTags */
+  /** Optional free-text search across businessName, searchTags, and descriptionMarkdown */
   declare q?: string;
-  /** Pagination */
-  declare page?: number;
-  declare limit?: number;
-  /** Geo-proximity: lat,lng,radiusKm */
-  declare lat?: number;
-  declare lng?: number;
-  declare radiusKm?: number;
+  /** Pagination — arrive as strings from the query string; coerced in the service */
+  declare page?: number | string;
+  declare limit?: number | string;
+  /**
+   * Geo-proximity filter.
+   * All three must be provided together for the filter to apply.
+   * Arrive as strings from the query string; coerced to numbers in the service.
+   */
+  declare lat?: number | string;
+  declare lng?: number | string;
+  declare radiusKm?: number | string;
 }

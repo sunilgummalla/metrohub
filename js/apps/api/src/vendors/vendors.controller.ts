@@ -52,6 +52,8 @@ class AdminGuard implements CanActivate {
 /**
  * Vendors REST API
  *
+ * `main.ts` sets `app.setGlobalPrefix("api")`, so the effective URLs are:
+ *
  * Public routes (no auth required):
  *   GET  /api/vendors              Browse approved vendors
  *   GET  /api/vendors/categories   List distinct categories for a city
@@ -65,7 +67,7 @@ class AdminGuard implements CanActivate {
  *   GET   /api/vendors/admin/list        List all vendors (any status)
  *   PATCH /api/vendors/admin/:id/status  Approve / reject a vendor
  */
-@Controller("api/vendors")
+@Controller("vendors")
 export class VendorsController {
   constructor(private readonly vendorsService: VendorsService) {}
 
