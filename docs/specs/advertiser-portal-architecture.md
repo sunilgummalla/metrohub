@@ -26,6 +26,23 @@ The Advertiser Portal must feel like a modern SaaS product (e.g., Facebook Ads M
 
 ---
 
+## 3. Data Retention Policy
+
+All presence data (concurrent user counts per route, per time interval) and campaign performance data (impressions, clicks, conversions) are retained for **3 years** from the date of collection.
+
+### Storage Architecture
+
+| Data Type | Granularity Stored | Retention | Notes |
+|---|---|---|---|
+| **Live presence** | Raw heartbeat events (30-second intervals) | 7 days | Used for real-time counts; purged after short window |
+| **Aggregated presence** | Hourly counts per route | 3 years | Pre-aggregated from raw events before purge; primary dataset for Chainlit and historical charts |
+| **Campaign impressions** | Per-impression log | 3 years | Enables granular performance replay |
+| **Campaign clicks** | Per-click log | 3 years | Enables CTR analysis over any time window |
+
+The 3-year retention window allows the Chainlit AI assistant to answer seasonal and year-over-year questions with high confidence — for example, comparing this Diwali season's Tambola traffic against the previous two years. Raw heartbeat events are aggregated into hourly buckets before the short-term purge, ensuring no meaningful data is lost while keeping storage costs manageable.
+
+---
+
 ## 2. The Admin Portal (Internal Control)
 
 The Admin Portal is strictly for MetroHub internal staff to oversee, moderate, and fine-tune the platform.
