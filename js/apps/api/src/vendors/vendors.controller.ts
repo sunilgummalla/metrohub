@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   CanActivate,
   Controller,
@@ -153,7 +154,12 @@ export class VendorsController {
 
   @Get("categories")
   getCategories(@Query("citySlug") citySlug: string) {
-    return this.vendorsService.getCategories(citySlug ?? "seattle");
+    // citySlug is required — silently defaulting to "seattle" would return the
+    // wrong city's categories for any other city, causing hard-to-debug issues.
+    if (!citySlug?.trim()) {
+      throw new BadRequestException("citySlug query parameter is required");
+    }
+    return this.vendorsService.getCategories(citySlug);
   }
 
   // ─── Admin (AdminGuard protected) ─────────────────────────────────────────

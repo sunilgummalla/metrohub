@@ -80,8 +80,10 @@ async function handleResponse<T>(res: Response): Promise<T> {
     throw new Error(message ?? `Request failed: ${res.status}`);
   }
 
-  // Empty body (e.g. 204, forgot-password, DELETE /me/images) — return undefined
-  if (!text) return undefined as unknown as T;
+  // Empty body (e.g. 204, forgot-password, DELETE /me/images) — return undefined.
+  // Trim first: a server may return a bare newline or whitespace for an empty
+  // response, which would cause JSON.parse to throw a SyntaxError.
+  if (!text.trim()) return undefined as unknown as T;
 
   return JSON.parse(text) as T;
 }

@@ -109,12 +109,25 @@ export class MembersController {
  * the memberId via a custom decorator.
  */
 function extractMemberIdOrThrow(req: { headers: Record<string, string> }): string {
+  // Stub tokens are only valid when ALLOW_STUB_AUTH=true AND NODE_ENV !== "production".
+  // This mirrors the guard in MembersService so that a correctly-shaped token string
+  // cannot be used to bypass auth in production or staging environments.
+  const stubAuthEnabled =
+    process.env["ALLOW_STUB_AUTH"] === "true" &&
+    process.env["NODE_ENV"] !== "production";
+
   const auth = req.headers["authorization"] ?? "";
   const token = auth.replace(/^Bearer\s+/i, "");
   const match = /^stub-token-([a-f0-9]{24})$/i.exec(token);
+
   if (!match) {
     throw new UnauthorizedException(
       "Missing or invalid Authorization token — please log in again",
+    );
+  }
+  if (!stubAuthEnabled) {
+    throw new UnauthorizedException(
+      "Stub auth is disabled in this environment — use a real JWT",
     );
   }
   return match[1];

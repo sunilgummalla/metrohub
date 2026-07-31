@@ -126,7 +126,10 @@ export class VendorsService {
     const baseQuery = this.vendorModel.find(filter).skip(skip).limit(limit).lean();
     const sortedQuery = isGeoQuery
       ? baseQuery // $near already sorts by distance; adding .sort() throws
-      : baseQuery.sort({ "activeBoosters.0.expiresAt": -1, createdAt: -1 });
+      // Sort by activeBoosters.expiresAt (not .0.expiresAt) to use MongoDB's
+      // array sort semantics — for descending order, Mongo picks the maximum
+      // date in the array, which is correct regardless of element order.
+      : baseQuery.sort({ "activeBoosters.expiresAt": -1, createdAt: -1 });
 
     const [data, total] = await Promise.all([
       sortedQuery.exec(),
@@ -253,7 +256,13 @@ export class VendorsService {
       .findByIdAndUpdate(
         toObjectId(id),
         { $set: { status } },
-        { new: true },
+        {
+          new: true,
+          // runValidators ensures Mongoose enforces the status enum on update.
+          // Without this, Mongoose skips schema validators for findByIdAndUpdate,
+          // which could allow an invalid status value to be persisted.
+          runValidators: true,
+        },
       )
       .exec();
 

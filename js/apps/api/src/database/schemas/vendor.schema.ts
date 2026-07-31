@@ -102,6 +102,14 @@ export class Vendor {
 
   // ─── Monetization ─────────────────────────────────────────────────────────
 
+  /**
+   * Whether this vendor is currently featured (shown with a gold badge and
+   * boosted in browse results). Managed via a dedicated admin endpoint
+   * (to be added in a future phase).
+   */
+  @Prop({ type: Boolean, default: false, index: true })
+  declare featured: boolean;
+
   /** References vendor_subscription_tiers._id */
   @Prop({ type: Types.ObjectId, default: null })
   declare subscriptionTierId: Types.ObjectId | null;
