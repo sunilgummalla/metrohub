@@ -9,11 +9,19 @@ The Influencer Marketplace is a two-sided platform within MetroHub designed to c
 
 ## 2. The Two-Sided Experience
 
-### For Influencers (The "Creator" Profile)
-1.  **Onboarding:** Influencers sign up via the standard Member Portal but opt into a "Creator Profile."
-2.  **Account Linking:** They securely link their social accounts (Instagram, TikTok, YouTube) via OAuth to verify their identity and automatically pull in core metrics (follower count, engagement rate).
-3.  **Audience Demographics:** They can manually declare or auto-sync their primary audience location (e.g., "Seattle Metro") and niche (e.g., "Foodie", "Lifestyle", "Gaming").
+### For Influencers (The "Creator Tier" Membership)
+The platform treats influencers not just as users, but as a distinct membership class with its own onboarding, privileges, and monetization mechanisms.
+
+1.  **Dedicated Enrollment:** Influencers enroll in the **Creator Tier**, a specialized membership level distinct from standard users or advertisers.
+2.  **Account Linking & Verification:** They securely link their social accounts (Instagram, TikTok, YouTube) via OAuth to verify their identity and automatically pull in core metrics (follower count, engagement rate).
+3.  **Audience Demographics:** They declare or auto-sync their primary audience location (e.g., "Seattle Metro") and niche (e.g., "Foodie", "Lifestyle", "Gaming").
 4.  **The "Pitch":** They define what they offer (e.g., "1 Reel + 2 Stories") and what they expect in return (e.g., "$200" or "Free dinner for two").
+
+### The Creator Booster System
+To stand out in the directory, creators can purchase **Boosters** (one-off payments or included in a premium Creator Tier subscription).
+*   **Profile Highlight:** Places their profile at the top of the Advertiser directory for a specific niche (e.g., "Featured Foodie of the Week").
+*   **Verified Badge:** An enhanced visual marker indicating they have successfully completed 5+ deals on MetroHub with a 5-star rating.
+*   **Proactive Pitching:** A booster that allows the creator to send proactive "reverse pitches" to businesses, rather than waiting for the business to find them.
 
 ### For Businesses (The "Advertiser" View)
 1.  **Discovery Directory:** Inside the Advertiser Member Portal, businesses have a "Find Creators" tab.
