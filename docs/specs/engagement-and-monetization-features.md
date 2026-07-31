@@ -40,8 +40,10 @@ A news feed providing local and international news to give users a reason to vis
 *   **Admin Curation:** Admins can pin specific stories, hide articles, or manually add community announcements.
 
 ### User Experience (UX) Integration
-*   **Placement:** A dedicated "News" or "Daily Brief" micro-app tile, or a scrolling ticker/feed integrated into the main dashboard shell.
-*   **Design:** Clean, minimalist cards. The AI summaries allow users to get the gist without clicking away, keeping them on the platform longer.
+*   **Placement:** A **scrolling news ticker** embedded in the main MetroHub shell, positioned between the sticky header and the app tile grid. It is always visible across the portal without requiring the user to navigate anywhere.
+*   **Scroll Behaviour:** Headlines scroll continuously from right to left at a comfortable reading pace. Scrolling **pauses immediately on mouse hover** (or touch-hold on mobile), allowing the user to read the current headline at leisure. Scrolling resumes automatically when the cursor leaves or the touch is released.
+*   **Interaction:** Each headline is a clickable link. On click, a slide-over panel or modal expands to show the AI-generated 2–3 sentence summary and a "Read full story" link, keeping the user on the platform rather than navigating away.
+*   **Design:** The ticker strip uses a single-line height with a subtle background tint drawn from the MetroHub shell palette. Typography is small but legible. A category tag (e.g., **Local**, **Sports**, **Tech**) is prepended to each headline in a muted accent colour so users can scan relevance at a glance. No borders, no flashing — it must feel like a native part of the shell chrome.
 
 ---
 
