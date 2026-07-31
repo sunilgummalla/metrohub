@@ -186,25 +186,42 @@
   border-color: var(--vm-accent);
 }
 
-/* Focus-visible targets the inner <button> (not the article, which is not focusable).
-   This gives keyboard users the same lift-and-highlight as hover. */
-.vm-card__btn:focus-visible {
-  outline: none;
-}
-
-.vm-card:has(.vm-card__btn:focus-visible) {
-  transform: translateY(-3px);
-  box-shadow: var(--vm-shadow);
-  border-color: var(--vm-accent);
-}
-
-/* Reset default browser button chrome — the card article provides all visual styling */
+/* Reset default browser button chrome — the card article provides all visual styling.
+   Must come before focus rules so `all: unset` does not wipe the focus outline. */
 .vm-card__btn {
   all: unset;
   display: block;
   width: 100%;
   cursor: pointer;
   text-align: left;
+}
+
+/* Keyboard focus: explicit outline on the button for browsers that don't support :has().
+   This is the primary, most-compatible focus indicator. */
+.vm-card__btn:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: -2px;
+}
+
+/* Progressive enhancement: when :has() is supported, lift the whole card on
+   keyboard focus (same effect as hover) and suppress the button outline so
+   the card border acts as the focus ring instead. */
+@supports selector(:has(*)) {
+  .vm-card__btn:focus-visible {
+    outline: none;
+  }
+
+  .vm-card:has(.vm-card__btn:focus-visible) {
+    transform: translateY(-3px);
+    box-shadow: var(--vm-shadow);
+    border-color: var(--vm-accent);
+  }
+}
+
+/* :focus-within fallback for older browsers — keeps the card highlighted
+   whenever any child (the button) has focus, even without :has() support. */
+.vm-card:focus-within {
+  border-color: var(--vm-accent);
 }
 
 .vm-card--featured {

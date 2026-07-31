@@ -10,12 +10,27 @@ import { User, UserDocument, Vendor, VendorDocument } from "../database";
 import { ForgotPasswordDto, LoginDto, RegisterDto, UpdateProfileDto } from "./members.dto";
 
 /**
+ * Returns true when the stub auth endpoints should be disabled.
+ *
+ * Stub auth (register/login with no real password validation or JWT) is
+ * ONLY allowed when:
+ *   1. NODE_ENV is not "production", AND
+ *   2. ALLOW_STUB_AUTH=true is explicitly set.
+ *
+ * This prevents the stub from running in staging/preview environments that
+ * are not marked "production" but are still publicly reachable.
+ */
+function isStubAuthDisabled(): boolean {
+  if (process.env["NODE_ENV"] === "production") return true;
+  return process.env["ALLOW_STUB_AUTH"] !== "true";
+}
+
+/**
  * MembersService — stub implementation.
  *
  * Real authentication (Google / Facebook / Microsoft OAuth) is not yet wired.
  * These methods return placeholder responses so the member portal can function
- * end-to-end in development. Replace each stub with real logic when auth is
- * implemented.
+ * end-to-end in LOCAL DEVELOPMENT ONLY (requires ALLOW_STUB_AUTH=true).
  *
  * TODO: Replace password-based stubs with OAuth token exchange.
  * TODO: Replace image upload stub with Cloudflare R2 upload.
@@ -34,6 +49,8 @@ export class MembersService {
   /**
    * Stub register — creates a User record and a pending Vendor record.
    * Returns a fake session token until real OAuth is implemented.
+   *
+   * DISABLED unless ALLOW_STUB_AUTH=true and NODE_ENV != "production".
    */
   async register(dto: RegisterDto): Promise<{
     memberId: string;
@@ -41,6 +58,13 @@ export class MembersService {
     businessName: string;
     token: string;
   }> {
+    if (isStubAuthDisabled()) {
+      throw new ServiceUnavailableException(
+        "Registration is not yet available — OAuth sign-up coming soon. " +
+        "Set ALLOW_STUB_AUTH=true in local dev to use the stub.",
+      );
+    }
+
     const existing = await this.userModel.findOne({ email: dto.email.toLowerCase() }).exec();
     if (existing) {
       throw new BadRequestException("An account with this email already exists");
@@ -79,6 +103,8 @@ export class MembersService {
   /**
    * Stub login — looks up the user by email and returns a fake session token.
    * Password is not validated until real auth is implemented.
+   *
+   * DISABLED unless ALLOW_STUB_AUTH=true and NODE_ENV != "production".
    */
   async login(dto: LoginDto): Promise<{
     memberId: string;
@@ -86,6 +112,13 @@ export class MembersService {
     businessName: string;
     token: string;
   }> {
+    if (isStubAuthDisabled()) {
+      throw new ServiceUnavailableException(
+        "Login is not yet available — OAuth sign-in coming soon. " +
+        "Set ALLOW_STUB_AUTH=true in local dev to use the stub.",
+      );
+    }
+
     const user = await this.userModel.findOne({ email: dto.email.toLowerCase() }).exec();
     if (!user) {
       throw new NotFoundException("No account found with this email address");
@@ -105,10 +138,13 @@ export class MembersService {
   /**
    * Stub forgot-password — logs the request and returns success.
    * Real email delivery via Resend will be added when auth is implemented.
+   *
+   * Always returns success regardless of whether the email exists to avoid
+   * leaking account existence information.
    */
-  async forgotPassword(dto: ForgotPasswordDto): Promise<void> {
+  async forgotPassword(_dto: ForgotPasswordDto): Promise<void> {
     // TODO: send a real password-reset email via Resend
-    console.log(`[MembersService] Password reset requested for: ${dto.email}`);
+    // Intentionally does not reveal whether the email is registered.
   }
 
   // ─── Profile ──────────────────────────────────────────────────────────────
@@ -129,31 +165,22 @@ export class MembersService {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const update: Record<string, any> = {};
-    if (dto.businessName !== undefined) update.businessName = dto.businessName;
-    if (dto.category !== undefined) update.category = dto.category;
-    if (dto.descriptionMarkdown !== undefined) update.descriptionMarkdown = dto.descriptionMarkdown;
     if (dto.address !== undefined) update.address = dto.address;
+    if (dto.descriptionMarkdown !== undefined) update.descriptionMarkdown = dto.descriptionMarkdown;
     if (dto.searchTags !== undefined) update.searchTags = dto.searchTags;
     if (dto.categoryData !== undefined) update.categoryData = dto.categoryData;
     if (dto.contact !== undefined) update.contact = dto.contact;
-    if (dto.images !== undefined) update.images = dto.images;
-    if (dto.location !== undefined) {
-      update.location = {
-        type: "Point",
-        coordinates: [dto.location.longitude, dto.location.latitude],
-      };
-    }
-    update.lastTokenizedAt = null; // trigger re-vectorisation
 
     const vendor = await this.vendorModel
       .findOneAndUpdate({ ownerId }, { $set: update }, { new: true })
+      .lean()
       .exec();
 
     if (!vendor) {
       throw new NotFoundException("No vendor profile found for this member");
     }
 
-    return vendor;
+    return vendor as unknown as VendorDocument;
   }
 
   /**

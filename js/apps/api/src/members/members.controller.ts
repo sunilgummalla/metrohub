@@ -6,6 +6,7 @@ import {
   Patch,
   Post,
   Req,
+  UnauthorizedException,
   UploadedFile,
   UseInterceptors,
 } from "@nestjs/common";
@@ -19,19 +20,20 @@ import { ForgotPasswordDto, LoginDto, RegisterDto, UpdateProfileDto } from "./me
  * `main.ts` sets `app.setGlobalPrefix("api")`, so the effective URLs are:
  *
  * Public (no auth):
- *   POST /api/members/register        Register a new vendor account
- *   POST /api/members/login           Log in (stub — no real auth yet)
+ *   POST /api/members/register        Register a new vendor account (stub — ALLOW_STUB_AUTH required)
+ *   POST /api/members/login           Log in (stub — ALLOW_STUB_AUTH required)
  *   POST /api/members/forgot-password Request a password reset email (stub)
  *
  * Authenticated (Bearer token from login response):
  *   GET    /api/members/me            Get own vendor profile
  *   PATCH  /api/members/me            Update own vendor profile
- *   POST   /api/members/me/images     Upload a profile image (stub)
+ *   POST   /api/members/me/images     Upload a profile image (stub — R2 not yet wired)
  *   DELETE /api/members/me/images     Remove a profile image URL
  *
  * NOTE: Auth is stubbed — the token from login is a placeholder string of the
  * form `stub-token-<userId>`. The `@Req()` parameter is used to extract the
  * memberId from the Authorization header until a real JWT guard is added.
+ * Missing/invalid tokens now return 401 Unauthorized (not 404/400).
  *
  * TODO: Replace stub token extraction with a proper JWT guard.
  * TODO: Replace image upload stub with Cloudflare R2 integration.
@@ -61,7 +63,7 @@ export class MembersController {
 
   @Get("me")
   getMe(@Req() req: { headers: Record<string, string> }) {
-    const memberId = extractMemberId(req);
+    const memberId = extractMemberIdOrThrow(req);
     return this.membersService.getMe(memberId);
   }
 
@@ -70,7 +72,7 @@ export class MembersController {
     @Req() req: { headers: Record<string, string> },
     @Body() dto: UpdateProfileDto,
   ) {
-    const memberId = extractMemberId(req);
+    const memberId = extractMemberIdOrThrow(req);
     return this.membersService.updateMe(memberId, dto);
   }
 
@@ -80,7 +82,7 @@ export class MembersController {
     @Req() req: { headers: Record<string, string> },
     @UploadedFile() file: Express.Multer.File,
   ) {
-    const memberId = extractMemberId(req);
+    const memberId = extractMemberIdOrThrow(req);
     return this.membersService.uploadImage(memberId, file);
   }
 
@@ -89,7 +91,7 @@ export class MembersController {
     @Req() req: { headers: Record<string, string> },
     @Body("url") url: string,
   ) {
-    const memberId = extractMemberId(req);
+    const memberId = extractMemberIdOrThrow(req);
     return this.membersService.deleteImage(memberId, url);
   }
 }
@@ -98,17 +100,22 @@ export class MembersController {
  * Extracts the memberId from a stub Bearer token of the form
  * `stub-token-<userId>`.
  *
+ * Throws `UnauthorizedException` (401) when the token is absent or malformed,
+ * so callers get a clear auth error rather than a confusing 404/400.
+ * The all-zeros ObjectId previously returned as a fallback was problematic
+ * because it is a valid ObjectId that could theoretically match a real record.
+ *
  * TODO: Replace with a proper JWT guard that validates the token and injects
  * the memberId via a custom decorator.
  */
-function extractMemberId(req: { headers: Record<string, string> }): string {
+function extractMemberIdOrThrow(req: { headers: Record<string, string> }): string {
   const auth = req.headers["authorization"] ?? "";
   const token = auth.replace(/^Bearer\s+/i, "");
   const match = /^stub-token-([a-f0-9]{24})$/i.exec(token);
   if (!match) {
-    // Return a clearly invalid ID so the service throws a 400/404 rather than
-    // silently operating on the wrong record
-    return "000000000000000000000000";
+    throw new UnauthorizedException(
+      "Missing or invalid Authorization token — please log in again",
+    );
   }
   return match[1];
 }

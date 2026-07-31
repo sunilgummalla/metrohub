@@ -10,6 +10,8 @@ import {
   Patch,
   Post,
   Query,
+  Req,
+  UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
 import { VendorsService } from "./vendors.service";
@@ -21,6 +23,11 @@ import { VendorStatus } from "../database";
 /**
  * Temporary admin guard.
  * Reads `x-admin-token` header and compares to `ADMIN_API_TOKEN` env var.
+ *
+ * DEFAULT-DENY: if `ADMIN_API_TOKEN` is not set the guard blocks all requests
+ * regardless of environment. Set `ALLOW_INSECURE_ADMIN=true` explicitly in
+ * local dev to bypass (never set this in staging or production).
+ *
  * Replace with a proper Passport/JWT guard once admin auth (Entra) is wired.
  */
 @Injectable()
@@ -29,11 +36,13 @@ class AdminGuard implements CanActivate {
     const expectedToken = process.env["ADMIN_API_TOKEN"];
 
     if (!expectedToken) {
-      // Block in production when the env var is not set; allow in dev for convenience
-      if (process.env["NODE_ENV"] === "production") {
-        throw new ForbiddenException("Admin access is not configured");
+      // Explicit opt-in for local dev only — never set in staging/production
+      if (process.env["ALLOW_INSECURE_ADMIN"] === "true") {
+        return true;
       }
-      return true;
+      throw new ForbiddenException(
+        "Admin access is not configured — set ADMIN_API_TOKEN or ALLOW_INSECURE_ADMIN=true for local dev",
+      );
     }
 
     const request = context.switchToHttp().getRequest<{ headers: Record<string, string> }>();
@@ -51,9 +60,9 @@ class AdminGuard implements CanActivate {
  * Temporary member guard.
  * Reads `x-member-token` header and compares to `MEMBER_API_TOKEN` env var.
  *
- * This is a placeholder until real member auth (Google / Facebook / Microsoft
- * OAuth via the member portal) is implemented. It prevents unauthenticated
- * callers from creating or editing vendor records by guessing owner IDs.
+ * DEFAULT-DENY: if `MEMBER_API_TOKEN` is not set the guard blocks all requests
+ * regardless of environment. Set `ALLOW_INSECURE_MEMBER=true` explicitly in
+ * local dev to bypass.
  *
  * Replace with a proper JWT guard once member auth is wired.
  */
@@ -63,11 +72,12 @@ class MemberGuard implements CanActivate {
     const expectedToken = process.env["MEMBER_API_TOKEN"];
 
     if (!expectedToken) {
-      // Block in production when the env var is not set; allow in dev for convenience
-      if (process.env["NODE_ENV"] === "production") {
-        throw new ForbiddenException("Member access is not configured");
+      if (process.env["ALLOW_INSECURE_MEMBER"] === "true") {
+        return true;
       }
-      return true;
+      throw new ForbiddenException(
+        "Member access is not configured — set MEMBER_API_TOKEN or ALLOW_INSECURE_MEMBER=true for local dev",
+      );
     }
 
     const request = context.switchToHttp().getRequest<{ headers: Record<string, string> }>();
@@ -79,6 +89,30 @@ class MemberGuard implements CanActivate {
 
     return true;
   }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Extracts the memberId from a stub Bearer token of the form
+ * `stub-token-<userId>`.
+ *
+ * Throws `UnauthorizedException` (401) when the token is absent or malformed,
+ * so callers get a clear auth error rather than a confusing 404/400.
+ *
+ * TODO: Replace with a proper JWT guard that validates the token and injects
+ * the memberId via a custom decorator.
+ */
+function extractMemberIdOrThrow(req: { headers: Record<string, string> }): string {
+  const auth = req.headers["authorization"] ?? "";
+  const token = auth.replace(/^Bearer\s+/i, "");
+  const match = /^stub-token-([a-f0-9]{24})$/i.exec(token);
+  if (!match) {
+    throw new UnauthorizedException(
+      "Missing or invalid Authorization token — please log in again",
+    );
+  }
+  return match[1];
 }
 
 // ─── Controller ───────────────────────────────────────────────────────────────
@@ -96,8 +130,9 @@ class MemberGuard implements CanActivate {
  * Member routes (MemberGuard — replace with JWT guard):
  *   POST  /api/vendors             Create a vendor application
  *   PATCH /api/vendors/:id         Update own vendor profile
+ *   ownerId is derived from the stub Bearer token, not from a query param.
  *
- * Admin routes (AdminGuard — replace with JWT guard):
+ * Admin routes (AdminGuard — replace with Entra JWT guard):
  *   GET   /api/vendors/admin/list        List all vendors (any status)
  *   PATCH /api/vendors/admin/:id/status  Approve / reject a vendor
  */
@@ -147,14 +182,16 @@ export class VendorsController {
   }
 
   // ─── Member (MemberGuard protected) ───────────────────────────────────────
+  // ownerId is derived from the stub Bearer token so that a token holder cannot
+  // create or update records for arbitrary owners by supplying a different ownerId.
 
   @Post()
   @UseGuards(MemberGuard)
   create(
     @Body() dto: CreateVendorDto,
-    // TODO: replace with real auth guard — extract ownerId from JWT claims
-    @Query("ownerId") ownerId: string,
+    @Req() req: { headers: Record<string, string> },
   ) {
+    const ownerId = extractMemberIdOrThrow(req);
     return this.vendorsService.create(ownerId, dto);
   }
 
@@ -163,9 +200,9 @@ export class VendorsController {
   update(
     @Param("id") id: string,
     @Body() dto: UpdateVendorDto,
-    // TODO: replace with real auth guard — extract ownerId from JWT claims
-    @Query("ownerId") ownerId: string,
+    @Req() req: { headers: Record<string, string> },
   ) {
+    const ownerId = extractMemberIdOrThrow(req);
     return this.vendorsService.update(id, ownerId, dto);
   }
 }

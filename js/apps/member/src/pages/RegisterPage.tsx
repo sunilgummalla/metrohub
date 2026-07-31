@@ -25,8 +25,8 @@ export function RegisterPage({ onRegister, onGoLogin }: RegisterPageProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getCategories().then(setCategories).catch(() => setCategories([]));
-  }, []);
+    getCategories(form.citySlug).then(setCategories).catch(() => setCategories([]));
+  }, [form.citySlug]);
 
   function set(key: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>

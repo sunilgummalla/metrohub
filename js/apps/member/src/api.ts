@@ -58,22 +58,32 @@ function authHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/**
+ * Parses a fetch Response, handling both JSON and empty-body responses.
+ *
+ * Uses `res.text()` first to avoid `SyntaxError` when the body is empty —
+ * this can happen even when `content-type: application/json` is set (e.g.
+ * with chunked transfer encoding where `content-length` is absent), or on
+ * 204 No Content responses such as forgot-password and DELETE /me/images.
+ */
 async function handleResponse<T>(res: Response): Promise<T> {
+  const text = await res.text();
+
   if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { message?: string };
-    throw new Error(body.message ?? `Request failed: ${res.status}`);
+    let message: string | undefined;
+    try {
+      const body = JSON.parse(text) as { message?: string };
+      message = body.message;
+    } catch {
+      // body was not JSON — fall through to generic message
+    }
+    throw new Error(message ?? `Request failed: ${res.status}`);
   }
-  // Some endpoints (e.g. forgot-password, DELETE /me/images) return 200/204 with
-  // no body. Calling res.json() on an empty body throws a SyntaxError even on
-  // success. Parse conditionally based on content-length / content-type.
-  const contentType = res.headers.get("content-type") ?? "";
-  const contentLength = res.headers.get("content-length");
-  const hasBody =
-    res.status !== 204 &&
-    contentLength !== "0" &&
-    contentType.includes("application/json");
-  if (!hasBody) return undefined as unknown as T;
-  return res.json() as Promise<T>;
+
+  // Empty body (e.g. 204, forgot-password, DELETE /me/images) — return undefined
+  if (!text) return undefined as unknown as T;
+
+  return JSON.parse(text) as T;
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -145,7 +155,12 @@ export async function deleteImage(url: string): Promise<void> {
   return handleResponse<void>(res);
 }
 
-export async function getCategories(): Promise<string[]> {
-  const res = await fetch(`${BASE}/vendors/categories?citySlug=seattle`);
+/**
+ * Fetches the list of vendor categories for a given city.
+ * citySlug is encoded via URLSearchParams to handle special characters safely.
+ */
+export async function getCategories(citySlug: string): Promise<string[]> {
+  const params = new URLSearchParams({ citySlug });
+  const res = await fetch(`${BASE}/vendors/categories?${params.toString()}`);
   return handleResponse<string[]>(res);
 }
