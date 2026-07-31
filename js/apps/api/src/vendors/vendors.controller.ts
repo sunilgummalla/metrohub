@@ -180,20 +180,25 @@ export class VendorsController {
   browse(@Query() query: BrowseVendorsQueryDto) {
     // citySlug is required for correct multi-city routing — an empty or
     // missing citySlug would silently return an empty result set.
-    if (!query.citySlug?.trim()) {
+    // Trim before forwarding so that URL-encoded whitespace (%20seattle%20)
+    // does not reach MongoDB as a padded slug that returns empty results.
+    const citySlug = query.citySlug?.trim();
+    if (!citySlug) {
       throw new BadRequestException("citySlug query parameter is required");
     }
-    return this.vendorsService.browse(query);
+    return this.vendorsService.browse({ ...query, citySlug });
   }
 
   @Get("categories")
   getCategories(@Query("citySlug") citySlug: string) {
     // citySlug is required — silently defaulting to "seattle" would return the
     // wrong city's categories for any other city, causing hard-to-debug issues.
-    if (!citySlug?.trim()) {
+    // Trim before forwarding so that whitespace-padded slugs don't reach MongoDB.
+    const trimmedSlug = citySlug?.trim();
+    if (!trimmedSlug) {
       throw new BadRequestException("citySlug query parameter is required");
     }
-    return this.vendorsService.getCategories(citySlug);
+    return this.vendorsService.getCategories(trimmedSlug);
   }
 
   // ─── Admin (AdminGuard protected) ─────────────────────────────────────────
@@ -206,6 +211,13 @@ export class VendorsController {
     @Query("page") page: string,
     @Query("limit") limit: string,
   ) {
+    // Validate status when provided — an invalid value would silently return
+    // an empty list instead of a clear 400, making it hard to debug typos.
+    if (status !== undefined && !VALID_STATUSES.includes(status)) {
+      throw new BadRequestException(
+        `status must be one of: ${VALID_STATUSES.join(", ")}`,
+      );
+    }
     return this.vendorsService.adminList(status, Number(page) || 1, Number(limit) || 20);
   }
 

@@ -195,7 +195,15 @@ export class VendorsService {
     if (dto.address !== undefined) update.address = dto.address;
     if (dto.searchTags !== undefined) update.searchTags = dto.searchTags;
     if (dto.categoryData !== undefined) update.categoryData = dto.categoryData;
-    if (dto.contact !== undefined) update.contact = dto.contact as Vendor["contact"];
+    // Use dot-path keys for nested contact fields so that a partial contact
+    // update (e.g. only { phone: "..." }) does not wipe out the other fields.
+    // Assigning update.contact = dto.contact would replace the entire sub-document.
+    if (dto.contact !== undefined) {
+      const c = dto.contact as Partial<Vendor["contact"]>;
+      if (c.phone !== undefined) (update as Record<string, unknown>)["contact.phone"] = c.phone;
+      if (c.email !== undefined) (update as Record<string, unknown>)["contact.email"] = c.email;
+      if (c.website !== undefined) (update as Record<string, unknown>)["contact.website"] = c.website;
+    }
     if (dto.images !== undefined) update.images = dto.images;
     if (dto.location !== undefined) {
       update.location = {

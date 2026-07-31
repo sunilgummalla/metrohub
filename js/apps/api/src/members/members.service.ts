@@ -169,7 +169,15 @@ export class MembersService {
     if (dto.descriptionMarkdown !== undefined) update.descriptionMarkdown = dto.descriptionMarkdown;
     if (dto.searchTags !== undefined) update.searchTags = dto.searchTags;
     if (dto.categoryData !== undefined) update.categoryData = dto.categoryData;
-    if (dto.contact !== undefined) update.contact = dto.contact;
+    // Use dot-path keys for nested contact fields so that a partial contact
+    // update (e.g. only { phone: "..." }) does not wipe out the other fields.
+    // Assigning update.contact = dto.contact would replace the entire sub-document.
+    if (dto.contact !== undefined) {
+      const c = dto.contact as Record<string, unknown>;
+      if (c["phone"] !== undefined) update["contact.phone"] = c["phone"];
+      if (c["email"] !== undefined) update["contact.email"] = c["email"];
+      if (c["website"] !== undefined) update["contact.website"] = c["website"];
+    }
 
     const vendor = await this.vendorModel
       .findOneAndUpdate({ ownerId }, { $set: update }, { new: true })

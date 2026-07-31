@@ -13,30 +13,40 @@ interface VendorDetailProps {
  *
  * Rules applied:
  *  1. Trim whitespace.
- *  2. Only allow `http:` and `https:` schemes — any other scheme (e.g.
+ *  2. Reject scheme-relative URLs (`//example.com`) — prepending `https:` would
+ *     produce `https:////example.com` (invalid). These are rare in user input and
+ *     safer to reject than to silently mangle.
+ *  3. Reject leading-slash paths (`/path`) — prepending `https://` would produce
+ *     `https:///path` which is also invalid.
+ *  4. Only allow `http:` and `https:` schemes — any other scheme (e.g.
  *     `javascript:`, `data:`, `vbscript:`) is rejected and `null` is returned.
- *  3. If the value has no scheme at all (plain domain like "example.com"),
+ *  5. If the value has no scheme at all (plain domain like "example.com"),
  *     prepend `https://` so the browser treats it as an absolute URL rather
  *     than a relative path.
  *
- * Returns `null` when the value is falsy or carries a dangerous scheme.
+ * Returns `null` when the value is falsy, carries a dangerous scheme, or looks
+ * like a relative path rather than an absolute domain.
  */
 function sanitiseWebsiteUrl(raw: string | null): string | null {
   if (!raw) return null;
   const trimmed = raw.trim();
   if (!trimmed) return null;
 
-  // If the value already contains a scheme, validate it
+  // Reject scheme-relative URLs (//example.com) and leading-slash paths (/path).
+  // Prepending https:// to these produces malformed URLs.
+  if (trimmed.startsWith("/")) return null;
+
+  // If the value already contains a scheme, validate it.
   if (/^[a-zA-Z][a-zA-Z0-9+\-.]*:/.test(trimmed)) {
     const lower = trimmed.toLowerCase();
     if (!lower.startsWith("https://") && !lower.startsWith("http://")) {
-      // Dangerous scheme — reject entirely
+      // Dangerous or unsupported scheme — reject entirely.
       return null;
     }
     return trimmed;
   }
 
-  // No scheme — treat as a plain domain and prepend https://
+  // No scheme — treat as a plain domain and prepend https://.
   return `https://${trimmed}`;
 }
 
