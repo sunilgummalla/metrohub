@@ -8,9 +8,13 @@ The Advertiser Member Portal is a self-serve platform where local businesses, ev
 
 ### Key Workflows
 1.  **Enrollment & Authentication:** Businesses sign up and log in using standard member authentication providers (Google, Facebook, Microsoft).
-2.  **Live Inventory Dashboard:** The core feature. Advertisers see a live heatmap of the MetroHub ecosystem.
-    *   *Example:* A dashboard showing "145 active users on Poker Scorecard" and "89 active users on Tambola."
-3.  **Slot Browsing & Purchasing:**
+2.  **Live & Historical Inventory Dashboard:** The core data feature. Advertisers see both a live heatmap of the MetroHub ecosystem and historical trend data.
+    *   *Live Example:* "145 active users on Poker Scorecard right now."
+    *   *Historical Example:* "Last Friday between 8 PM - 10 PM, Poker Scorecard peaked at 210 concurrent users."
+3.  **AI Business Intelligence Assistant (Chainlit):** An embedded AI chat interface powered by Chainlit. Advertisers can ask natural language queries to make calculated buying decisions.
+    *   *Example Query:* "What is the best time slot to reach the most users on the Tambola app on weekends?"
+    *   *Example Query:* "How did the Poker footer slot perform last month during the 7-9 PM window?"
+4.  **Slot Browsing & Purchasing:**
     *   Advertisers browse available `slotIds` (e.g., `hero-banner`, `poker-scorecard-footer`, `news-ticker`).
     *   They can select dates, times, and specific slots based on the live presence data and historical trends.
     *   They upload their creative (image/copy) directly through the portal.

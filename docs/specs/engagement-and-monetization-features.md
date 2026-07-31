@@ -70,8 +70,8 @@ To drive urgency and demand for ad slots, the platform tracks and exposes real-t
 *   **Aggregation:** The API maintains a real-time count of active connections per route in memory (e.g., Redis).
 
 ### User Experience (UX) Integration
-*   **For Advertisers (Admin/Portal):** A dashboard showing live heatmaps. E.g., *"There are currently 145 users playing Poker. Buy the Poker Footer slot for the next hour for $X."*
-*   **For Users (Optional):** A subtle social proof indicator in the shell or app header: *"🔥 42 people playing Rummy right now."* This creates a sense of community for the players while simultaneously proving the value of the real estate.
+*   **For Users (Player-facing):** A subtle social proof indicator in the shell or app header: *"🔥 42 people playing Rummy right now."* This creates a sense of community for the players, validates the platform's popularity, and indirectly demonstrates the value of the real estate to anyone looking at the screen.
+*   **For Advertisers:** Handled separately in the Advertiser Member Portal (see portal architecture spec).
 
 ## 5. In-Game Banner Ad UX Constraints
 
