@@ -7,11 +7,6 @@ import { BrowseVendorsQueryDto, CreateVendorDto, UpdateVendorDto } from "./vendo
 const DEFAULT_PAGE_LIMIT = 20;
 const MAX_PAGE_LIMIT = 100;
 
-/** Escape a string so it is safe to use inside a MongoDB $regex value. */
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 /** Validate and convert a string to a Mongoose ObjectId, throwing 400 on invalid input. */
 function toObjectId(id: string, label = "id"): Types.ObjectId {
   if (!Types.ObjectId.isValid(id)) {
@@ -30,6 +25,24 @@ function toFiniteNumber(value: number | string | undefined): number | undefined 
   if (value === undefined || value === null || value === "") return undefined;
   const n = Number(value);
   return Number.isFinite(n) ? n : undefined;
+}
+
+/**
+ * Clamp `page` to a positive integer (minimum 1).
+ * Prevents negative `skip` values which MongoDB rejects.
+ */
+function clampPage(raw: number | string | undefined): number {
+  const n = toFiniteNumber(raw) ?? 1;
+  return Math.max(1, Math.floor(n));
+}
+
+/**
+ * Clamp `limit` to the range [1, MAX_PAGE_LIMIT].
+ * Prevents zero/negative limits that produce unbounded or empty queries.
+ */
+function clampLimit(raw: number | string | undefined): number {
+  const n = toFiniteNumber(raw) ?? DEFAULT_PAGE_LIMIT;
+  return Math.min(Math.max(1, Math.floor(n)), MAX_PAGE_LIMIT);
 }
 
 @Injectable()
@@ -51,13 +64,18 @@ export class VendorsService {
    * Geo params (lat, lng, radiusKm) arrive as strings from the query string and
    * are coerced to finite numbers before use; the geo filter is silently skipped
    * when any value is missing or non-numeric.
+   *
+   * IMPORTANT: MongoDB does not allow `.sort()` when `$near` is used in the
+   * filter — it implicitly sorts by distance. The sort is therefore only applied
+   * for non-geo queries.
    */
   async browse(query: BrowseVendorsQueryDto): Promise<{ data: VendorDocument[]; total: number }> {
     const { citySlug, category, q } = query;
 
-    // Coerce numeric query params — they arrive as strings without a global transform pipe
-    const page = toFiniteNumber(query.page) ?? 1;
-    const limit = Math.min(toFiniteNumber(query.limit) ?? DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT);
+    // Clamp pagination params — page must be ≥ 1 (negative skip throws in Mongo),
+    // limit must be in [1, MAX_PAGE_LIMIT].
+    const page = clampPage(query.page);
+    const limit = clampLimit(query.limit);
     const lat = toFiniteNumber(query.lat);
     const lng = toFiniteNumber(query.lng);
     const radiusKm = toFiniteNumber(query.radiusKm);
@@ -80,7 +98,8 @@ export class VendorsService {
 
     // Geo-proximity filter using MongoDB 2dsphere index.
     // Only applied when all three values are present and finite numbers.
-    if (lat !== undefined && lng !== undefined && radiusKm !== undefined) {
+    const isGeoQuery = lat !== undefined && lng !== undefined && radiusKm !== undefined;
+    if (isGeoQuery) {
       filter.location = {
         $near: {
           $geometry: { type: "Point", coordinates: [lng, lat] },
@@ -89,14 +108,15 @@ export class VendorsService {
       };
     }
 
+    // MongoDB does NOT allow .sort() when $near is used — $near implicitly sorts
+    // results by ascending distance. Only apply the explicit sort for non-geo queries.
+    const baseQuery = this.vendorModel.find(filter).skip(skip).limit(limit).lean();
+    const sortedQuery = isGeoQuery
+      ? baseQuery // $near already sorts by distance; adding .sort() throws
+      : baseQuery.sort({ "activeBoosters.0.expiresAt": -1, createdAt: -1 });
+
     const [data, total] = await Promise.all([
-      this.vendorModel
-        .find(filter)
-        .sort({ "activeBoosters.0.expiresAt": -1, createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean()
-        .exec(),
+      sortedQuery.exec(),
       this.vendorModel.countDocuments(filter).exec(),
     ]);
 
@@ -196,14 +216,16 @@ export class VendorsService {
   ): Promise<{ data: VendorDocument[]; total: number }> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filter: Record<string, any> = status ? { status } : {};
-    const skip = (page - 1) * Math.min(limit, MAX_PAGE_LIMIT);
+    const safePage = Math.max(1, Math.floor(page));
+    const safeLimit = Math.min(Math.max(1, Math.floor(limit)), MAX_PAGE_LIMIT);
+    const skip = (safePage - 1) * safeLimit;
 
     const [data, total] = await Promise.all([
       this.vendorModel
         .find(filter)
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(Math.min(limit, MAX_PAGE_LIMIT))
+        .limit(safeLimit)
         .lean()
         .exec(),
       this.vendorModel.countDocuments(filter).exec(),
@@ -229,6 +251,3 @@ export class VendorsService {
     return vendor;
   }
 }
-
-// Keep escapeRegex exported for potential future use in other modules
-export { escapeRegex };

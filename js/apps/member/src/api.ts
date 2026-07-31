@@ -63,6 +63,16 @@ async function handleResponse<T>(res: Response): Promise<T> {
     const body = await res.json().catch(() => ({})) as { message?: string };
     throw new Error(body.message ?? `Request failed: ${res.status}`);
   }
+  // Some endpoints (e.g. forgot-password, DELETE /me/images) return 200/204 with
+  // no body. Calling res.json() on an empty body throws a SyntaxError even on
+  // success. Parse conditionally based on content-length / content-type.
+  const contentType = res.headers.get("content-type") ?? "";
+  const contentLength = res.headers.get("content-length");
+  const hasBody =
+    res.status !== 204 &&
+    contentLength !== "0" &&
+    contentType.includes("application/json");
+  if (!hasBody) return undefined as unknown as T;
   return res.json() as Promise<T>;
 }
 

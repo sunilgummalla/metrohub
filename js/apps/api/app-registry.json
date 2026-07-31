@@ -104,7 +104,7 @@
       "folder": "app-vendor-marketplace",
       "displayName": "Vendor Marketplace",
       "category": "Marketplace",
-      "route": "/apps/vendor-marketplace",
+      "route": "/marketplace",
       "tile": {
         "title": "Vendor Marketplace",
         "description": "Discover local vendors, businesses, and service providers near you."

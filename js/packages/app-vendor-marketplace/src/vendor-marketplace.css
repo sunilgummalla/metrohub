@@ -179,12 +179,32 @@
   position: relative;
 }
 
-.vm-card:hover,
-.vm-card:focus-visible {
+/* Hover effect on the card article */
+.vm-card:hover {
   transform: translateY(-3px);
   box-shadow: var(--vm-shadow);
   border-color: var(--vm-accent);
+}
+
+/* Focus-visible targets the inner <button> (not the article, which is not focusable).
+   This gives keyboard users the same lift-and-highlight as hover. */
+.vm-card__btn:focus-visible {
   outline: none;
+}
+
+.vm-card:has(.vm-card__btn:focus-visible) {
+  transform: translateY(-3px);
+  box-shadow: var(--vm-shadow);
+  border-color: var(--vm-accent);
+}
+
+/* Reset default browser button chrome — the card article provides all visual styling */
+.vm-card__btn {
+  all: unset;
+  display: block;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
 }
 
 .vm-card--featured {

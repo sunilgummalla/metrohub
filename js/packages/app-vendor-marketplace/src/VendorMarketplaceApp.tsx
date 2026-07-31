@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { browseVendors, getCategories, getVendor } from "./api";
 import { VendorCard } from "./VendorCard";
 import { VendorDetail } from "./VendorDetail";
@@ -27,7 +27,22 @@ export function VendorMarketplaceApp({ citySlug = "seattle" }: VendorMarketplace
   });
   const [searchInput, setSearchInput] = useState("");
 
-  // Load categories once on mount
+  // Track the previous citySlug so we can reset filters when it changes.
+  // Using a ref avoids adding citySlug as a dependency to the filters effect.
+  const prevCitySlugRef = useRef(citySlug);
+
+  useEffect(() => {
+    if (prevCitySlugRef.current !== citySlug) {
+      prevCitySlugRef.current = citySlug;
+      // Reset all filters to the new city — clears category, search query, and
+      // resets to page 1 so the new city's results load from the beginning.
+      setFilters({ citySlug, page: 1, limit: PAGE_SIZE });
+      setSearchInput("");
+      setSelectedVendor(null);
+    }
+  }, [citySlug]);
+
+  // Load categories whenever the city changes
   useEffect(() => {
     getCategories(citySlug)
       .then(setCategories)
@@ -77,7 +92,10 @@ export function VendorMarketplaceApp({ citySlug = "seattle" }: VendorMarketplace
 
   const handleBack = useCallback(() => setSelectedVendor(null), []);
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  // Use filters.limit (not the constant PAGE_SIZE) so pagination stays correct
+  // if the limit is ever changed dynamically.
+  const activeLimit = filters.limit ?? PAGE_SIZE;
+  const totalPages = Math.ceil(total / activeLimit);
 
   if (selectedVendor) {
     return <VendorDetail vendor={selectedVendor} onBack={handleBack} />;

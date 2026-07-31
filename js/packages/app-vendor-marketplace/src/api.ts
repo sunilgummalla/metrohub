@@ -31,7 +31,9 @@ export async function getVendor(id: string): Promise<Vendor> {
 }
 
 export async function getCategories(citySlug: string): Promise<string[]> {
-  const res = await fetch(`${API_BASE}/vendors/categories?citySlug=${citySlug}`);
+  // Use URLSearchParams to safely encode citySlug (consistent with browseVendors)
+  const params = new URLSearchParams({ citySlug });
+  const res = await fetch(`${API_BASE}/vendors/categories?${params.toString()}`);
   if (!res.ok) throw new Error(`Failed to fetch categories: ${res.status}`);
   return res.json() as Promise<string[]>;
 }

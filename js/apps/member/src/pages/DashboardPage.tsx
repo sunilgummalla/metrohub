@@ -51,6 +51,16 @@ export function DashboardPage({ businessName, onLogout }: DashboardPageProps) {
   const [newCatVal, setNewCatVal] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Holds the pending setTimeout ID for the flash message so we can cancel it
+  // if another flash fires before the 3 s expires, or if the component unmounts.
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear any pending flash timer on unmount
+  useEffect(() => {
+    return () => {
+      if (flashTimerRef.current !== null) clearTimeout(flashTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -74,8 +84,13 @@ export function DashboardPage({ businessName, onLogout }: DashboardPageProps) {
   }, []);
 
   function flash(msg: string) {
+    // Cancel any in-flight flash timer before starting a new one
+    if (flashTimerRef.current !== null) clearTimeout(flashTimerRef.current);
     setSuccess(msg);
-    setTimeout(() => setSuccess(null), 3000);
+    flashTimerRef.current = setTimeout(() => {
+      setSuccess(null);
+      flashTimerRef.current = null;
+    }, 3000);
   }
 
   const saveProfile = useCallback(async () => {
