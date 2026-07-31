@@ -99,6 +99,18 @@
       }
     },
     {
+      "id": "marketplace",
+      "packageName": "@metrohub/marketplace",
+      "folder": "app-marketplace",
+      "displayName": "Marketplace",
+      "category": "Marketplace",
+      "route": "/marketplace",
+      "tile": {
+        "title": "Marketplace",
+        "description": "Discover local businesses, services, and deals near you."
+      }
+    },
+    {
       "id": "near-by",
       "packageName": "@metrohub/near-by",
       "folder": "app-near-by",

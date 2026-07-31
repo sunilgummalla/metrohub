@@ -219,6 +219,12 @@ a { color: inherit; text-decoration: none; }
   transition: color 0.15s ease, background 0.15s ease;
 }
 
+.topNavHighlight {
+  color: var(--indigo) !important;
+  font-weight: 700;
+  background: rgba(99, 102, 241, 0.08) !important;
+}
+
 .topNav a:hover {
   color: var(--indigo);
   background: var(--surface-2);

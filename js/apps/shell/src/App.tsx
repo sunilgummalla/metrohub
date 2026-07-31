@@ -3,6 +3,7 @@ import { RummyScorecard } from "@metrohub/rummy-scorecard";
 import { TambolaApp } from "@metrohub/tambola";
 import { BingoApp } from "@metrohub/bingo";
 import { PlansApp } from "@metrohub/plans";
+import { MarketplaceApp } from "./MarketplaceApp";
 import registry from "../../api/app-registry.json";
 
 type PortalApp = (typeof registry.apps)[number];
@@ -20,6 +21,7 @@ const APP_ICONS: Record<string, string> = {
   "deals":           "🏷",
   "near-by":         "📍",
   "plans":           "💳",
+  "marketplace":     "🏪",
 };
 
 // ─── Gradient map per category ────────────────────────────────────────────────
@@ -28,6 +30,7 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
   Accounting:    "linear-gradient(135deg,#0f766e,#14b8a6)",
   Shopping:      "linear-gradient(135deg,#b45309,#f59e0b)",
   "Site Seeing": "linear-gradient(135deg,#2563eb,#60a5fa)",
+  Marketplace:   "linear-gradient(135deg,#4338ca,#7c3aed)",
 };
 
 function categoryGradient(cat: string) {
@@ -62,6 +65,7 @@ function ShellHeader({ onHome }: { onHome?: () => void }) {
       </a>
       <nav className="topNav" aria-label="Shell navigation">
         <a href="/">Apps</a>
+        <a href="/marketplace" className="topNavHighlight">Marketplace</a>
         <a href="/apps/my-accounts">Accounts</a>
         <a href="/apps/splits">Splits</a>
       </nav>
@@ -321,6 +325,8 @@ function AppWorkspace({ app }: { app: PortalApp }) {
           <BingoApp />
         ) : app.id === "plans" ? (
           <PlansApp />
+        ) : app.id === "marketplace" ? (
+          <MarketplaceApp />
         ) : (
           <div className="viewportBody">
             <span
