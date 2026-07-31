@@ -37,7 +37,23 @@ The Advertiser Member Portal is a self-serve platform where local businesses, ev
     *   Advertisers browse available `slotIds` (e.g., `hero-banner`, `poker-scorecard-footer`, `news-ticker`).
     *   They can select dates, times, and specific slots based on the live presence data and historical trends.
     *   They upload their creative (image/copy) directly through the portal.
-    *   They complete the transaction via an integrated payment gateway.
+    *   They complete the transaction via the configured payment gateway.
+
+### Payment Gateway Architecture
+
+Payment processing is designed as a **configurable, provider-agnostic integration** in the NestJS API. The supported providers at launch are **Stripe** and **PayPal**. The active provider is controlled by a single environment variable (`PAYMENT_PROVIDER=stripe` or `PAYMENT_PROVIDER=paypal`), allowing the platform to switch providers without any code changes.
+
+**Provider Abstraction:**
+The API exposes a `PaymentService` interface with standard methods (`createCheckoutSession`, `handleWebhook`, `refund`). Each provider (Stripe, PayPal) implements this interface in its own adapter class. The correct adapter is resolved at runtime based on the environment configuration.
+
+| Concern | Stripe | PayPal |
+|---|---|---|
+| **Checkout flow** | Stripe Checkout (hosted) or Payment Element | PayPal Smart Payment Buttons |
+| **Webhook events** | `payment_intent.succeeded`, `charge.refunded` | `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.REFUNDED` |
+| **Refunds** | Stripe Refunds API | PayPal Refund API |
+| **Config keys** | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` |
+
+The Member Portal frontend renders the appropriate payment UI component based on the active provider returned by the API, ensuring the checkout experience is always consistent with the configured gateway.
 4.  **Campaign Performance:** A simple analytics view showing impressions, clicks, and conversion rates (if tracked) for their active and past campaigns.
 
 ### UX Philosophy
