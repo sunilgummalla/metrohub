@@ -59,33 +59,43 @@ class AdminGuard implements CanActivate {
 
 /**
  * Temporary member guard.
- * Reads `x-member-token` header and compares to `MEMBER_API_TOKEN` env var.
  *
- * DEFAULT-DENY: if `MEMBER_API_TOKEN` is not set the guard blocks all requests
- * regardless of environment. Set `ALLOW_INSECURE_MEMBER=true` explicitly in
- * local dev to bypass.
+ * Validates the stub `Authorization: Bearer stub-token-<24hex>` token that
+ * the member portal sends after login. This is consistent with
+ * `extractMemberIdOrThrow` which also reads the Bearer token — both the
+ * guard and the helper use the same auth mechanism so the member portal only
+ * needs to send one header.
  *
- * Replace with a proper JWT guard once member auth is wired.
+ * DEFAULT-DENY: stub tokens are only accepted when ALLOW_STUB_AUTH=true AND
+ * NODE_ENV !== "production". In production the guard always blocks (until a
+ * real JWT guard replaces this stub).
+ *
+ * Replace with a proper JWT guard once member auth (Google/Facebook/Microsoft
+ * via Entra) is wired.
  */
 @Injectable()
 class MemberGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const expectedToken = process.env["MEMBER_API_TOKEN"];
+    const stubAuthEnabled =
+      process.env["ALLOW_STUB_AUTH"] === "true" &&
+      process.env["NODE_ENV"] !== "production";
 
-    if (!expectedToken) {
-      if (process.env["ALLOW_INSECURE_MEMBER"] === "true") {
-        return true;
-      }
+    if (!stubAuthEnabled) {
       throw new ForbiddenException(
-        "Member access is not configured — set MEMBER_API_TOKEN or ALLOW_INSECURE_MEMBER=true for local dev",
+        "Member auth is not configured — set ALLOW_STUB_AUTH=true for local dev (never in production)",
       );
     }
 
+    // Validate that the request carries a well-formed stub Bearer token.
+    // extractMemberIdOrThrow will re-validate below; this guard just ensures
+    // the request is rejected early with a 403 before reaching the handler.
     const request = context.switchToHttp().getRequest<{ headers: Record<string, string> }>();
-    const provided = request.headers["x-member-token"];
-
-    if (provided !== expectedToken) {
-      throw new ForbiddenException("Invalid member token");
+    const auth = request.headers["authorization"] ?? "";
+    const token = auth.replace(/^Bearer\s+/i, "");
+    if (!/^stub-token-[a-f0-9]{24}$/i.test(token)) {
+      throw new UnauthorizedException(
+        "Missing or invalid Authorization token — please log in again",
+      );
     }
 
     return true;
@@ -99,22 +109,40 @@ class MemberGuard implements CanActivate {
  * `stub-token-<userId>`.
  *
  * Throws `UnauthorizedException` (401) when the token is absent or malformed,
- * so callers get a clear auth error rather than a confusing 404/400.
+ * or when stub auth is disabled (ALLOW_STUB_AUTH != true or NODE_ENV = production).
+ *
+ * MemberGuard runs first and rejects invalid tokens before the handler is
+ * reached, so this function is a secondary safety net that also extracts the
+ * memberId for use in the service layer.
  *
  * TODO: Replace with a proper JWT guard that validates the token and injects
  * the memberId via a custom decorator.
  */
 function extractMemberIdOrThrow(req: { headers: Record<string, string> }): string {
+  // Stub tokens are only valid when ALLOW_STUB_AUTH=true AND not in production.
+  const stubAuthEnabled =
+    process.env["ALLOW_STUB_AUTH"] === "true" &&
+    process.env["NODE_ENV"] !== "production";
+
   const auth = req.headers["authorization"] ?? "";
   const token = auth.replace(/^Bearer\s+/i, "");
   const match = /^stub-token-([a-f0-9]{24})$/i.exec(token);
+
   if (!match) {
     throw new UnauthorizedException(
       "Missing or invalid Authorization token — please log in again",
     );
   }
+  if (!stubAuthEnabled) {
+    throw new UnauthorizedException(
+      "Stub auth is disabled in this environment — use a real JWT",
+    );
+  }
   return match[1];
 }
+
+/** Allowed vendor status values for runtime validation */
+const VALID_STATUSES: VendorStatus[] = ["pending", "approved", "rejected", "suspended"];
 
 // ─── Controller ───────────────────────────────────────────────────────────────
 
@@ -124,14 +152,15 @@ function extractMemberIdOrThrow(req: { headers: Record<string, string> }): strin
  * `main.ts` sets `app.setGlobalPrefix("api")`, so the effective URLs are:
  *
  * Public routes (no auth required):
- *   GET  /api/vendors              Browse approved vendors
- *   GET  /api/vendors/categories   List distinct categories for a city
+ *   GET  /api/vendors              Browse approved vendors (citySlug required)
+ *   GET  /api/vendors/categories   List distinct categories for a city (citySlug required)
  *   GET  /api/vendors/:id          Get a single approved vendor
  *
  * Member routes (MemberGuard — replace with JWT guard):
  *   POST  /api/vendors             Create a vendor application (status: pending)
  *   PATCH /api/vendors/:id         Update own vendor profile
- *   ownerId is derived from the stub Bearer token, not from a query param.
+ *   Auth: Authorization: Bearer stub-token-<24hex> (same token from login response)
+ *   ownerId is derived from the Bearer token, not from a query param.
  *
  * Admin routes (AdminGuard — replace with Entra JWT guard):
  *   GET   /api/vendors/admin/list        List all vendors (any status)
@@ -149,6 +178,11 @@ export class VendorsController {
 
   @Get()
   browse(@Query() query: BrowseVendorsQueryDto) {
+    // citySlug is required for correct multi-city routing — an empty or
+    // missing citySlug would silently return an empty result set.
+    if (!query.citySlug?.trim()) {
+      throw new BadRequestException("citySlug query parameter is required");
+    }
     return this.vendorsService.browse(query);
   }
 
@@ -181,6 +215,14 @@ export class VendorsController {
     @Param("id") id: string,
     @Body("status") status: VendorStatus,
   ) {
+    // Validate status before forwarding to the service. Mongoose runValidators
+    // catches this too, but an explicit 400 here gives a clearer error message
+    // and avoids a round-trip to the database for obviously invalid input.
+    if (!status || !VALID_STATUSES.includes(status)) {
+      throw new BadRequestException(
+        `status must be one of: ${VALID_STATUSES.join(", ")}`,
+      );
+    }
     return this.vendorsService.setStatus(id, status);
   }
 
@@ -192,7 +234,8 @@ export class VendorsController {
   }
 
   // ─── Member (MemberGuard protected) ───────────────────────────────────────
-  // ownerId is derived from the stub Bearer token so that a token holder cannot
+  // Auth: Authorization: Bearer stub-token-<24hex> (same token from login response).
+  // ownerId is derived from the Bearer token so that a token holder cannot
   // create or update records for arbitrary owners by supplying a different ownerId.
 
   @Post()

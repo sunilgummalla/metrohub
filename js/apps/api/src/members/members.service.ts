@@ -184,7 +184,12 @@ export class MembersService {
   }
 
   /**
-   * Stub image upload — returns a placeholder URL.
+   * Image upload stub.
+   *
+   * Currently throws `ServiceUnavailableException` (503) because Cloudflare R2
+   * is not yet wired. The member portal should handle this gracefully and show
+   * a "coming soon" message rather than an unhandled error.
+   *
    * TODO: upload to Cloudflare R2 and return the real CDN URL.
    */
   async uploadImage(_memberId: string, _file: Express.Multer.File): Promise<{ url: string }> {
