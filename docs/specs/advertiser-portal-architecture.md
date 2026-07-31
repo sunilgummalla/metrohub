@@ -11,9 +11,28 @@ The Advertiser Member Portal is a self-serve platform where local businesses, ev
 2.  **Live & Historical Inventory Dashboard:** The core data feature. Advertisers see both a live heatmap of the MetroHub ecosystem and historical trend data.
     *   *Live Example:* "145 active users on Poker Scorecard right now."
     *   *Historical Example:* "Last Friday between 8 PM - 10 PM, Poker Scorecard peaked at 210 concurrent users."
-3.  **AI Business Intelligence Assistant (Chainlit):** An embedded AI chat interface powered by Chainlit. Advertisers can ask natural language queries to make calculated buying decisions.
-    *   *Example Query:* "What is the best time slot to reach the most users on the Tambola app on weekends?"
-    *   *Example Query:* "How did the Poker footer slot perform last month during the 7-9 PM window?"
+3.  **AI Business Intelligence Assistant (Chainlit):** An embedded AI chat interface powered by Chainlit, available to all enrolled advertisers from day one at no additional cost.
+
+    **Access Policy — Strict Data Isolation:**
+    The assistant enforces a two-tier data access model on every query, regardless of how the question is phrased.
+
+    | Data Category | What the Advertiser Can See | What is Blocked |
+    |---|---|---|
+    | **Own campaigns** | Full detail — impressions, clicks, CTR, spend, creative performance, slot history | N/A |
+    | **Platform traffic** | General aggregated stats — total concurrent users per app, peak hours, day-of-week trends | Competitor spend, competitor CTR, competitor creative details |
+    | **Other businesses** | Nothing — zero visibility | All campaign data, identity, slot bookings, and performance of any other advertiser |
+
+    This isolation is enforced at the query layer, not just the UI layer. The Chainlit service receives the authenticated advertiser's `memberId` on every session and injects it as a mandatory filter on all database queries. The LLM prompt also includes a system instruction that explicitly prohibits it from speculating about, inferring, or revealing any information about other advertisers, even indirectly.
+
+    **Example Queries the Assistant Can Answer:**
+    *   *"What is the best 2-hour window on weekends to reach the most Tambola users?"* (platform traffic — allowed)
+    *   *"How did my Poker footer slot perform last month?"* (own campaign — allowed)
+    *   *"If I book the hero banner next Friday evening, what audience size can I expect based on history?"* (platform traffic — allowed)
+    *   *"Which of my slots had the highest click-through rate in the last 90 days?"* (own campaign — allowed)
+
+    **Example Queries the Assistant Will Decline:**
+    *   *"What is the other business running on the Tambola sidebar spending?"* (blocked — competitor data)
+    *   *"Who else is advertising on the Poker scorecard?"* (blocked — competitor identity)
 4.  **Slot Browsing & Purchasing:**
     *   Advertisers browse available `slotIds` (e.g., `hero-banner`, `poker-scorecard-footer`, `news-ticker`).
     *   They can select dates, times, and specific slots based on the live presence data and historical trends.
