@@ -11,7 +11,7 @@ The Advertiser Member Portal is a self-serve platform where local businesses, ev
 2.  **Live & Historical Inventory Dashboard:** The core data feature. Advertisers see both a live heatmap of the MetroHub ecosystem and historical trend data.
     *   *Live Example:* "145 active users on Poker Scorecard right now."
     *   *Historical Example:* "Last Friday between 8 PM - 10 PM, Poker Scorecard peaked at 210 concurrent users."
-3.  **AI Business Intelligence Assistant (Chainlit):** An embedded AI chat interface powered by Chainlit, available to all enrolled advertisers from day one at no additional cost.
+3.  **AI Business Intelligence Assistant (Chainlit):** An embedded AI chat interface powered by Chainlit. This is an **Advertiser Pro** feature — Advertiser Basic (Free) members do not have AI access (see [membership-tiers-and-gating.md](./membership-tiers-and-gating.md)). The sections below describe the assistant's behavior for Pro members.
 
     **Access Policy — Strict Data Isolation:**
     The assistant enforces a two-tier data access model on every query, regardless of how the question is phrased.
@@ -54,27 +54,10 @@ The API exposes a `PaymentService` interface with standard methods (`createCheck
 | **Config keys** | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` |
 
 The Member Portal frontend renders the appropriate payment UI component based on the active provider returned by the API, ensuring the checkout experience is always consistent with the configured gateway.
-4.  **Campaign Performance:** A simple analytics view showing impressions, clicks, and conversion rates (if tracked) for their active and past campaigns.
+5.  **Campaign Performance:** A simple analytics view showing impressions, clicks, and conversion rates (if tracked) for their active and past campaigns.
 
 ### UX Philosophy
 The Advertiser Portal must feel like a modern SaaS product (e.g., Facebook Ads Manager, but radically simpler). The focus is on showing the live audience value immediately to trigger a purchase.
-
----
-
-## 3. Data Retention Policy
-
-All presence data (concurrent user counts per route, per time interval) and campaign performance data (impressions, clicks, conversions) are retained for **3 years** from the date of collection.
-
-### Storage Architecture
-
-| Data Type | Granularity Stored | Retention | Notes |
-|---|---|---|---|
-| **Live presence** | Raw heartbeat events (30-second intervals) | 7 days | Used for real-time counts; purged after short window |
-| **Aggregated presence** | Hourly counts per route | 3 years | Pre-aggregated from raw events before purge; primary dataset for Chainlit and historical charts |
-| **Campaign impressions** | Per-impression log | 3 years | Enables granular performance replay |
-| **Campaign clicks** | Per-click log | 3 years | Enables CTR analysis over any time window |
-
-The 3-year retention window allows the Chainlit AI assistant to answer seasonal and year-over-year questions with high confidence — for example, comparing this Diwali season's Tambola traffic against the previous two years. Raw heartbeat events are aggregated into hourly buckets before the short-term purge, ensuring no meaningful data is lost while keeping storage costs manageable.
 
 ---
 
@@ -95,3 +78,20 @@ The Admin Portal is strictly for MetroHub internal staff to oversee, moderate, a
 
 ### UX Philosophy
 Usability over aesthetics. The Admin Portal should be a dense, data-rich interface optimized for speed, moderation queues, and rapid configuration changes.
+
+---
+
+## 3. Data Retention Policy
+
+All presence data (concurrent user counts per route, per time interval) and campaign performance data (impressions, clicks, conversions) are retained for **3 years** from the date of collection.
+
+### Storage Architecture
+
+| Data Type | Granularity Stored | Retention | Notes |
+|---|---|---|---|
+| **Live presence** | Raw heartbeat events (30-second intervals) | 7 days | Used for real-time counts; purged after short window |
+| **Aggregated presence** | Hourly counts per route | 3 years | Pre-aggregated from raw events before purge; primary dataset for Chainlit and historical charts |
+| **Campaign impressions** | Per-impression log | 3 years | Enables granular performance replay |
+| **Campaign clicks** | Per-click log | 3 years | Enables CTR analysis over any time window |
+
+The 3-year retention window allows the Chainlit AI assistant to answer seasonal and year-over-year questions with high confidence — for example, comparing this Diwali season's Tambola traffic against the previous two years. Raw heartbeat events are aggregated into hourly buckets before the short-term purge, ensuring no meaningful data is lost while keeping storage costs manageable.

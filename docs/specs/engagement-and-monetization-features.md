@@ -1,9 +1,10 @@
 # Engagement & Monetization Features Specification
 
-This document outlines the architecture, user experience, and integration strategy for three new engagement and monetization features on MetroHub:
+This document outlines the architecture, user experience, and integration strategy for four new engagement and monetization features on MetroHub:
 1. Admin-managed Hero Banner Ads
 2. AI-powered and Admin-curated News Feed
 3. Seamless In-game Banner Ads
+4. Real-Time Audience Presence & Advertiser Demand Engine
 
 The core philosophy across all these features is **seamless integration**. Ads and content must enhance the user experience rather than distract or annoy users.
 
