@@ -15,6 +15,12 @@ import {
   SubscriptionPlanSchema,
   Subscription,
   SubscriptionSchema,
+  Vendor,
+  VendorSchema,
+  BoosterConfig,
+  BoosterConfigSchema,
+  VendorSubscriptionTier,
+  VendorSubscriptionTierSchema,
 } from "./schemas";
 
 /**
@@ -57,6 +63,9 @@ function buildMongoUri(): string {
       { name: Session.name, schema: SessionSchema },
       { name: SubscriptionPlan.name, schema: SubscriptionPlanSchema },
       { name: Subscription.name, schema: SubscriptionSchema },
+      { name: Vendor.name, schema: VendorSchema },
+      { name: BoosterConfig.name, schema: BoosterConfigSchema },
+      { name: VendorSubscriptionTier.name, schema: VendorSubscriptionTierSchema },
     ]),
   ],
   exports: [MongooseModule],
