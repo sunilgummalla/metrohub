@@ -53,7 +53,7 @@ function ShellHeader({ onHome }: { onHome?: () => void }) {
         onClick={onHome ? (e) => { e.preventDefault(); onHome(); } : undefined}
       >
         <img
-          src="/brand/logo-horizontal-dark-400x133.png"
+          src="/brand/logo-horizontal-dark-800x267.png"
           alt="Metro Hub"
           className="brandLogo"
           width={168}
@@ -208,7 +208,7 @@ function PortalHome() {
             />
           </div>
 
-          <div className="heroBadge">Personal finance &amp; game nights portal</div>
+          <div className="heroBadge">⬡ MetroHub · Your Digital Command Centre</div>
 
           <h1 className="heroTitle">
             Your hub for<br />
