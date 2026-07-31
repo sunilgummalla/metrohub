@@ -1,40 +1,39 @@
-/* ─── Design tokens ─────────────────────────────────────────────────────────── */
+/* ─── Design tokens — Metro Hub light theme (aligned to ataseattle.org) ───── */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* Core palette — Metro Hub */
-  --navy:         #0f172a;
-  --navy-2:       #1e293b;
-  --navy-3:       #334155;
-  --gold:         #f59e0b;
-  --gold-light:   #fef3c7;
-  --gold-dark:    #d97706;
-  --teal:         #14b8a6;
-  --teal-light:   #ccfbf1;
-  --teal-dark:    #0f766e;
+  /* Core palette */
+  --orange:        #e07b00;   /* ATA marigold orange */
+  --orange-light:  #fef3e2;
+  --orange-dark:   #b86200;
+  --indigo:        #2563eb;   /* ATA indigo blue */
+  --indigo-light:  #eff6ff;
+  --indigo-dark:   #1d4ed8;
+  --teal:          #0d9488;
+  --teal-light:    #f0fdfa;
 
   /* Semantic tokens */
-  --bg:           #0b1120;
-  --surface:      #0f172a;
-  --surface-2:    #1e293b;
-  --surface-3:    #263348;
-  --border:       rgba(255,255,255,0.08);
-  --border-strong:rgba(255,255,255,0.14);
-  --text:         #f1f5f9;
-  --text-2:       #cbd5e1;
-  --muted:        #64748b;
+  --bg:            #fafaf8;   /* warm ivory */
+  --surface:       #ffffff;
+  --surface-2:     #f4f4f0;
+  --surface-3:   #ebebe6;
+  --border:        rgba(0,0,0,0.09);
+  --border-strong: rgba(0,0,0,0.15);
+  --text:          #1a1a2e;   /* deep navy — high contrast on white */
+  --text-2:        #374151;
+  --muted:         #6b7280;
 
-  /* Brand (primary = gold, accent = teal) */
-  --brand:        var(--gold);
-  --brand-light:  rgba(245,158,11,0.12);
-  --brand-dark:   var(--gold-dark);
-  --accent:       var(--teal);
-  --accent-light: rgba(20,184,166,0.12);
+  /* Brand (primary = orange, accent = indigo) */
+  --brand:        var(--orange);
+  --brand-light:  var(--orange-light);
+  --brand-dark:   var(--orange-dark);
+  --accent:       var(--indigo);
+  --accent-light: var(--indigo-light);
 
-  /* Shadows */
-  --shadow-sm: 0 1px 3px rgb(0 0 0 / 30%), 0 1px 2px rgb(0 0 0 / 20%);
-  --shadow-md: 0 4px 20px rgb(0 0 0 / 40%), 0 2px 8px rgb(0 0 0 / 25%);
-  --shadow-lg: 0 12px 48px rgb(0 0 0 / 50%), 0 4px 16px rgb(0 0 0 / 30%);
+  /* Shadows — lighter for light mode */
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 8%), 0 1px 2px rgb(0 0 0 / 5%);
+  --shadow-md: 0 4px 20px rgb(0 0 0 / 10%), 0 2px 8px rgb(0 0 0 / 6%);
+  --shadow-lg: 0 12px 48px rgb(0 0 0 / 12%), 0 4px 16px rgb(0 0 0 / 7%);
 
   --radius:    12px;
   --radius-sm: 8px;
@@ -71,11 +70,12 @@ h1, h2, h3, p { margin: 0; }
   justify-content: space-between;
   gap: 16px;
   padding: 0 32px;
-  height: 64px;
-  background: rgba(11,17,32,0.85);
+  height: 72px;                          /* taller so logo breathes */
+  background: rgba(255,255,255,0.92);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-sm);
 }
 
 .brand {
@@ -87,7 +87,7 @@ h1, h2, h3, p { margin: 0; }
 
 .brandLogo {
   display: block;
-  height: 40px;
+  height: 52px;                          /* was 40px — now properly sized */
   width: auto;
   object-fit: contain;
 }
@@ -180,7 +180,7 @@ h1, h2, h3, p { margin: 0; }
   width: 360px;
   height: 360px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(245,158,11,0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(224,123,0,0.08) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -191,7 +191,7 @@ h1, h2, h3, p { margin: 0; }
   width: 280px;
   height: 280px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(20,184,166,0.10) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -213,7 +213,7 @@ h1, h2, h3, p { margin: 0; }
   width: 72px;
   height: 72px;
   border-radius: 18px;
-  box-shadow: 0 4px 20px rgba(245,158,11,0.25);
+  box-shadow: 0 4px 20px rgba(224,123,0,0.20);
 }
 
 .heroBadge {
@@ -223,9 +223,9 @@ h1, h2, h3, p { margin: 0; }
   width: fit-content;
   padding: 5px 14px;
   border-radius: 999px;
-  background: var(--brand-light);
-  border: 1px solid rgba(245,158,11,0.25);
-  color: var(--gold);
+  background: var(--orange-light);
+  border: 1px solid rgba(224,123,0,0.25);
+  color: var(--orange-dark);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -240,8 +240,8 @@ h1, h2, h3, p { margin: 0; }
   color: var(--text);
 }
 
-.heroAccentGold { color: var(--gold); }
-.heroAccentTeal { color: var(--teal); }
+.heroAccentGold { color: var(--orange); }
+.heroAccentTeal { color: var(--indigo); }
 .heroAccentSep  { color: var(--muted); }
 
 .heroSubtitle {
@@ -290,27 +290,27 @@ h1, h2, h3, p { margin: 0; }
 }
 
 .heroBtnPrimary {
-  background: var(--gold);
-  color: var(--navy);
-  box-shadow: 0 2px 12px rgba(245,158,11,0.35);
+  background: var(--orange);
+  color: var(--text);
+  box-shadow: 0 2px 12px rgba(224,123,0,0.30);
 }
 
 .heroBtnPrimary:hover {
-  background: var(--gold-dark);
-  box-shadow: 0 4px 20px rgba(245,158,11,0.45);
+  background: var(--orange-dark);
+  box-shadow: 0 4px 20px rgba(224,123,0,0.40);
   transform: translateY(-1px);
 }
 
 .heroBtnSecondary {
-  background: var(--surface-2);
+  background: var(--surface);
   color: var(--text-2);
   border: 1px solid var(--border-strong);
 }
 
 .heroBtnSecondary:hover {
-  border-color: var(--teal);
-  color: var(--teal);
-  background: var(--accent-light);
+  border-color: var(--indigo);
+  color: var(--indigo);
+  background: var(--indigo-light);
 }
 
 /* Hero visual (right column) */
@@ -343,7 +343,7 @@ h1, h2, h3, p { margin: 0; }
 .statValue {
   font-size: 30px;
   font-weight: 900;
-  color: var(--gold);
+  color: var(--orange);
   line-height: 1;
 }
 
@@ -373,7 +373,7 @@ h1, h2, h3, p { margin: 0; }
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  background: var(--surface-2);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
   font-size: 13px;
@@ -385,8 +385,8 @@ h1, h2, h3, p { margin: 0; }
 }
 
 .heroPreviewChip:hover {
-  border-color: var(--gold);
-  background: var(--surface-3);
+  border-color: var(--orange);
+  background: var(--orange-light);
 }
 
 .heroPreviewIcon {
@@ -430,7 +430,7 @@ h1, h2, h3, p { margin: 0; }
 }
 
 .heroPreviewChip:hover .heroPreviewChipArrow {
-  color: var(--gold);
+  color: var(--orange);
   transform: translateX(2px);
 }
 
@@ -475,7 +475,7 @@ h1, h2, h3, p { margin: 0; }
   padding: 0 14px;
   border-radius: 999px;
   border: 1px solid var(--border-strong);
-  background: var(--surface-2);
+  background: var(--surface);
   color: var(--muted);
   font-size: 13px;
   font-weight: 600;
@@ -483,21 +483,21 @@ h1, h2, h3, p { margin: 0; }
 }
 
 .categoryPill:hover {
-  border-color: var(--teal);
-  color: var(--teal);
-  background: var(--accent-light);
+  border-color: var(--indigo);
+  color: var(--indigo);
+  background: var(--indigo-light);
 }
 
 .categoryPillActive {
-  border-color: var(--gold);
-  background: var(--gold);
-  color: var(--navy);
+  border-color: var(--orange);
+  background: var(--orange);
+  color: var(--text);
 }
 
 .categoryPillActive:hover {
-  background: var(--gold-dark);
-  border-color: var(--gold-dark);
-  color: var(--navy);
+  background: var(--orange-dark);
+  border-color: var(--orange-dark);
+  color: var(--text);
 }
 
 .categoryPillCount {
@@ -508,13 +508,13 @@ h1, h2, h3, p { margin: 0; }
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.12);
+  background: var(--border);
   font-size: 11px;
   font-weight: 700;
 }
 
 .categoryPillActive .categoryPillCount {
-  background: rgba(15,23,42,0.2);
+  background: rgba(255,255,255,0.30);
 }
 
 /* App grid */
@@ -540,10 +540,10 @@ h1, h2, h3, p { margin: 0; }
 }
 
 .appCard:hover {
-  border-color: var(--gold);
-  box-shadow: var(--shadow-md), 0 0 0 1px rgba(245,158,11,0.15);
+  border-color: var(--orange);
+  box-shadow: var(--shadow-md), 0 0 0 1px rgba(224,123,0,0.12);
   transform: translateY(-2px);
-  background: var(--surface-2);
+  background: var(--orange-light);
 }
 
 .appCardIcon {
@@ -595,7 +595,7 @@ h1, h2, h3, p { margin: 0; }
 }
 
 .appCard:hover .appCardArrow {
-  color: var(--gold);
+  color: var(--orange);
   transform: translateX(3px);
 }
 
@@ -613,7 +613,7 @@ h1, h2, h3, p { margin: 0; }
 .eyebrow {
   font-size: 11px;
   font-weight: 800;
-  color: var(--teal);
+  color: var(--indigo);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 4px;
@@ -640,6 +640,7 @@ h1, h2, h3, p { margin: 0; }
   font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.02em;
+  color: var(--text);
 }
 
 .workspaceHeader p {
@@ -654,7 +655,7 @@ h1, h2, h3, p { margin: 0; }
   padding: 0 14px;
   border-radius: 8px;
   border: 1px solid var(--border-strong);
-  background: var(--surface-2);
+  background: var(--surface);
   font-size: 13px;
   font-weight: 700;
   color: var(--text-2);
@@ -663,8 +664,8 @@ h1, h2, h3, p { margin: 0; }
 }
 
 .secondaryAction:hover {
-  border-color: var(--teal);
-  color: var(--teal);
+  border-color: var(--indigo);
+  color: var(--indigo);
 }
 
 .appViewport {
@@ -714,6 +715,7 @@ h1, h2, h3, p { margin: 0; }
 .viewportBody h2 {
   font-size: 28px;
   font-weight: 800;
+  color: var(--text);
 }
 
 .viewportBody p {
@@ -788,5 +790,5 @@ h1, h2, h3, p { margin: 0; }
   .heroFeaturePill { font-size: 11px; padding: 4px 10px; }
   .categoryPills { gap: 6px; }
   .categoryPill { font-size: 12px; height: 30px; padding: 0 10px; }
-  .brandLogo { height: 32px; }
+  .brandLogo { height: 42px; }
 }
