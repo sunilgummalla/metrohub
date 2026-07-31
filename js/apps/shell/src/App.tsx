@@ -56,8 +56,8 @@ function ShellHeader({ onHome }: { onHome?: () => void }) {
           src="/brand/logo-horizontal-dark-400x133.png"
           alt="Metro Hub"
           className="brandLogo"
-          width={134}
-          height={45}
+          width={168}
+          height={56}
         />
       </a>
       <nav className="topNav" aria-label="Shell navigation">

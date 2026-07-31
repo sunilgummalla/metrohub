@@ -70,8 +70,8 @@ h1, h2, h3, p { margin: 0; }
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 0 32px;
-  height: 64px;
+  padding: 0 40px;
+  height: 80px;
   background: rgba(11,17,32,0.85);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(20px);
@@ -87,7 +87,7 @@ h1, h2, h3, p { margin: 0; }
 
 .brandLogo {
   display: block;
-  height: 40px;
+  height: 56px;
   width: auto;
   object-fit: contain;
 }
@@ -788,5 +788,5 @@ h1, h2, h3, p { margin: 0; }
   .heroFeaturePill { font-size: 11px; padding: 4px 10px; }
   .categoryPills { gap: 6px; }
   .categoryPill { font-size: 12px; height: 30px; padding: 0 10px; }
-  .brandLogo { height: 32px; }
+  .brandLogo { height: 44px; }
 }
