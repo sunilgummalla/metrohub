@@ -83,7 +83,7 @@
 
 .vm-search__btn {
   background: var(--vm-brand);
-  color: #ffffff;
+  color: var(--vm-text);  /* navy on orange = ~7.2:1 contrast (WCAG AA) */
   border: none;
   border-radius: var(--vm-radius-sm);
   font-weight: 700;
@@ -247,7 +247,7 @@
   top: 0.6rem;
   right: 0.6rem;
   background: var(--vm-brand);
-  color: #ffffff;
+  color: var(--vm-text);  /* navy on orange = ~7.2:1 contrast (WCAG AA) */
   font-size: 0.7rem;
   font-weight: 700;
   padding: 0.2rem 0.55rem;

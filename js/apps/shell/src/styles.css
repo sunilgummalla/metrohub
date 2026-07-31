@@ -291,7 +291,7 @@ h1, h2, h3, p { margin: 0; }
 
 .heroBtnPrimary {
   background: var(--orange);
-  color: #ffffff;
+  color: var(--text);
   box-shadow: 0 2px 12px rgba(224,123,0,0.30);
 }
 
@@ -491,13 +491,13 @@ h1, h2, h3, p { margin: 0; }
 .categoryPillActive {
   border-color: var(--orange);
   background: var(--orange);
-  color: #ffffff;
+  color: var(--text);
 }
 
 .categoryPillActive:hover {
   background: var(--orange-dark);
   border-color: var(--orange-dark);
-  color: #ffffff;
+  color: var(--text);
 }
 
 .categoryPillCount {
@@ -508,7 +508,7 @@ h1, h2, h3, p { margin: 0; }
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: rgba(0,0,0,0.10); /* = var(--border) */
+  background: var(--border);
   font-size: 11px;
   font-weight: 700;
 }

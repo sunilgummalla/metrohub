@@ -146,7 +146,7 @@ body {
   background: var(--brand);
   border: none;
   border-radius: var(--radius-sm);
-  color: #ffffff;
+  color: var(--text);  /* navy on orange = ~7.2:1 contrast (WCAG AA) */
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 700;
@@ -370,7 +370,7 @@ body {
   background: var(--brand);
   border: none;
   border-radius: var(--radius-sm);
-  color: #ffffff;
+  color: var(--text);  /* navy on orange = ~7.2:1 contrast (WCAG AA) */
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 700;
@@ -509,7 +509,7 @@ body {
   left: 0;
   right: 0;
   background: rgba(224, 123, 0, 0.85);
-  color: #ffffff;
+  color: var(--text);  /* navy on amber = adequate contrast */
   font-size: 0.65rem;
   font-weight: 700;
   text-align: center;
