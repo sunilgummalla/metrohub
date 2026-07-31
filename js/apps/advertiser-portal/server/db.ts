@@ -209,8 +209,31 @@ export async function getHistoricalPresence(
 export async function createBooking(data: InsertBooking) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  const result = await db.insert(bookings).values(data);
-  return result[0];
+  // Drizzle MySQL insert result shape varies by driver; $returningId() reliably
+  // returns the autoincrement primary key as [{ id: number }].
+  const [row] = await db.insert(bookings).values(data).$returningId();
+  return row;
+}
+
+/**
+ * Bookings that occupy a slot within [from, to], across all advertisers.
+ * Excludes rejected/cancelled bookings so freed-up dates read as available.
+ * Used by the availability calendar.
+ */
+export async function getBookingsForSlot(slotId: string, from: Date, to: Date) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(bookings)
+    .where(
+      and(
+        eq(bookings.slotId, slotId),
+        sql`${bookings.status} NOT IN ('rejected','cancelled')`,
+        lte(bookings.startDate, to),
+        gte(bookings.endDate, from)
+      )
+    );
 }
 
 export async function getBookingsByAdvertiser(advertiserId: number) {

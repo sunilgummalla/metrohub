@@ -39,10 +39,14 @@ export function getSessionCookieOptions(
   //       ? hostname
   //       : undefined;
 
+  // Browsers reject SameSite=None cookies unless Secure=true, which would break
+  // local/dev HTTP flows. Only send SameSite=None over HTTPS; fall back to Lax
+  // (still valid for same-site OAuth redirects) on insecure requests.
+  const secure = isSecureRequest(req);
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req),
+    sameSite: secure ? "none" : "lax",
+    secure,
   };
 }

@@ -87,6 +87,12 @@ ${livePresence.map(p => `- ${p.appName}: ${p.count} concurrent users right now`)
             max_tokens: 600,
           }),
         });
+        if (!response.ok) {
+          const errBody = await response.text().catch(() => "");
+          throw new Error(
+            `LLM request failed: ${response.status} ${response.statusText}${errBody ? ` — ${errBody}` : ""}`
+          );
+        }
         const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
         reply = data.choices?.[0]?.message?.content ?? "I'm unable to answer that right now. Please try again.";
       } catch (err) {

@@ -15,7 +15,8 @@
 - [x] tRPC: campaigns.stats — aggregate stats for own campaigns
 - [x] tRPC: ai.chat — AI assistant with per-member data isolation (query + LLM layers)
 - [x] Payment adapter: provider-agnostic interface (Stripe primary, PayPal secondary)
-- [x] Payment webhook handler for booking confirmation
+- [x] Payment adapter `handleWebhook` interface + provider stubs (Stripe/PayPal)
+- [ ] `/api/payment/webhook` HTTP endpoint wiring for booking confirmation (next step — not in this PR)
 ## Phase 2: Frontend — Global Theme & Layout
 - [x] Global theme: Space Grotesk + Inter fonts, indigo/amber/slate palette, light mode default
 - [x] DashboardLayout sidebar with 6 sections: Overview, Live Audience, Ad Slots, My Campaigns, AI Assistant, Account & Billing

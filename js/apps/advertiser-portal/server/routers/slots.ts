@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { getAllAdSlots, getLivePresence, createBooking, updateBookingStatus, getBookingsByAdvertiser } from "../db";
+import { getAllAdSlots, getLivePresence, createBooking, updateBookingStatus, getBookingsByAdvertiser, getBookingsForSlot } from "../db";
 import { getPaymentAdapter } from "../payment";
 import { protectedProcedure, router } from "../_core/trpc";
 
@@ -21,14 +21,36 @@ export const slotsRouter = router({
   }),
 
   availability: protectedProcedure
-    .input(z.object({ slotId: z.string(), month: z.number(), year: z.number() }))
+    .input(z.object({ slotId: z.string(), month: z.number().int().min(1).max(12), year: z.number().int() }))
     .query(async ({ input }) => {
-      // Query bookings table for the given slot/month to find booked dates
-      const allBookings = await getBookingsByAdvertiser(0); // pass 0 to get all (see db helper)
-      // For availability we need all bookings for this slot, not just one advertiser's
-      // This is a simplified check — production would query across all advertisers
-      const bookedDays: number[] = [];
-      return { slotId: input.slotId, month: input.month, year: input.year, bookedDays };
+      // Booked days = every day-of-month covered by a non-cancelled booking on this
+      // slot that overlaps the requested month, across all advertisers.
+      const monthStart = new Date(input.year, input.month - 1, 1, 0, 0, 0, 0);
+      const monthEnd = new Date(input.year, input.month, 0, 23, 59, 59, 999);
+
+      const slotBookings = await getBookingsForSlot(input.slotId, monthStart, monthEnd);
+
+      const bookedDays = new Set<number>();
+      for (const booking of slotBookings) {
+        const bStart = new Date(booking.startDate);
+        const bEnd = new Date(booking.endDate);
+        const rangeStart = bStart > monthStart ? bStart : monthStart;
+        const rangeEnd = bEnd < monthEnd ? bEnd : monthEnd;
+        const cursor = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate());
+        while (cursor <= rangeEnd) {
+          if (cursor.getMonth() === input.month - 1 && cursor.getFullYear() === input.year) {
+            bookedDays.add(cursor.getDate());
+          }
+          cursor.setDate(cursor.getDate() + 1);
+        }
+      }
+
+      return {
+        slotId: input.slotId,
+        month: input.month,
+        year: input.year,
+        bookedDays: Array.from(bookedDays).sort((a, b) => a - b),
+      };
     }),
 
   bookSlot: protectedProcedure
@@ -71,7 +93,7 @@ export const slotsRouter = router({
         creativeClickUrl: input.creativeClickUrl,
         creativeImageUrl: input.creativeImageUrl,
       });
-      const bookingId = (bookingResult as { insertId?: number })?.insertId ?? 0;
+      const bookingId = bookingResult?.id ?? 0;
 
       // Create payment session
       const adapter = getPaymentAdapter();
