@@ -56,11 +56,11 @@ function ShellHeader({ onHome }: { onHome?: () => void }) {
         onClick={onHome ? (e) => { e.preventDefault(); onHome(); } : undefined}
       >
         <img
-          src="/brand/logo-horizontal-dark-400x133.png"
+          src="/brand/logo-horizontal-light-800x267.png"
           alt="Metro Hub"
           className="brandLogo"
-          width={134}
-          height={45}
+          width={200}
+          height={67}
         />
       </a>
       <nav className="topNav" aria-label="Shell navigation">

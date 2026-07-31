@@ -1,17 +1,21 @@
-/* ─── Vendor Marketplace — MetroHub dark-navy theme ─────────────────────── */
+/* ─── Vendor Marketplace — Metro Hub light theme (aligned to ataseattle.org) */
 
 :root {
-  --vm-bg: #0b1120;
-  --vm-surface: #0f172a;
-  --vm-surface-2: #1e293b;
-  --vm-border: #334155;
-  --vm-brand: #f59e0b;
-  --vm-accent: #14b8a6;
-  --vm-text: #f1f5f9;
-  --vm-text-muted: #94a3b8;
-  --vm-radius: 12px;
-  --vm-radius-sm: 6px;
-  --vm-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --vm-bg:          #fafaf8;   /* warm ivory */
+  --vm-surface:     #ffffff;
+  --vm-surface-2:   #f4f4f0;
+  --vm-border:      rgba(0,0,0,0.09);
+  --vm-border-strong: rgba(0,0,0,0.15);
+  --vm-brand:       #e07b00;   /* ATA marigold orange */
+  --vm-brand-dark:  #b86200;
+  --vm-brand-light: #fef3e2;
+  --vm-accent:      #2563eb;   /* ATA indigo blue */
+  --vm-accent-light:#eff6ff;
+  --vm-text:        #1a1a2e;   /* deep navy — fully readable on white */
+  --vm-text-muted:  #6b7280;
+  --vm-radius:      12px;
+  --vm-radius-sm:   6px;
+  --vm-shadow:      0 4px 20px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
 }
 
 /* ─── App shell ─────────────────────────────────────────────────────────── */
@@ -27,7 +31,7 @@
 /* ─── Header ────────────────────────────────────────────────────────────── */
 
 .vm-header {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  background: linear-gradient(135deg, #fef3e2 0%, #eff6ff 100%);
   padding: 3rem 2rem 2rem;
   text-align: center;
   border-bottom: 1px solid var(--vm-border);
@@ -58,38 +62,40 @@
 
 .vm-search__input {
   flex: 1;
-  background: var(--vm-surface-2);
-  border: 1px solid var(--vm-border);
+  background: var(--vm-surface);
+  border: 1px solid var(--vm-border-strong);
   border-radius: var(--vm-radius-sm);
   color: var(--vm-text);
   font-size: 0.95rem;
   padding: 0.65rem 1rem;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .vm-search__input:focus {
   border-color: var(--vm-accent);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
 }
 
 .vm-search__input::placeholder {
-  color: var(--vm-text-muted);
+  color: #9ca3af;
 }
 
 .vm-search__btn {
   background: var(--vm-brand);
-  color: #0b1120;
+  color: #ffffff;
   border: none;
   border-radius: var(--vm-radius-sm);
   font-weight: 700;
   font-size: 0.9rem;
   padding: 0.65rem 1.25rem;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: background 0.2s, box-shadow 0.2s;
 }
 
 .vm-search__btn:hover {
-  opacity: 0.85;
+  background: var(--vm-brand-dark);
+  box-shadow: 0 2px 12px rgba(224,123,0,0.30);
 }
 
 /* ─── Category pills ────────────────────────────────────────────────────── */
@@ -105,8 +111,8 @@
 }
 
 .vm-category-pill {
-  background: var(--vm-surface-2);
-  border: 1px solid var(--vm-border);
+  background: var(--vm-surface);
+  border: 1px solid var(--vm-border-strong);
   border-radius: 999px;
   color: var(--vm-text-muted);
   font-size: 0.8rem;
@@ -120,13 +126,19 @@
 .vm-category-pill:hover {
   border-color: var(--vm-accent);
   color: var(--vm-accent);
+  background: var(--vm-accent-light);
 }
 
 .vm-category-pill--active {
   background: var(--vm-accent);
   border-color: var(--vm-accent);
-  color: #0b1120;
+  color: #ffffff;
   font-weight: 700;
+}
+
+.vm-category-pill--active:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
 }
 
 /* ─── Results area ──────────────────────────────────────────────────────── */
@@ -147,7 +159,7 @@
 }
 
 .vm-error {
-  color: #f87171;
+  color: #dc2626;
 }
 
 .vm-empty__reset {
@@ -177,6 +189,7 @@
   overflow: hidden;
   transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
   position: relative;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 /* Hover effect on the card article */
@@ -226,7 +239,7 @@
 
 .vm-card--featured {
   border-color: var(--vm-brand);
-  box-shadow: 0 0 0 1px var(--vm-brand);
+  box-shadow: 0 0 0 1px var(--vm-brand), 0 2px 12px rgba(224,123,0,0.12);
 }
 
 .vm-card__badge {
@@ -234,7 +247,7 @@
   top: 0.6rem;
   right: 0.6rem;
   background: var(--vm-brand);
-  color: #0b1120;
+  color: #ffffff;
   font-size: 0.7rem;
   font-weight: 700;
   padding: 0.2rem 0.55rem;
@@ -263,7 +276,8 @@
   justify-content: center;
   font-size: 3rem;
   font-weight: 800;
-  color: var(--vm-text-muted);
+  color: var(--vm-brand);
+  background: var(--vm-brand-light);
 }
 
 .vm-card__body {
@@ -321,14 +335,14 @@
 }
 
 .vm-pagination__btn {
-  background: var(--vm-surface-2);
-  border: 1px solid var(--vm-border);
+  background: var(--vm-surface);
+  border: 1px solid var(--vm-border-strong);
   border-radius: var(--vm-radius-sm);
   color: var(--vm-text);
   font-size: 0.875rem;
   padding: 0.5rem 1rem;
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, color 0.2s;
 }
 
 .vm-pagination__btn:disabled {
@@ -339,6 +353,7 @@
 .vm-pagination__btn:not(:disabled):hover {
   border-color: var(--vm-accent);
   color: var(--vm-accent);
+  background: var(--vm-accent-light);
 }
 
 .vm-pagination__info {
@@ -356,7 +371,7 @@
 
 .vm-detail__back {
   background: none;
-  border: 1px solid var(--vm-border);
+  border: 1px solid var(--vm-border-strong);
   border-radius: var(--vm-radius-sm);
   color: var(--vm-text-muted);
   cursor: pointer;
@@ -399,8 +414,9 @@
 }
 
 .vm-detail__category {
-  background: var(--vm-accent);
-  color: #0b1120;
+  background: var(--vm-accent-light);
+  color: var(--vm-accent);
+  border: 1px solid rgba(37,99,235,0.20);
   font-size: 0.75rem;
   font-weight: 700;
   padding: 0.2rem 0.7rem;
@@ -423,12 +439,17 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
 
 .vm-detail__contact p {
   margin: 0;
   font-size: 0.9rem;
   color: var(--vm-text-muted);
+}
+
+.vm-detail__contact p strong {
+  color: var(--vm-text);
 }
 
 .vm-detail__link {
@@ -471,6 +492,7 @@
 
 .vm-detail__markdown code {
   background: var(--vm-surface-2);
+  border: 1px solid var(--vm-border);
   border-radius: 4px;
   padding: 0.1em 0.4em;
   font-size: 0.875em;
@@ -478,6 +500,7 @@
 
 .vm-detail__markdown pre {
   background: var(--vm-surface-2);
+  border: 1px solid var(--vm-border);
   border-radius: var(--vm-radius-sm);
   padding: 1rem;
   overflow-x: auto;
