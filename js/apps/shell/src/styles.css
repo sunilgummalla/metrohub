@@ -16,7 +16,7 @@
   --bg:            #fafaf8;   /* warm ivory */
   --surface:       #ffffff;
   --surface-2:     #f4f4f0;
-  --surface-3:     #ebebе6;
+  --surface-3:   #ebebe6;
   --border:        rgba(0,0,0,0.09);
   --border-strong: rgba(0,0,0,0.15);
   --text:          #1a1a2e;   /* deep navy — high contrast on white */
@@ -508,7 +508,7 @@ h1, h2, h3, p { margin: 0; }
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: rgba(0,0,0,0.10);
+  background: rgba(0,0,0,0.10); /* = var(--border) */
   font-size: 11px;
   font-weight: 700;
 }
