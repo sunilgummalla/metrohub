@@ -50,11 +50,30 @@ A news feed providing local and international news to give users a reason to vis
 ## 3. Seamless In-Game Banner Ads
 
 ### Overview
-Monetization within the high-engagement game scorecard apps (Poker, Rummy, Tambola, Bingo) without disrupting gameplay.
+Monetization within the high-engagement game scorecard apps (Poker, Rummy, Tambola, Bingo) without disrupting gameplay. Each placement within an app is treated as a distinct, sellable inventory unit.
 
 ### Architecture & Data Model
-*   **Delivery:** The experience layer fetches contextual ads from the API based on the current micro-app (e.g., snack ads during Poker).
-*   **Tracking:** Simple impression and click tracking logged back to the API.
+*   **Distinct Inventory Units:** In-game ad slots are managed entirely separately from Hero Banners. They have a lighter data model (e.g., icon + one-liner copy, or small 320x50 banner) optimized for the game context.
+*   **Delivery:** The experience layer fetches contextual ads from the API based on the specific `slotId` requested by the micro-app (e.g., `poker-scorecard-footer`, `tambola-sidebar`).
+*   **Tracking:** Simple impression and click tracking logged back to the API, grouped by `slotId`.
+
+---
+
+## 4. Real-Time Audience Presence & Advertiser Demand Engine
+
+### Overview
+To drive urgency and demand for ad slots, the platform tracks and exposes real-time concurrent user counts ("presence") per page and per ad slot. This allows local businesses to see exactly how many eyeballs are currently on a page and bid or buy accordingly.
+
+### Architecture & Data Model
+*   **Presence Tracking:** A WebSocket or Server-Sent Events (SSE) connection between the React shell/micro-apps and the NestJS API.
+*   **Heartbeat:** Clients send a lightweight ping every 30 seconds containing their current `appId` and `route`.
+*   **Aggregation:** The API maintains a real-time count of active connections per route in memory (e.g., Redis).
+
+### User Experience (UX) Integration
+*   **For Advertisers (Admin/Portal):** A dashboard showing live heatmaps. E.g., *"There are currently 145 users playing Poker. Buy the Poker Footer slot for the next hour for $X."*
+*   **For Users (Optional):** A subtle social proof indicator in the shell or app header: *"🔥 42 people playing Rummy right now."* This creates a sense of community for the players while simultaneously proving the value of the real estate.
+
+## 5. In-Game Banner Ad UX Constraints
 
 ### User Experience (UX) Integration
 *   **Crucial Constraint:** Ads *must not* interrupt the core loop of the game (e.g., entering a score, calling a number).
