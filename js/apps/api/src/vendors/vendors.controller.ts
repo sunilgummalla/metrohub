@@ -128,13 +128,17 @@ function extractMemberIdOrThrow(req: { headers: Record<string, string> }): strin
  *   GET  /api/vendors/:id          Get a single approved vendor
  *
  * Member routes (MemberGuard — replace with JWT guard):
- *   POST  /api/vendors             Create a vendor application
+ *   POST  /api/vendors             Create a vendor application (status: pending)
  *   PATCH /api/vendors/:id         Update own vendor profile
  *   ownerId is derived from the stub Bearer token, not from a query param.
  *
  * Admin routes (AdminGuard — replace with Entra JWT guard):
  *   GET   /api/vendors/admin/list        List all vendors (any status)
- *   PATCH /api/vendors/admin/:id/status  Approve / reject a vendor
+ *   PATCH /api/vendors/admin/:id/status  Set vendor status (approved/rejected/suspended)
+ *
+ * NOTE: Separate /approve and /feature endpoints mentioned in earlier drafts
+ * were consolidated into PATCH /admin/:id/status for simplicity in Phase 1.
+ * The `featured` flag will be managed via a dedicated endpoint in a future phase.
  */
 @Controller("vendors")
 export class VendorsController {

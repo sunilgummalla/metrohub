@@ -167,9 +167,13 @@ export function VendorMarketplaceApp({ citySlug = "seattle" }: VendorMarketplace
             {filters.q || filters.category ? (
               <button
                 className="vm-empty__reset"
-                onClick={() =>
-                  setFilters({ citySlug, page: 1, limit: PAGE_SIZE })
-                }
+                onClick={() => {
+                  // Reset both the active filters AND the search input so the
+                  // UI stays consistent — a stale query in the input box would
+                  // re-apply on the next submission otherwise.
+                  setFilters({ citySlug, page: 1, limit: PAGE_SIZE });
+                  setSearchInput("");
+                }}
               >
                 Clear filters
               </button>

@@ -2,6 +2,13 @@ import React, { useEffect, useState } from "react";
 import { register, getCategories } from "../api";
 import type { MemberSession } from "../api";
 
+/** Basic email format check — avoids a round-trip for obviously invalid input. */
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+const MIN_PASSWORD_LENGTH = 8;
+
 interface RegisterPageProps {
   onRegister: (session: MemberSession) => void;
   onGoLogin: () => void;
@@ -37,14 +44,39 @@ export function RegisterPage({ onRegister, onGoLogin }: RegisterPageProps) {
     e.preventDefault();
     setError(null);
 
-    if (form.password !== form.confirmPassword) {
-      setError("Passwords do not match");
+    // Client-side validation — noValidate disables browser constraint validation,
+    // so we must check all required fields ourselves before submitting.
+    if (!form.businessName.trim()) {
+      setError("Business name is required");
       return;
     }
 
     const category = form.category === "__custom__" ? form.customCategory.trim() : form.category;
     if (!category) {
       setError("Please select or enter a category");
+      return;
+    }
+
+    if (!form.email.trim()) {
+      setError("Email is required");
+      return;
+    }
+    if (!isValidEmail(form.email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    if (!form.password) {
+      setError("Password is required");
+      return;
+    }
+    if (form.password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+      return;
+    }
+
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match");
       return;
     }
 

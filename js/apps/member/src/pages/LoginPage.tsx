@@ -8,6 +8,11 @@ interface LoginPageProps {
   onGoForgot: () => void;
 }
 
+/** Basic email format check — avoids a round-trip for obviously invalid input. */
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export function LoginPage({ onLogin, onGoRegister, onGoForgot }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,9 +22,25 @@ export function LoginPage({ onLogin, onGoRegister, onGoForgot }: LoginPageProps)
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    // Client-side validation — noValidate disables browser constraint validation,
+    // so we must check required fields and email format ourselves before submitting.
+    if (!email.trim()) {
+      setError("Email is required");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+    if (!password) {
+      setError("Password is required");
+      return;
+    }
+
     setLoading(true);
     try {
-      const session = await login({ email, password });
+      const session = await login({ email: email.trim(), password });
       onLogin(session);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");

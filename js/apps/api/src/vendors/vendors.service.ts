@@ -100,6 +100,19 @@ export class VendorsService {
     // Only applied when all three values are present and finite numbers.
     const isGeoQuery = lat !== undefined && lng !== undefined && radiusKm !== undefined;
     if (isGeoQuery) {
+      // Validate coordinate ranges before building the $near query.
+      // MongoDB rejects $near with a negative $maxDistance or out-of-range
+      // coordinates, which would produce a cryptic 500 rather than a clear 400.
+      if (lat < -90 || lat > 90) {
+        throw new BadRequestException(`lat must be between -90 and 90, got ${lat}`);
+      }
+      if (lng < -180 || lng > 180) {
+        throw new BadRequestException(`lng must be between -180 and 180, got ${lng}`);
+      }
+      if (radiusKm <= 0) {
+        throw new BadRequestException(`radiusKm must be a positive number, got ${radiusKm}`);
+      }
+
       filter.location = {
         $near: {
           $geometry: { type: "Point", coordinates: [lng, lat] },

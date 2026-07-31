@@ -5,6 +5,11 @@ interface ForgotPasswordPageProps {
   onGoLogin: () => void;
 }
 
+/** Basic email format check — avoids a round-trip for obviously invalid input. */
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export function ForgotPasswordPage({ onGoLogin }: ForgotPasswordPageProps) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -14,9 +19,21 @@ export function ForgotPasswordPage({ onGoLogin }: ForgotPasswordPageProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    // Client-side validation — noValidate disables browser constraint validation,
+    // so we must check required fields and email format ourselves before submitting.
+    if (!email.trim()) {
+      setError("Email is required");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
     setLoading(true);
     try {
-      await requestPasswordReset(email);
+      await requestPasswordReset(email.trim());
       setSent(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Request failed");
