@@ -309,7 +309,7 @@ The data model is designed to accommodate future carrier integrations. MetroHub 
 | `images` | String[] | Cloudflare R2 URLs |
 | `tags` | String[] | For search indexing |
 | `categoryIds` | ObjectId[] | |
-| `platformFeeOverridePct` | Number? | Overrides store/global default |
+| `platformFeeOverridePct` | Decimal? | Overrides store/global default. Percentage expressed as **0–100** (e.g. `12.5` = 12.5%); decimals allowed; `null` = use store/global default. |
 | `createdAt` | Date | |
 | `publishedAt` | Date? | |
 
@@ -320,10 +320,10 @@ The data model is designed to accommodate future carrier integrations. MetroHub 
 | `_id` | ObjectId | |
 | `buyerId` | ObjectId | |
 | `vendorId` | ObjectId | |
-| `items` | Array | `{ productId, quantity, unitPrice, subtotal }` |
-| `subtotal` | Number | |
-| `platformFeeAmount` | Number | Calculated at time of purchase |
-| `total` | Number | |
+| `items` | Array | `{ productId, quantity: Integer, unitPrice: Integer, subtotal: Integer }` — `unitPrice`/`subtotal` are integer minor units (same rule as `Product.price`) |
+| `subtotal` | Integer | Minor currency units (integer). Sum of item subtotals. |
+| `platformFeeAmount` | Integer | Minor currency units (integer). Calculated at time of purchase. |
+| `total` | Integer | Minor currency units (integer). `subtotal` + fees/shipping as applicable. |
 | `currency` | String | |
 | `paymentStatus` | Enum | `pending`, `paid`, `refunded`, `failed` |
 | `stripePaymentIntentId` | String? | |
