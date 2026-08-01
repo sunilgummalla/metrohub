@@ -3,7 +3,7 @@ import { RummyScorecard } from "@metrohub/rummy-scorecard";
 import { TambolaApp } from "@metrohub/tambola";
 import { BingoApp } from "@metrohub/bingo";
 import { PlansApp } from "@metrohub/plans";
-import { MarketplaceApp } from "./MarketplaceApp";
+import { MarketplaceApp } from "@metrohub/marketplace";
 import registry from "../../api/app-registry.json";
 
 type PortalApp = (typeof registry.apps)[number];
@@ -326,7 +326,7 @@ function AppWorkspace({ app }: { app: PortalApp }) {
         ) : app.id === "plans" ? (
           <PlansApp />
         ) : app.id === "marketplace" ? (
-          <MarketplaceApp />
+          <MarketplaceApp citySlug="seattle" />
         ) : (
           <div className="viewportBody">
             <span

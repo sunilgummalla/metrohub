@@ -18,3 +18,12 @@ export type { SubscriptionPlanDocument } from "./subscription-plan.schema";
 
 export { Subscription, SubscriptionSchema } from "./subscription.schema";
 export type { SubscriptionDocument } from "./subscription.schema";
+
+export { Vendor, VendorSchema } from "./vendor.schema";
+export type { VendorDocument, VendorStatus } from "./vendor.schema";
+
+export { BoosterConfig, BoosterConfigSchema } from "./booster-config.schema";
+export type { BoosterConfigDocument, BoosterPeriod } from "./booster-config.schema";
+
+export { VendorSubscriptionTier, VendorSubscriptionTierSchema } from "./vendor-subscription-tier.schema";
+export type { VendorSubscriptionTierDocument } from "./vendor-subscription-tier.schema";
