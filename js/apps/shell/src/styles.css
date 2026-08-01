@@ -1,66 +1,186 @@
-/* ─── Design tokens — Metro Hub light theme (aligned to ataseattle.org) ───── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   MetroHub Shell — "Aurora Light" design system
+   Bright, high-contrast, futuristic-light theme.
+   Fonts: Space Grotesk (display) + Inter (body)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap");
+
+/* ── Design tokens ─────────────────────────────────────────────────────────── */
 :root {
-  color-scheme: light;
+  /* Surfaces */
+  --bg:            #f6f8fc;   /* page background — soft cool white          */
+  --surface:       #ffffff;   /* cards, header                              */
+  --surface-2:     #eef2f9;   /* subtle panels, pills                       */
 
-  /* Core palette */
-  --orange:        #e07b00;   /* ATA marigold orange */
-  --orange-light:  #fef3e2;
-  --orange-dark:   #b86200;
-  --indigo:        #2563eb;   /* ATA indigo blue */
-  --indigo-light:  #eff6ff;
-  --indigo-dark:   #1d4ed8;
-  --teal:          #0d9488;
-  --teal-light:    #f0fdfa;
+  /* Ink — high contrast text */
+  --ink:           #0d1b2e;   /* primary text — near-black navy (AAA)       */
+  --ink-soft:      #3f4f66;   /* secondary text (AA+ on white)              */
+  --ink-faint:     #64748b;   /* metadata, labels                           */
 
-  /* Semantic tokens */
-  --bg:            #fafaf8;   /* warm ivory */
-  --surface:       #ffffff;
-  --surface-2:     #f4f4f0;
-  --surface-3:   #ebebe6;
-  --border:        rgba(0,0,0,0.09);
-  --border-strong: rgba(0,0,0,0.15);
-  --text:          #1a1a2e;   /* deep navy — high contrast on white */
-  --text-2:        #374151;
-  --muted:         #6b7280;
+  /* Brand accents */
+  --indigo:        #4338ca;   /* primary action — deep indigo               */
+  --indigo-bright: #6366f1;
+  --amber:         #b45309;   /* brand gold, darkened for text contrast     */
+  --amber-bright:  #f59e0b;   /* brand gold for graphics/borders            */
+  --teal:          #0f766e;   /* teal for text                              */
+  --teal-bright:   #14b8a6;   /* teal for graphics                          */
 
-  /* Brand (primary = orange, accent = indigo) */
-  --brand:        var(--orange);
-  --brand-light:  var(--orange-light);
-  --brand-dark:   var(--orange-dark);
-  --accent:       var(--indigo);
-  --accent-light: var(--indigo-light);
+  /* Lines & shadows */
+  --line:          #dbe3ef;
+  --line-strong:   #c3cfe2;
+  --shadow-sm:     0 1px 2px rgba(13, 27, 46, 0.06);
+  --shadow-md:     0 4px 16px rgba(13, 27, 46, 0.08);
+  --shadow-lg:     0 12px 40px rgba(13, 27, 46, 0.12);
 
-  /* Shadows — lighter for light mode */
-  --shadow-sm: 0 1px 3px rgb(0 0 0 / 8%), 0 1px 2px rgb(0 0 0 / 5%);
-  --shadow-md: 0 4px 20px rgb(0 0 0 / 10%), 0 2px 8px rgb(0 0 0 / 6%);
-  --shadow-lg: 0 12px 48px rgb(0 0 0 / 12%), 0 4px 16px rgb(0 0 0 / 7%);
+  /* Typography */
+  --font-display:  "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-body:     "Inter", system-ui, -apple-system, sans-serif;
 
-  --radius:    12px;
-  --radius-sm: 8px;
+  --radius:        16px;
+  --radius-lg:     24px;
+  --radius-sm:     8px;
+
+  /* ── Canonical aliases — used by all micro-apps ──────────────────────────
+     Apps reference --brand, --text, --surface, --border, --muted, --shadow.
+     These map to the Aurora Light tokens so apps never need local :root blocks.
+  ─────────────────────────────────────────────────────────────────────────── */
+  --brand:          var(--indigo);
+  --brand-dark:     #3730a3;
+  --brand-bright:   var(--indigo-bright);
+  --primary:        var(--indigo);
+  --text:           var(--ink);
+  --muted:          var(--ink-soft);
+  --faint:          var(--ink-faint);
+  --surface-muted:  var(--surface-2);
+  --surface-alt:    var(--surface-2);
+  --border:         var(--line);
+  --border-strong:  var(--line-strong);
+  --shadow:         var(--shadow-sm);
+  --shadow-md:      var(--shadow-md);
+  --font-heading:   var(--font-display);
+
+  /* Semantic colours used by game apps */
+  --danger:         #dc2626;
+  --danger-bg:      #fee2e2;
+  --danger-border:  #fca5a5;
+  --success:        #059669;
+  --success-bg:     #dcfce7;
+  --success-border: #4ade80;
+  --warning:        #d97706;
+  --warning-bg:     #fef3c7;
+  --warning-border: #fcd34d;
+
+  /* Tambola/Bingo game-specific aliases */
+  --called:         var(--indigo);
+  --called-text:    #ffffff;
+  --uncalled:       var(--surface);
+  --uncalled-text:  var(--ink);
+  --free-cell:      var(--amber-bright);
+  --free-cell-text: #ffffff;
 }
 
-/* ─── Reset ─────────────────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; }
-html, body, #root { min-height: 100%; }
-body {
+/* ── Dark mode — all tokens redefined, apps inherit automatically ─────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:            #0d1117;
+    --surface:       #161b22;
+    --surface-2:     #21262d;
+
+    --ink:           #e6edf3;
+    --ink-soft:      #8b949e;
+    --ink-faint:     #6e7681;
+
+    --indigo:        #818cf8;
+    --indigo-bright: #a5b4fc;
+    --amber:         #fbbf24;
+    --amber-bright:  #fcd34d;
+    --teal:          #34d399;
+    --teal-bright:   #6ee7b7;
+
+    --line:          #30363d;
+    --line-strong:   #484f58;
+    --shadow-sm:     0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md:     0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg:     0 12px 40px rgba(0, 0, 0, 0.6);
+
+    --danger:         #f87171;
+    --danger-bg:      rgba(248, 113, 113, 0.12);
+    --danger-border:  rgba(248, 113, 113, 0.35);
+    --success:        #4ade80;
+    --success-bg:     rgba(74, 222, 128, 0.12);
+    --success-border: rgba(74, 222, 128, 0.35);
+    --warning:        #fbbf24;
+    --warning-bg:     rgba(251, 191, 36, 0.12);
+    --warning-border: rgba(251, 191, 36, 0.35);
+
+    --called:         #818cf8;
+    --uncalled:       var(--surface-2);
+    --uncalled-text:  var(--ink);
+  }
+}
+
+/* ── Manual dark mode override (data-theme="dark" on <html>) ─────────────── */
+[data-theme="dark"] {
+  --bg:            #0d1117;
+  --surface:       #161b22;
+  --surface-2:     #21262d;
+  --ink:           #e6edf3;
+  --ink-soft:      #8b949e;
+  --ink-faint:     #6e7681;
+  --indigo:        #818cf8;
+  --indigo-bright: #a5b4fc;
+  --amber:         #fbbf24;
+  --amber-bright:  #fcd34d;
+  --teal:          #34d399;
+  --teal-bright:   #6ee7b7;
+  --line:          #30363d;
+  --line-strong:   #484f58;
+  --shadow-sm:     0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md:     0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg:     0 12px 40px rgba(0, 0, 0, 0.6);
+  --danger:         #f87171;
+  --danger-bg:      rgba(248, 113, 113, 0.12);
+  --danger-border:  rgba(248, 113, 113, 0.35);
+  --success:        #4ade80;
+  --success-bg:     rgba(74, 222, 128, 0.12);
+  --success-border: rgba(74, 222, 128, 0.35);
+  --warning:        #fbbf24;
+  --warning-bg:     rgba(251, 191, 36, 0.12);
+  --warning-border: rgba(251, 191, 36, 0.35);
+  --called:         #818cf8;
+  --uncalled:       var(--surface-2);
+  --uncalled-text:  var(--ink);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
   margin: 0;
+  padding: 0;
   background: var(--bg);
-  color: var(--text);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
-a { color: inherit; text-decoration: none; }
-button { font: inherit; cursor: pointer; }
-h1, h2, h3, p { margin: 0; }
 
-/* ─── Shell frame ────────────────────────────────────────────────────────────── */
+a { color: inherit; text-decoration: none; }
+
+/* ── Shell frame ───────────────────────────────────────────────────────────── */
 .shellFrame {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* Soft aurora wash at the very top of the page — light, never dark */
+  background:
+    radial-gradient(900px 420px at 15% -5%, rgba(99, 102, 241, 0.10), transparent 60%),
+    radial-gradient(900px 420px at 85% -5%, rgba(245, 158, 11, 0.10), transparent 60%),
+    var(--bg);
 }
 
-/* ─── Header ─────────────────────────────────────────────────────────────────── */
+/* ── Header ────────────────────────────────────────────────────────────────── */
 .shellHeader {
   position: sticky;
   top: 0;
@@ -68,727 +188,691 @@ h1, h2, h3, p { margin: 0; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 0 32px;
-  height: 72px;                          /* taller so logo breathes */
-  background: rgba(255,255,255,0.92);
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: var(--shadow-sm);
+  height: 80px;
+  padding: 0 40px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  flex-shrink: 0;
-}
+.brand { display: inline-flex; align-items: center; }
 
 .brandLogo {
-  display: block;
-  height: 52px;                          /* was 40px — now properly sized */
+  height: 56px;
   width: auto;
-  object-fit: contain;
+  display: block;
 }
 
 .topNav {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
 }
 
 .topNav a {
-  display: inline-flex;
-  align-items: center;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 8px;
-  font-size: 14px;
+  font-family: var(--font-display);
+  font-size: 15px;
   font-weight: 600;
-  color: var(--muted);
-  transition: background 0.15s, color 0.15s;
+  color: var(--ink-soft);
+  padding: 10px 18px;
+  border-radius: 999px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.topNavHighlight {
+  color: var(--indigo) !important;
+  font-weight: 700;
+  background: rgba(99, 102, 241, 0.08) !important;
 }
 
 .topNav a:hover {
+  color: var(--indigo);
   background: var(--surface-2);
-  color: var(--text);
 }
 
-/* ─── Footer ─────────────────────────────────────────────────────────────────── */
-.shellFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 32px;
-  height: 52px;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-  font-size: 13px;
-}
-
-.footerLeft {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.footerIcon {
-  display: block;
-  border-radius: 6px;
-}
-
-.footerBrand {
-  font-weight: 700;
-  color: var(--text-2);
-}
-
-.footerMeta {
-  color: var(--muted);
-}
-
-/* ─── Portal home layout ─────────────────────────────────────────────────────── */
+/* ── Portal main ───────────────────────────────────────────────────────────── */
 .portalMain {
-  display: grid;
-  gap: 32px;
-  width: min(1200px, calc(100% - 48px));
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 0 56px;
+  padding: 40px 32px 80px;
 }
 
-/* ─── Hero ───────────────────────────────────────────────────────────────────── */
+/* ── Hero ──────────────────────────────────────────────────────────────────── */
 .portalHero {
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: 32px;
-  align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 56px 52px;
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
   position: relative;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 48px;
+  align-items: center;
+  padding: 56px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
 }
 
-/* Decorative background blobs */
-.heroBlobGold {
+/* faint futuristic grid, on white — very low opacity so text stays crisp */
+.portalHero::before {
+  content: "";
   position: absolute;
-  top: -80px;
-  left: -80px;
-  width: 360px;
-  height: 360px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(224,123,0,0.08) 0%, transparent 70%);
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(67, 56, 202, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(67, 56, 202, 0.045) 1px, transparent 1px);
+  background-size: 36px 36px;
   pointer-events: none;
+}
+
+.heroBlobGold,
+.heroBlobTeal {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+.heroBlobGold {
+  width: 380px; height: 380px;
+  top: -160px; right: -100px;
+  background: rgba(245, 158, 11, 0.16);
 }
 
 .heroBlobTeal {
-  position: absolute;
-  bottom: -60px;
-  right: 320px;
-  width: 280px;
-  height: 280px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 70%);
-  pointer-events: none;
+  width: 380px; height: 380px;
+  bottom: -180px; left: -120px;
+  background: rgba(99, 102, 241, 0.13);
 }
 
-.heroInner {
-  display: grid;
-  gap: 22px;
-  position: relative;
-  z-index: 1;
-}
+.heroInner { position: relative; }
 
-/* Logo mark in hero */
-.heroLogoWrap {
-  display: flex;
-  align-items: center;
-}
+.heroLogoWrap { margin-bottom: 20px; }
 
 .heroLogoMark {
-  display: block;
   width: 72px;
+
   height: 72px;
-  border-radius: 18px;
-  box-shadow: 0 4px 20px rgba(224,123,0,0.20);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
 }
 
 .heroBadge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  width: fit-content;
-  padding: 5px 14px;
-  border-radius: 999px;
-  background: var(--orange-light);
-  border: 1px solid rgba(224,123,0,0.25);
-  color: var(--orange-dark);
-  font-size: 12px;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 12.5px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
+  color: var(--indigo);
+  background: rgba(99, 102, 241, 0.09);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 999px;
+  padding: 8px 16px;
+  margin-bottom: 22px;
 }
 
 .heroTitle {
-  font-size: clamp(36px, 4.5vw, 58px);
-  font-weight: 900;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  color: var(--text);
+  font-family: var(--font-display);
+  font-size: clamp(38px, 5vw, 58px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0 0 20px;
 }
 
-.heroAccentGold { color: var(--orange); }
-.heroAccentTeal { color: var(--indigo); }
-.heroAccentSep  { color: var(--muted); }
+.heroAccentGold {
+  background: linear-gradient(100deg, #b45309, #f59e0b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.heroAccentSep { color: var(--ink); }
+
+.heroAccentTeal {
+  background: linear-gradient(100deg, #4338ca, #6366f1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 
 .heroSubtitle {
-  font-size: 16px;
-  line-height: 1.75;
-  color: var(--muted);
-  max-width: 480px;
+  font-size: 18px;
+  line-height: 1.65;
+  color: var(--ink-soft);
+  max-width: 46ch;
+  margin: 0 0 26px;
 }
 
-/* Feature pills row */
 .heroFeatures {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+  margin-bottom: 32px;
 }
 
 .heroFeaturePill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  border: 1px solid var(--border-strong);
-  font-size: 12px;
+  gap: 8px;
+  font-size: 13.5px;
   font-weight: 600;
-  color: var(--text-2);
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 15px;
 }
 
 .heroButtons {
   display: flex;
-  gap: 10px;
   flex-wrap: wrap;
+  gap: 14px;
 }
 
 .heroBtnPrimary,
 .heroBtnSecondary {
-  display: inline-flex;
-  align-items: center;
-  height: 44px;
-  padding: 0 22px;
-  border-radius: 10px;
-  font-size: 14px;
+  font-family: var(--font-display);
+  font-size: 15.5px;
   font-weight: 700;
-  transition: all 0.15s;
+  border-radius: 14px;
+  padding: 15px 28px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .heroBtnPrimary {
-  background: var(--orange);
-  color: var(--text);
-  box-shadow: 0 2px 12px rgba(224,123,0,0.30);
+  color: #ffffff;
+  background: linear-gradient(120deg, #4338ca, #6366f1);
+  box-shadow: 0 6px 20px rgba(67, 56, 202, 0.30);
 }
 
 .heroBtnPrimary:hover {
-  background: var(--orange-dark);
-  box-shadow: 0 4px 20px rgba(224,123,0,0.40);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(67, 56, 202, 0.38);
 }
 
 .heroBtnSecondary {
+  color: var(--ink);
   background: var(--surface);
-  color: var(--text-2);
-  border: 1px solid var(--border-strong);
+  border: 1.5px solid var(--line-strong);
 }
 
 .heroBtnSecondary:hover {
-  border-color: var(--indigo);
+  border-color: var(--indigo-bright);
   color: var(--indigo);
-  background: var(--indigo-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
-/* Hero visual (right column) */
+/* ── Hero visual (right column) ────────────────────────────────────────────── */
 .heroVisual {
-  display: grid;
-  gap: 14px;
   position: relative;
-  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
-/* Stats strip */
 .statsStrip {
   display: flex;
   align-items: center;
-  background: var(--surface-2);
-  border: 1px solid var(--border-strong);
-  border-radius: 14px;
-  overflow: hidden;
+  justify-content: space-around;
+  background: linear-gradient(120deg, #0d1b2e, #1e2f4d);
+  border-radius: var(--radius);
+  padding: 22px 18px;
+  box-shadow: var(--shadow-md);
 }
 
 .statItem {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  flex: 1;
-  padding: 18px 12px;
+  gap: 2px;
 }
 
 .statValue {
+  font-family: var(--font-display);
   font-size: 30px;
-  font-weight: 900;
-  color: var(--orange);
+  font-weight: 700;
+  color: #ffd166;
   line-height: 1;
 }
 
 .statLabel {
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 600;
-  color: var(--muted);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  color: #b8c6dd;
 }
 
 .statDivider {
   width: 1px;
-  height: 44px;
-  background: var(--border-strong);
-  flex-shrink: 0;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.18);
 }
 
-/* Hero app preview chips */
 .heroAppPreview {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .heroPreviewChip {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
+  gap: 14px;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 16px;
   box-shadow: var(--shadow-sm);
-  transition: border-color 0.15s, background 0.15s;
-  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .heroPreviewChip:hover {
-  border-color: var(--orange);
-  background: var(--orange-light);
+  transform: translateX(4px);
+  border-color: var(--indigo-bright);
+  box-shadow: var(--shadow-md);
 }
 
 .heroPreviewIcon {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  font-size: 18px;
+  color: #fff;
   flex-shrink: 0;
 }
 
 .heroPreviewChipBody {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  flex: 1;
   min-width: 0;
 }
 
 .heroPreviewChipTitle {
-  font-size: 13px;
+  font-family: var(--font-display);
+  font-size: 14.5px;
   font-weight: 700;
-  color: var(--text);
-  line-height: 1.2;
+  color: var(--ink);
 }
 
 .heroPreviewChipCat {
   font-size: 11px;
   font-weight: 600;
-  color: var(--muted);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  color: var(--ink-faint);
 }
 
 .heroPreviewChipArrow {
-  font-size: 14px;
-  color: var(--muted);
-  flex-shrink: 0;
-  transition: color 0.15s, transform 0.15s;
+  margin-left: auto;
+  color: var(--indigo-bright);
+  font-weight: 700;
 }
 
-.heroPreviewChip:hover .heroPreviewChipArrow {
-  color: var(--orange);
-  transform: translateX(2px);
-}
-
-/* ─── Apps section ───────────────────────────────────────────────────────────── */
-.appsSection {
-  display: grid;
-  gap: 20px;
-}
+/* ── Apps section ──────────────────────────────────────────────────────────── */
+.appsSection { margin-top: 64px; }
 
 .appsSectionHeader {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
+  margin-bottom: 20px;
 }
 
 .appsSectionTitle {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--text);
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0;
 }
 
 .appsSectionSub {
-  font-size: 14px;
-  color: var(--muted);
-  margin-top: 4px;
+  font-size: 14.5px;
+  color: var(--ink-faint);
+  margin: 4px 0 0;
 }
 
-/* Category pills */
 .categoryPills {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 28px;
 }
 
 .categoryPill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 13px;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 14px;
   font-weight: 600;
-  transition: all 0.15s;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .categoryPill:hover {
-  border-color: var(--indigo);
+  border-color: var(--indigo-bright);
   color: var(--indigo);
-  background: var(--indigo-light);
 }
 
 .categoryPillActive {
-  border-color: var(--orange);
-  background: var(--orange);
-  color: var(--text);
+  color: #ffffff;
+  background: linear-gradient(120deg, #4338ca, #6366f1);
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(67, 56, 202, 0.28);
 }
 
-.categoryPillActive:hover {
-  background: var(--orange-dark);
-  border-color: var(--orange-dark);
-  color: var(--text);
-}
+.categoryPillActive:hover { color: #ffffff; }
 
 .categoryPillCount {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
   border-radius: 999px;
-  background: var(--border);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
+  background: rgba(13, 27, 46, 0.07);
 }
 
 .categoryPillActive .categoryPillCount {
-  background: rgba(255,255,255,0.30);
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
 }
 
-/* App grid */
+/* ── App grid & cards ──────────────────────────────────────────────────────── */
 .appsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
 }
 
-/* App card */
 .appCard {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 18px;
+  align-items: flex-start;
+  gap: 16px;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
+  padding: 22px;
   box-shadow: var(--shadow-sm);
-  transition: all 0.18s ease;
-  text-decoration: none;
-  color: inherit;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  overflow: hidden;
+}
+
+.appCard::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, #4338ca, #6366f1, #f59e0b);
+  opacity: 0;
+  transition: opacity 0.18s ease;
 }
 
 .appCard:hover {
-  border-color: var(--orange);
-  box-shadow: var(--shadow-md), 0 0 0 1px rgba(224,123,0,0.12);
-  transform: translateY(-2px);
-  background: var(--orange-light);
+  transform: translateY(-4px);
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-lg);
 }
+
+.appCard:hover::after { opacity: 1; }
 
 .appCardIcon {
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 52px;
   height: 52px;
-  border-radius: 12px;
-  flex-shrink: 0;
+  border-radius: 14px;
   font-size: 22px;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
 }
 
-.appCardBody {
-  display: grid;
-  gap: 3px;
-  flex: 1;
-  min-width: 0;
-}
+.appCardBody { min-width: 0; }
 
 .appCardCategory {
+  display: block;
   font-size: 11px;
   font-weight: 700;
-  color: var(--teal);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  color: var(--indigo);
+  margin-bottom: 3px;
 }
 
 .appCardTitle {
-  font-size: 15px;
+  display: block;
+  font-family: var(--font-display);
+  font-size: 18px;
   font-weight: 700;
-  color: var(--text);
-  line-height: 1.2;
-}
-
-.appCardDesc {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.4;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.appCardArrow {
-  font-size: 16px;
-  color: var(--muted);
-  flex-shrink: 0;
-  transition: transform 0.18s, color 0.18s;
-}
-
-.appCard:hover .appCardArrow {
-  color: var(--orange);
-  transform: translateX(3px);
-}
-
-/* ─── Workspace view ─────────────────────────────────────────────────────────── */
-.shellMain {
-  display: grid;
-  gap: 24px;
-  width: min(1200px, calc(100% - 48px));
-  margin: 0 auto;
-  padding: 28px 0 40px;
-}
-
-.workspaceMain { align-content: start; }
-
-.eyebrow {
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--indigo);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  color: var(--ink);
   margin-bottom: 4px;
 }
 
-.workspaceHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 24px 28px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
+.appCardDesc {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin: 0;
 }
 
-.workspaceHeader > div {
-  display: grid;
-  gap: 6px;
+.appCardArrow {
+  margin-left: auto;
+  align-self: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.appCard:hover .appCardArrow {
+  color: var(--indigo);
+  transform: translateX(3px);
+}
+
+/* ── Workspace (individual app pages) ─────────────────────────────────────── */
+.shellMain {
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+}
+
+.workspaceMain { display: flex; flex-direction: column; gap: 28px; }
+
+.workspaceHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 32px 36px;
+  box-shadow: var(--shadow-sm);
 }
 
 .workspaceHeader h1 {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 4px 0 8px;
 }
 
-.workspaceHeader p {
-  font-size: 15px;
-  color: var(--muted);
+.workspaceHeader p { color: var(--ink-soft); margin: 0; }
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--indigo);
+  margin: 0;
 }
 
 .secondaryAction {
-  display: inline-flex;
-  align-items: center;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-2);
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 20px;
   white-space: nowrap;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
 }
 
 .secondaryAction:hover {
-  border-color: var(--indigo);
   color: var(--indigo);
+  border-color: var(--indigo-bright);
 }
 
 .appViewport {
-  display: grid;
-  min-height: 430px;
-  overflow: hidden;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
 .viewportToolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  min-height: 44px;
-  border-bottom: 1px solid var(--border);
+  padding: 12px 22px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-faint);
   background: var(--surface-2);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-  padding: 0 18px;
+  border-bottom: 1px solid var(--line);
 }
 
 .viewportBody {
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 14px;
-  min-height: 360px;
-  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 72px 24px;
   text-align: center;
 }
 
-.viewportMark {
-  display: grid;
-  place-items: center;
-  width: 80px;
-  height: 80px;
-  border-radius: 18px;
-  font-size: 32px;
-  color: #fff;
-}
-
 .viewportBody h2 {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--ink);
+  margin: 0;
 }
 
-.viewportBody p {
-  color: var(--muted);
-  font-size: 14px;
-}
+.viewportBody p { color: var(--ink-faint); margin: 0; font-size: 14px; }
 
-.contentBand {
-  display: grid;
-  gap: 18px;
-  padding: 22px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.sectionHeader {
-  display: flex;
+.viewportMark {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  font-size: 28px;
+  color: #fff;
+  box-shadow: var(--shadow-md);
 }
 
-.sectionHeader > div { display: grid; gap: 6px; }
+/* Related apps band */
+.contentBand { margin-top: 4px; }
 
-.compactBand { box-shadow: none; }
+.sectionHeader { margin-bottom: 18px; }
+
+.sectionHeader h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 4px 0 0;
+}
 
 .appGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
 }
 
-.compactGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.compactGrid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+
+/* ── Footer ────────────────────────────────────────────────────────────────── */
+.shellFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 26px 40px;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
 }
 
-/* ─── Responsive ─────────────────────────────────────────────────────────────── */
+.footerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.footerIcon { border-radius: 7px; }
+
+.footerBrand {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.footerMeta {
+  font-size: 13.5px;
+  color: var(--ink-faint);
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 960px) {
-  .shellHeader, .shellFooter { padding: 0 20px; }
-
-  .portalMain, .shellMain {
-    width: calc(100% - 32px);
-    padding-top: 28px;
-  }
-
   .portalHero {
     grid-template-columns: 1fr;
     padding: 36px 28px;
-  }
-
-  .heroVisual { display: none; }
-
-  .appsGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .appGrid, .compactGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .workspaceHeader {
-    flex-direction: column;
-    align-items: flex-start;
+    gap: 36px;
   }
 }
 
-@media (max-width: 600px) {
-  .heroTitle { font-size: 32px; }
-  .heroLogoMark { width: 56px; height: 56px; }
-  .heroFeatures { gap: 6px; }
-  .heroFeaturePill { font-size: 11px; padding: 4px 10px; }
-  .categoryPills { gap: 6px; }
-  .categoryPill { font-size: 12px; height: 30px; padding: 0 10px; }
-  .brandLogo { height: 42px; }
+@media (max-width: 640px) {
+  .shellHeader { padding: 0 20px; height: 68px; }
+  .brandLogo { height: 44px; }
+  .topNav a { padding: 8px 12px; font-size: 14px; }
+  .portalMain, .shellMain { padding: 24px 18px 56px; }
+  .portalHero { padding: 28px 20px; }
+  .heroTitle { font-size: 34px; }
+  .heroButtons a { width: 100%; text-align: center; }
+  .workspaceHeader { flex-direction: column; align-items: flex-start; }
+  .shellFooter { flex-direction: column; gap: 10px; padding: 22px 20px; }
 }

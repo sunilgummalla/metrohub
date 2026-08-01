@@ -7,7 +7,7 @@ export default defineConfig({
     alias: {
       "@metrohub/shared": path.resolve(__dirname, "../../packages/shared/src/index.ts"),
       "@metrohub/plans": path.resolve(__dirname, "../../packages/app-plans/src/index.ts"),
-      "@metrohub/vendor-marketplace": path.resolve(__dirname, "../../packages/app-vendor-marketplace/src/index.ts"),
+      "@metrohub/marketplace": path.resolve(__dirname, "../../packages/app-marketplace/src/index.ts"),
     },
   },
   server: {

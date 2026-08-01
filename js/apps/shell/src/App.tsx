@@ -3,7 +3,7 @@ import { RummyScorecard } from "@metrohub/rummy-scorecard";
 import { TambolaApp } from "@metrohub/tambola";
 import { BingoApp } from "@metrohub/bingo";
 import { PlansApp } from "@metrohub/plans";
-import { VendorMarketplaceApp } from "@metrohub/vendor-marketplace";
+import { MarketplaceApp } from "@metrohub/marketplace";
 import registry from "../../api/app-registry.json";
 
 type PortalApp = (typeof registry.apps)[number];
@@ -21,7 +21,7 @@ const APP_ICONS: Record<string, string> = {
   "deals":           "🏷",
   "near-by":         "📍",
   "plans":           "💳",
-  "vendor-marketplace": "🏪",
+  "marketplace":     "🏪",
 };
 
 // ─── Gradient map per category ────────────────────────────────────────────────
@@ -29,8 +29,8 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
   Scoreboards:   "linear-gradient(135deg,#7c3aed,#a855f7)",
   Accounting:    "linear-gradient(135deg,#0f766e,#14b8a6)",
   Shopping:      "linear-gradient(135deg,#b45309,#f59e0b)",
-  "Site Seeing":  "linear-gradient(135deg,#2563eb,#60a5fa)",
-  Marketplace:   "linear-gradient(135deg,#be185d,#ec4899)",
+  "Site Seeing": "linear-gradient(135deg,#2563eb,#60a5fa)",
+  Marketplace:   "linear-gradient(135deg,#4338ca,#7c3aed)",
 };
 
 function categoryGradient(cat: string) {
@@ -59,12 +59,13 @@ function ShellHeader({ onHome }: { onHome?: () => void }) {
           src="/brand/logo-horizontal-light-800x267.png"
           alt="Metro Hub"
           className="brandLogo"
-          width={200}
-          height={67}
+          width={168}
+          height={56}
         />
       </a>
       <nav className="topNav" aria-label="Shell navigation">
         <a href="/">Apps</a>
+        <a href="/marketplace" className="topNavHighlight">Marketplace</a>
         <a href="/apps/my-accounts">Accounts</a>
         <a href="/apps/splits">Splits</a>
       </nav>
@@ -211,7 +212,7 @@ function PortalHome() {
             />
           </div>
 
-          <div className="heroBadge">Personal finance &amp; game nights portal</div>
+          <div className="heroBadge">⬡ MetroHub · Everything in one place</div>
 
           <h1 className="heroTitle">
             Your hub for<br />
@@ -324,8 +325,8 @@ function AppWorkspace({ app }: { app: PortalApp }) {
           <BingoApp />
         ) : app.id === "plans" ? (
           <PlansApp />
-        ) : app.id === "vendor-marketplace" ? (
-          <VendorMarketplaceApp citySlug="seattle" />
+        ) : app.id === "marketplace" ? (
+          <MarketplaceApp citySlug="seattle" />
         ) : (
           <div className="viewportBody">
             <span
