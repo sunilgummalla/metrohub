@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { browseVendors, getCategories, getVendor } from "./api";
 import { VendorDetail } from "./VendorDetail";
 import type { BrowseFilters, Vendor } from "./types";
@@ -186,7 +186,7 @@ export function MarketplaceApp({ citySlug = "seattle" }: MarketplaceAppProps) {
   }, []);
 
   const handleSearch = useCallback(
-    (e: React.FormEvent) => {
+    (e: FormEvent) => {
       e.preventDefault();
       setFilters((f) => ({ ...f, q: searchInput.trim() || undefined, page: 1 }));
     },
