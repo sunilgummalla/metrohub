@@ -29,6 +29,17 @@ const SLOT_ICONS: Record<string, string> = {
   "tambola-sidebar": "🎱", "bingo-sidebar": "🎯",
 };
 
+/**
+ * Build a local-time Date from a `YYYY-MM-DD` date-input value. Using
+ * `new Date("YYYY-MM-DD")` would parse as midnight UTC and can land on the
+ * previous local day, causing off-by-one booking/pricing on the server (which
+ * computes calendar days in local time).
+ */
+function localDateFromInput(value: string): Date {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export default function AdSlots() {
   const { isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
@@ -167,8 +178,11 @@ export default function AdSlots() {
                 if (!bookingSlot || !startDate || !endDate) return;
                 bookMutation.mutate({
                   slotId: bookingSlot,
-                  startDate: new Date(startDate),
-                  endDate: new Date(endDate),
+                  // Build local-time dates from the Y/M/D parts. `new Date("YYYY-MM-DD")`
+                  // parses as midnight UTC, which the server's local-time calendar-day
+                  // math can shift by a day (off-by-one billing/availability).
+                  startDate: localDateFromInput(startDate),
+                  endDate: localDateFromInput(endDate),
                   creativeCopy: copy || undefined,
                   creativeClickUrl: clickUrl || undefined,
                 });

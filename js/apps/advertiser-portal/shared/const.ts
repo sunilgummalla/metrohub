@@ -14,13 +14,23 @@ export const OAUTH_STATE_COOKIE = "__Host-oauth_state";
 // CSRF nonce. Defined here so the client encoder and server decoder never drift.
 export type OAuthState = { redirectUri: string; nonce?: string };
 
+// base64 helpers that work in both the browser (btoa/atob) and Node (Buffer).
+// This module is imported server-side (OAuth callback), where btoa/atob may be
+// unavailable — falling back to Buffer avoids a ReferenceError outside the
+// route handler's try/catch.
+const toBase64 = (s: string): string =>
+  typeof btoa === "function" ? btoa(s) : Buffer.from(s, "utf-8").toString("base64");
+
+const fromBase64 = (s: string): string =>
+  typeof atob === "function" ? atob(s) : Buffer.from(s, "base64").toString("utf-8");
+
 export const encodeOAuthState = (state: OAuthState): string =>
-  btoa(JSON.stringify(state));
+  toBase64(JSON.stringify(state));
 
 export const decodeOAuthState = (state: string): OAuthState => {
   let decoded: string;
   try {
-    decoded = atob(state);
+    decoded = fromBase64(state);
   } catch {
     // Malformed base64 (e.g. attacker-supplied garbage). Return no nonce so the
     // callback's CSRF guard rejects it with 403 — never throw, since the caller

@@ -131,12 +131,26 @@ function vitePluginManusDebugCollector(): Plugin {
           return;
         }
 
+        // Cap the buffered body so a large POST can't exhaust dev-server memory.
+        const MAX_BODY_BYTES = 1_000_000; // 1 MB
         let body = "";
+        let bodyBytes = 0;
+        let aborted = false;
         req.on("data", (chunk) => {
+          if (aborted) return;
+          bodyBytes += chunk.length;
+          if (bodyBytes > MAX_BODY_BYTES) {
+            aborted = true;
+            res.writeHead(413, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ success: false, error: "Payload too large" }));
+            req.destroy();
+            return;
+          }
           body += chunk.toString();
         });
 
         req.on("end", () => {
+          if (aborted) return;
           try {
             const payload = JSON.parse(body);
             handlePayload(payload);

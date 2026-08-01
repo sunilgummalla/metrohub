@@ -246,6 +246,13 @@ export async function getBookingsByAdvertiser(advertiserId: number) {
     .orderBy(desc(bookings.createdAt));
 }
 
+/** Persist the payment provider's checkout/session id for later reconciliation. */
+export async function setBookingPaymentSession(bookingId: number, paymentSessionId: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(bookings).set({ paymentSessionId }).where(eq(bookings.id, bookingId));
+}
+
 export async function updateBookingStatus(
   bookingId: number,
   status: "pending_payment" | "pending_moderation" | "approved" | "active" | "completed" | "rejected" | "cancelled",

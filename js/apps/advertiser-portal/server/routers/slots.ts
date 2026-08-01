@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { getAllAdSlots, getLivePresence, createBooking, updateBookingStatus, getBookingsByAdvertiser, getBookingsForSlot } from "../db";
+import { getAllAdSlots, getLivePresence, createBooking, setBookingPaymentSession, getBookingsByAdvertiser, getBookingsForSlot } from "../db";
 import { getPaymentAdapter } from "../payment";
 import { protectedProcedure, router } from "../_core/trpc";
 
@@ -126,9 +126,14 @@ export const slotsRouter = router({
         successUrl: `${baseUrl}/campaigns?payment=success`,
         cancelUrl: `${baseUrl}/slots?payment=cancelled`,
       });
-      // Mark booking as pending moderation once payment session is created
-      if (bookingId > 0) {
-        await updateBookingStatus(bookingId, "pending_moderation");
+
+      // Persist the provider session id so the payment webhook/return flow can
+      // reconcile provider events back to this booking. The booking stays in
+      // `pending_payment` — it only advances to `pending_moderation` once
+      // payment success is confirmed (webhook), so unpaid bookings never enter
+      // the moderation queue.
+      if (bookingId > 0 && session.sessionId) {
+        await setBookingPaymentSession(bookingId, session.sessionId);
       }
 
       return { success: true, checkoutUrl: session.checkoutUrl, totalPrice, days };
