@@ -453,7 +453,7 @@
 
 .mktBizCategory {
   font-size: 0.8rem;
-  color: var(--text-muted, #6b7280);
+  color: var(--muted);
   text-transform: capitalize;
 }
 
@@ -486,11 +486,11 @@
 .mktError {
   padding: 2rem 0;
   text-align: center;
-  color: var(--text-muted, #6b7280);
+  color: var(--muted);
 }
 
 .mktError {
-  color: #b91c1c;
+  color: var(--danger);
 }
 
 /* Pagination */
@@ -519,28 +519,29 @@
 
 .mktPageInfo {
   font-size: 0.9rem;
-  color: var(--text-muted, #6b7280);
+  color: var(--muted);
 }
 
 /* ─── Vendor detail view (salvaged from the vendor-marketplace package) ──── */
-/* ─── Vendor Marketplace — Metro Hub light theme (aligned to ataseattle.org) */
-
-:root {
-  --vm-bg:          #fafaf8;   /* warm ivory */
-  --vm-surface:     #ffffff;
-  --vm-surface-2:   #f4f4f0;
-  --vm-border:      rgba(0,0,0,0.09);
-  --vm-border-strong: rgba(0,0,0,0.15);
-  --vm-brand:       #e07b00;   /* ATA marigold orange */
-  --vm-brand-dark:  #b86200;
-  --vm-brand-light: #fef3e2;
-  --vm-accent:      #2563eb;   /* ATA indigo blue */
-  --vm-accent-light:#eff6ff;
-  --vm-text:        #1a1a2e;   /* deep navy — fully readable on white */
-  --vm-text-muted:  #6b7280;
-  --vm-radius:      12px;
-  --vm-radius-sm:   6px;
-  --vm-shadow:      0 4px 20px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+/* Scope the --vm-* variables to the marketplace wrapper and map them to the
+   shell's theme-aware tokens, so the detail view follows light/dark mode
+   instead of the old hard-coded light-only palette. */
+.mktApp {
+  --vm-bg:            var(--surface-muted);
+  --vm-surface:       var(--surface);
+  --vm-surface-2:     var(--surface-muted);
+  --vm-border:        var(--border);
+  --vm-border-strong: var(--border-strong);
+  --vm-brand:         var(--brand);
+  --vm-brand-dark:    var(--brand-dark);
+  --vm-brand-light:   var(--surface-muted);
+  --vm-accent:        var(--brand);
+  --vm-accent-light:  var(--surface-muted);
+  --vm-text:          var(--text);
+  --vm-text-muted:    var(--muted);
+  --vm-radius:        var(--radius);
+  --vm-radius-sm:     var(--radius-sm);
+  --vm-shadow:        var(--shadow-md);
 }
 
 /* ─── App shell ─────────────────────────────────────────────────────────── */
