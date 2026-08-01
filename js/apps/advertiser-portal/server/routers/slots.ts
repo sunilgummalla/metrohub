@@ -74,10 +74,30 @@ export const slotsRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "UPGRADE_REQUIRED:hero_banner" });
       }
 
-      const days = Math.max(
-        1,
-        Math.ceil((input.endDate.getTime() - input.startDate.getTime()) / 86400000)
-      );
+      // Reject reversed ranges — otherwise they'd silently price as 1 day.
+      if (input.endDate.getTime() < input.startDate.getTime()) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "endDate must be on or after startDate" });
+      }
+
+      // Prevent double-booking: reject if any non-cancelled booking already
+      // overlaps the requested range (consistent with the availability calendar).
+      const overlapping = await getBookingsForSlot(input.slotId, input.startDate, input.endDate);
+      if (overlapping.length > 0) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "SLOT_UNAVAILABLE: this slot is already booked for the selected dates",
+        });
+      }
+
+      // Bill by inclusive calendar days so pricing matches the availability
+      // calendar (which marks every day-of-month the booking covers).
+      const startDay = new Date(
+        input.startDate.getFullYear(), input.startDate.getMonth(), input.startDate.getDate()
+      ).getTime();
+      const endDay = new Date(
+        input.endDate.getFullYear(), input.endDate.getMonth(), input.endDate.getDate()
+      ).getTime();
+      const days = Math.round((endDay - startDay) / 86400000) + 1;
       const totalPrice = (parseFloat(slot.basePricePerDay) * days).toFixed(2);
 
       // Create booking record

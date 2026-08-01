@@ -1,11 +1,44 @@
 import type { Express } from "express";
 import { ENV } from "./env";
+import { sdk } from "./sdk";
+
+/**
+ * Reject keys that could escape the app's storage namespace. The proxy mints a
+ * signed URL for whatever `path` it is given, so an attacker must not be able to
+ * point it at arbitrary/other-tenant objects via traversal or absolute paths.
+ */
+function isSafeStorageKey(key: string): boolean {
+  if (!key) return false;
+  let decoded = key;
+  try {
+    decoded = decodeURIComponent(key);
+  } catch {
+    return false; // malformed percent-encoding
+  }
+  if (decoded.startsWith("/")) return false; // absolute path
+  if (decoded.includes("..")) return false; // path traversal
+  if (decoded.includes("://") || decoded.includes("\\")) return false; // absolute URL / backslash
+  return true;
+}
 
 export function registerStorageProxy(app: Express) {
   app.get("/manus-storage/*", async (req, res) => {
+    // Require an authenticated session — this endpoint uses the server's Forge
+    // API key to mint signed GET URLs, so it must not be open to the public.
+    let user = null;
+    try {
+      user = await sdk.authenticateRequest(req);
+    } catch {
+      user = null;
+    }
+    if (!user) {
+      res.status(401).send("Authentication required");
+      return;
+    }
+
     const key = (req.params as Record<string, string>)[0];
-    if (!key) {
-      res.status(400).send("Missing storage key");
+    if (!key || !isSafeStorageKey(key)) {
+      res.status(400).send("Missing or invalid storage key");
       return;
     }
 
