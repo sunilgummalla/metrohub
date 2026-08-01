@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { getAllAdSlots, getLivePresence, createBooking, setBookingPaymentSession, getBookingsByAdvertiser, getBookingsForSlot } from "../db";
 import { getPaymentAdapter } from "../payment";
 import { protectedProcedure, router } from "../_core/trpc";
+import { calendarDaysInclusive, expandBookedDays } from "./slotDates";
 
 export const slotsRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
@@ -29,27 +30,13 @@ export const slotsRouter = router({
       const monthEnd = new Date(input.year, input.month, 0, 23, 59, 59, 999);
 
       const slotBookings = await getBookingsForSlot(input.slotId, monthStart, monthEnd);
-
-      const bookedDays = new Set<number>();
-      for (const booking of slotBookings) {
-        const bStart = new Date(booking.startDate);
-        const bEnd = new Date(booking.endDate);
-        const rangeStart = bStart > monthStart ? bStart : monthStart;
-        const rangeEnd = bEnd < monthEnd ? bEnd : monthEnd;
-        const cursor = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate());
-        while (cursor <= rangeEnd) {
-          if (cursor.getMonth() === input.month - 1 && cursor.getFullYear() === input.year) {
-            bookedDays.add(cursor.getDate());
-          }
-          cursor.setDate(cursor.getDate() + 1);
-        }
-      }
+      const bookedDays = expandBookedDays(slotBookings, input.year, input.month);
 
       return {
         slotId: input.slotId,
         month: input.month,
         year: input.year,
-        bookedDays: Array.from(bookedDays).sort((a, b) => a - b),
+        bookedDays,
       };
     }),
 
@@ -91,13 +78,7 @@ export const slotsRouter = router({
 
       // Bill by inclusive calendar days so pricing matches the availability
       // calendar (which marks every day-of-month the booking covers).
-      const startDay = new Date(
-        input.startDate.getFullYear(), input.startDate.getMonth(), input.startDate.getDate()
-      ).getTime();
-      const endDay = new Date(
-        input.endDate.getFullYear(), input.endDate.getMonth(), input.endDate.getDate()
-      ).getTime();
-      const days = Math.round((endDay - startDay) / 86400000) + 1;
+      const days = calendarDaysInclusive(input.startDate, input.endDate);
       const totalPrice = (parseFloat(slot.basePricePerDay) * days).toFixed(2);
 
       // Create booking record

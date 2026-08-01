@@ -21,6 +21,15 @@ function normalizeKey(relKey: string): string {
   return relKey.replace(/^\/+/, "");
 }
 
+/**
+ * Build a per-user storage key. User-owned uploads must be stored under this
+ * `u/<userId>/` prefix so the storage proxy can enforce ownership — a non-admin
+ * can only fetch objects inside their own namespace.
+ */
+export function userStorageKey(userId: number, relKey: string): string {
+  return `u/${userId}/${normalizeKey(relKey)}`;
+}
+
 function appendHashSuffix(relKey: string): string {
   const hash = crypto.randomUUID().replace(/-/g, "").slice(0, 8);
   const lastDot = relKey.lastIndexOf(".");

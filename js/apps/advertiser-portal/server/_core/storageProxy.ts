@@ -21,6 +21,12 @@ function isSafeStorageKey(key: string): boolean {
   return true;
 }
 
+/** Per-user object namespace. User-owned uploads live under this prefix so the
+ *  proxy can enforce ownership (see `userStorageKey` in ../storage). */
+function userPrefix(userId: number): string {
+  return `u/${userId}/`;
+}
+
 export function registerStorageProxy(app: Express) {
   app.get("/manus-storage/*", async (req, res) => {
     // Require an authenticated session — this endpoint uses the server's Forge
@@ -39,6 +45,15 @@ export function registerStorageProxy(app: Express) {
     const key = (req.params as Record<string, string>)[0];
     if (!key || !isSafeStorageKey(key)) {
       res.status(400).send("Missing or invalid storage key");
+      return;
+    }
+
+    // Enforce per-user object ownership: a non-admin may only fetch keys under
+    // their own `u/<id>/` namespace, so learning another advertiser's key does
+    // not grant access. Admins are exempt (needed for ad-creative moderation).
+    const decodedKey = decodeURIComponent(key);
+    if (user.role !== "admin" && !decodedKey.startsWith(userPrefix(user.id))) {
+      res.status(403).send("Forbidden");
       return;
     }
 

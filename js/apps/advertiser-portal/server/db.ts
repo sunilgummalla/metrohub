@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertBooking,
@@ -289,19 +289,38 @@ export async function getCampaignStats(advertiserId: number) {
   return { impressions, clicks, ctr: Math.round(ctr * 100) / 100 };
 }
 
-export async function getCampaignsByAdvertiser(advertiserId: number) {
+export type BookingStatus =
+  | "pending_payment"
+  | "pending_moderation"
+  | "approved"
+  | "active"
+  | "completed"
+  | "rejected"
+  | "cancelled";
+
+/**
+ * Advertiser bookings enriched with impression/click counts.
+ * Pass `opts.statuses` to filter (e.g. only live campaigns for spend stats);
+ * omit it to return every booking (used by the "My Campaigns" list so pending
+ * bookings are visible too).
+ */
+export async function getCampaignsByAdvertiser(
+  advertiserId: number,
+  opts?: { statuses?: readonly BookingStatus[] }
+) {
   const db = await getDb();
   if (!db) return [];
+
+  const statuses = opts?.statuses;
+  const whereClause =
+    statuses && statuses.length > 0
+      ? and(eq(bookings.advertiserId, advertiserId), inArray(bookings.status, statuses as BookingStatus[]))
+      : eq(bookings.advertiserId, advertiserId);
 
   const rows = await db
     .select()
     .from(bookings)
-    .where(
-      and(
-        eq(bookings.advertiserId, advertiserId),
-        sql`${bookings.status} IN ('approved','active','completed')`
-      )
-    )
+    .where(whereClause)
     .orderBy(desc(bookings.createdAt));
 
   // Attach impression/click counts per booking
