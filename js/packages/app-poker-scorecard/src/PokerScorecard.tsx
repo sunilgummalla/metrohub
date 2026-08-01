@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useGameSync, type GameSyncPayload } from "@metrohub/shared";
 import "./poker.css";
 
 const ACTIVE_KEY = "poker-active-v1";
@@ -21,6 +22,8 @@ type Transaction = {
   note: string;
   createdAt: number;
 };
+
+type TxnDraft = Pick<Transaction, "playerId" | "kind" | "amount" | "note">;
 
 type GameState =
   | { phase: "setup" }
@@ -58,23 +61,6 @@ const KIND_LABELS: Record<TxnKind, string> = {
 
 function uid() {
   return Math.random().toString(36).slice(2, 9);
-}
-
-function toBase64(value: string): string {
-  return btoa(
-    encodeURIComponent(value).replace(/%([0-9A-F]{2})/g, (_, part) =>
-      String.fromCharCode(parseInt(part, 16))
-    )
-  );
-}
-
-function fromBase64(value: string): string {
-  return decodeURIComponent(
-    atob(value)
-      .split("")
-      .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`)
-      .join("")
-  );
 }
 
 function loadHistory(): HistoryEntry[] {
@@ -118,27 +104,7 @@ function clearActiveGame() {
   localStorage.removeItem(ACTIVE_KEY);
 }
 
-function parseSharedGame(): GameState | undefined {
-  try {
-    const hash = window.location.hash.slice(1);
-    const isOwner = hash.startsWith("poker:");
-    const isReadOnly = hash.startsWith("poker-ro:");
-    if (!isOwner && !isReadOnly) return undefined;
-    const encoded = isOwner ? hash.slice(6) : hash.slice(9);
-    const parsed = JSON.parse(fromBase64(encoded)) as GameState;
-    if (parsed.phase === "setup" || parsed.phase === "playing" || parsed.phase === "finished") {
-      return parsed;
-    }
-  } catch {
-    return undefined;
-  }
-  return undefined;
-}
-
 function loadGame(): GameState {
-  const shared = parseSharedGame();
-  if (shared) return shared;
-
   try {
     const raw = localStorage.getItem(ACTIVE_KEY);
     if (!raw) return { phase: "setup" };
@@ -150,24 +116,6 @@ function loadGame(): GameState {
     return envelope.state;
   } catch {
     return { phase: "setup" };
-  }
-}
-
-function detectReadOnly(): boolean {
-  try {
-    return window.location.hash.slice(1).startsWith("poker-ro:");
-  } catch {
-    return false;
-  }
-}
-
-function buildShareUrl(state: GameState, readOnly: boolean) {
-  try {
-    const encoded = toBase64(JSON.stringify(state));
-    const base = window.location.href.split("#")[0];
-    return `${base}#${readOnly ? "poker-ro" : "poker"}:${encoded}`;
-  } catch {
-    return window.location.href;
   }
 }
 
@@ -391,46 +339,56 @@ function SetupScreen({
   );
 }
 
-function ShareActions({ game, readOnly }: { game: GameState; readOnly: boolean }) {
-  const [copied, setCopied] = useState("");
+function CopyLinkBtn({ url, label }: { url: string; label: string }) {
+  const [copied, setCopied] = useState(false);
 
-  async function copyUrl(asReadOnly: boolean) {
-    const url = buildShareUrl(game, asReadOnly);
-    await navigator.clipboard.writeText(url);
-    setCopied(asReadOnly ? "view" : "owner");
-    window.setTimeout(() => setCopied(""), 1800);
-  }
-
-  if (readOnly) {
-    return <span className="pokerReadOnly">View only</span>;
+  function handleCopy() {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    });
   }
 
   return (
+    <button className="pokerSecondaryBtn" type="button" onClick={handleCopy}>
+      {copied ? `Copied ${label}` : `Copy ${label}`}
+    </button>
+  );
+}
+
+function ShareActions({ shareUrl, readOnly }: { shareUrl: string; readOnly: boolean }) {
+  // A single live view link (read-only viewers see updates over SSE in real time).
+  return (
     <div className="pokerShareActions">
-      <button className="pokerSecondaryBtn" type="button" onClick={() => copyUrl(false)}>
-        {copied === "owner" ? "Copied" : "Copy edit link"}
-      </button>
-      <button className="pokerSecondaryBtn" type="button" onClick={() => copyUrl(true)}>
-        {copied === "view" ? "Copied" : "Copy view link"}
-      </button>
+      {readOnly && <span className="pokerReadOnly">View only</span>}
+      <CopyLinkBtn url={shareUrl} label="live view link" />
     </div>
   );
 }
 
+const DEFAULT_DRAFT: TxnDraft = { playerId: "", kind: "rebuy", amount: 0, note: "" };
+
 function TransactionForm({
   players,
-  onAdd,
+  mode,
+  initial,
+  onSubmit,
+  onCancel,
 }: {
   players: Player[];
-  onAdd: (txn: Omit<Transaction, "id" | "createdAt">) => void;
+  mode: "add" | "edit";
+  initial?: TxnDraft;
+  onSubmit: (txn: TxnDraft) => void;
+  onCancel?: () => void;
 }) {
-  const [playerId, setPlayerId] = useState(players[0]?.id ?? "");
-  const [kind, setKind] = useState<TxnKind>("rebuy");
-  const [amount, setAmount] = useState("");
-  const [note, setNote] = useState("");
+  const seed = initial ?? DEFAULT_DRAFT;
+  const [playerId, setPlayerId] = useState(seed.playerId || players[0]?.id || "");
+  const [kind, setKind] = useState<TxnKind>(seed.kind);
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
+  const [note, setNote] = useState(seed.note);
   const [error, setError] = useState("");
 
-  function handleAdd() {
+  function handleSubmit() {
     const parsed = parseAmount(amount);
     if (!playerId) {
       setError("Choose a player.");
@@ -440,17 +398,19 @@ function TransactionForm({
       setError("Enter an amount greater than zero.");
       return;
     }
-    onAdd({ playerId, kind, amount: parsed, note: note.trim() });
-    setAmount("");
-    setNote("");
+    onSubmit({ playerId, kind, amount: parsed, note: note.trim() });
+    if (mode === "add") {
+      setAmount("");
+      setNote("");
+    }
     setError("");
   }
 
   return (
-    <section className="pokerPanel">
+    <section className={`pokerPanel ${mode === "edit" ? "pokerEditPanel" : ""}`}>
       <div className="pokerPanelHeader">
         <span className="pokerBadge">Ledger</span>
-        <h3>Add transaction</h3>
+        <h3>{mode === "edit" ? "Edit transaction" : "Add transaction"}</h3>
       </div>
       <div className="pokerTxnForm">
         <label className="pokerField">
@@ -482,7 +442,7 @@ function TransactionForm({
             type="number"
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
-            onKeyDown={(event) => event.key === "Enter" && handleAdd()}
+            onKeyDown={(event) => event.key === "Enter" && handleSubmit()}
           />
         </label>
         <label className="pokerField pokerNoteField">
@@ -492,14 +452,21 @@ function TransactionForm({
             placeholder="optional"
             value={note}
             onChange={(event) => setNote(event.target.value)}
-            onKeyDown={(event) => event.key === "Enter" && handleAdd()}
+            onKeyDown={(event) => event.key === "Enter" && handleSubmit()}
           />
         </label>
       </div>
       {error && <p className="pokerError">{error}</p>}
-      <button className="pokerPrimaryBtn" type="button" onClick={handleAdd}>
-        Add transaction
-      </button>
+      <div className="pokerFormActions">
+        <button className="pokerPrimaryBtn" type="button" onClick={handleSubmit}>
+          {mode === "edit" ? "Save changes" : "Add transaction"}
+        </button>
+        {mode === "edit" && onCancel && (
+          <button className="pokerSecondaryBtn" type="button" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
+      </div>
     </section>
   );
 }
@@ -508,11 +475,15 @@ function LedgerTable({
   ledger,
   transactions,
   readOnly,
+  editingId,
+  onEdit,
   onDelete,
 }: {
   ledger: PlayerLedger[];
   transactions: Transaction[];
   readOnly: boolean;
+  editingId: string | null;
+  onEdit: (txnId: string) => void;
   onDelete: (txnId: string) => void;
 }) {
   return (
@@ -561,7 +532,7 @@ function LedgerTable({
             .map((txn) => {
               const player = ledger.find((row) => row.id === txn.playerId);
               return (
-                <div className="pokerTxnRow" key={txn.id}>
+                <div className={`pokerTxnRow ${editingId === txn.id ? "pokerTxnRowEditing" : ""}`} key={txn.id}>
                   <div>
                     <strong>{player?.name ?? "Unknown player"}</strong>
                     <span>
@@ -570,9 +541,24 @@ function LedgerTable({
                   </div>
                   <strong>{money(txn.amount)}</strong>
                   {!readOnly && (
-                    <button className="pokerIconBtn pokerDangerSoft" type="button" onClick={() => onDelete(txn.id)}>
-                      x
-                    </button>
+                    <div className="pokerTxnRowActions">
+                      <button
+                        aria-label="Edit transaction"
+                        className="pokerIconBtn"
+                        type="button"
+                        onClick={() => onEdit(txn.id)}
+                      >
+                        ✎
+                      </button>
+                      <button
+                        aria-label="Delete transaction"
+                        className="pokerIconBtn pokerDangerSoft"
+                        type="button"
+                        onClick={() => onDelete(txn.id)}
+                      >
+                        x
+                      </button>
+                    </div>
                   )}
                 </div>
               );
@@ -586,14 +572,18 @@ function LedgerTable({
 function GameScreen({
   game,
   readOnly,
+  shareUrl,
   onAddTransaction,
+  onUpdateTransaction,
   onDeleteTransaction,
   onFinish,
   onNewGame,
 }: {
   game: Extract<GameState, { phase: "playing" | "finished" }>;
   readOnly: boolean;
-  onAddTransaction: (txn: Omit<Transaction, "id" | "createdAt">) => void;
+  shareUrl: string;
+  onAddTransaction: (txn: TxnDraft) => void;
+  onUpdateTransaction: (txnId: string, txn: TxnDraft) => void;
   onDeleteTransaction: (txnId: string) => void;
   onFinish: () => void;
   onNewGame: () => void;
@@ -602,6 +592,15 @@ function GameScreen({
   const totals = useMemo(() => ledgerTotals(ledger), [ledger]);
   const sorted = [...ledger].sort((a, b) => b.net - a.net);
   const leader = sorted[0];
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const editable = !readOnly && game.phase === "playing";
+  const editingTxn = editable && editingId ? game.transactions.find((txn) => txn.id === editingId) : undefined;
+
+  function handleEditSubmit(draft: TxnDraft) {
+    if (editingId) onUpdateTransaction(editingId, draft);
+    setEditingId(null);
+  }
 
   return (
     <div className="pokerGame">
@@ -614,7 +613,7 @@ function GameScreen({
           </p>
         </div>
         <div className="pokerHeroActions">
-          <ShareActions game={game} readOnly={readOnly} />
+          <ShareActions shareUrl={shareUrl} readOnly={readOnly} />
           {!readOnly && game.phase === "playing" && (
             <button className="pokerPrimaryBtn" type="button" onClick={onFinish}>
               End game
@@ -654,14 +653,31 @@ function GameScreen({
         </div>
       )}
 
-      {!readOnly && game.phase === "playing" && (
-        <TransactionForm players={game.players} onAdd={onAddTransaction} />
-      )}
+      {editable &&
+        (editingTxn ? (
+          <TransactionForm
+            key={editingTxn.id}
+            players={game.players}
+            mode="edit"
+            initial={{
+              playerId: editingTxn.playerId,
+              kind: editingTxn.kind,
+              amount: editingTxn.amount,
+              note: editingTxn.note,
+            }}
+            onSubmit={handleEditSubmit}
+            onCancel={() => setEditingId(null)}
+          />
+        ) : (
+          <TransactionForm players={game.players} mode="add" onSubmit={onAddTransaction} />
+        ))}
 
       <LedgerTable
         ledger={ledger}
         transactions={game.transactions}
         readOnly={readOnly || game.phase === "finished"}
+        editingId={editingId}
+        onEdit={setEditingId}
         onDelete={onDeleteTransaction}
       />
     </div>
@@ -670,25 +686,28 @@ function GameScreen({
 
 export function PokerScorecard() {
   const [game, setGame] = useState<GameState>(() => loadGame());
-  const readOnly = detectReadOnly();
-  const gameIdRef = useMemo<{ current: string }>(() => {
-    try {
-      const raw = localStorage.getItem(ACTIVE_KEY);
-      if (raw) {
-        const envelope = JSON.parse(raw) as ActiveEnvelope;
-        if (envelope.id) return { current: envelope.id };
-      }
-    } catch {
-      // Ignore storage failures.
+
+  // ─── SSE live sync (host publishes, read-only viewer subscribes) ────────────
+  const onRemoteUpdate = useCallback((remote: GameSyncPayload) => {
+    const parsed = remote as unknown as GameState;
+    if (parsed && (parsed.phase === "playing" || parsed.phase === "finished")) {
+      setGame(parsed);
     }
-    return { current: uid() };
   }, []);
 
+  const { gameId, isReadOnly, shareUrl, publish, resetGameId } = useGameSync({
+    gameType: "poker",
+    onRemoteUpdate,
+  });
+  const readOnly = isReadOnly;
+
+  // Persist every state change to localStorage and publish to viewers (host only)
   useEffect(() => {
     if (readOnly) return;
-    saveActiveGame(game, gameIdRef.current);
-    if (game.phase === "finished") archiveGame(game, gameIdRef.current);
-  }, [game, readOnly, gameIdRef]);
+    saveActiveGame(game, gameId);
+    publish(game as unknown as GameSyncPayload);
+    if (game.phase === "finished") archiveGame(game, gameId);
+  }, [game, readOnly, gameId, publish]);
 
   function startGame(players: Player[], initialBuyIn: number, smallBlind: number, bigBlind: number) {
     const startedAt = Date.now();
@@ -700,15 +719,23 @@ export function PokerScorecard() {
       note: "Initial buy-in",
       createdAt: startedAt,
     }));
-    gameIdRef.current = uid();
+    resetGameId(); // fresh session id so old share links go stale
     setGame({ phase: "playing", players, transactions, startedAt, smallBlind, bigBlind });
   }
 
-  function addTransaction(txn: Omit<Transaction, "id" | "createdAt">) {
+  function addTransaction(txn: TxnDraft) {
     if (game.phase !== "playing") return;
     setGame({
       ...game,
       transactions: [...game.transactions, { ...txn, id: uid(), createdAt: Date.now() }],
+    });
+  }
+
+  function updateTransaction(txnId: string, patch: TxnDraft) {
+    if (game.phase !== "playing") return;
+    setGame({
+      ...game,
+      transactions: game.transactions.map((txn) => (txn.id === txnId ? { ...txn, ...patch } : txn)),
     });
   }
 
@@ -720,15 +747,30 @@ export function PokerScorecard() {
   function finishGame() {
     if (game.phase !== "playing") return;
     const finished = { ...game, phase: "finished" as const, finishedAt: Date.now() };
-    archiveGame(finished, gameIdRef.current);
+    archiveGame(finished, gameId);
     setGame(finished);
   }
 
   function newGame() {
-    if (game.phase !== "setup") archiveGame(game, gameIdRef.current);
+    if (game.phase !== "setup") archiveGame(game, gameId);
     clearActiveGame();
-    gameIdRef.current = uid();
+    resetGameId(); // invalidate old share links immediately
     setGame({ phase: "setup" });
+  }
+
+  // Read-only viewer that hasn't received the host's first snapshot yet.
+  if (readOnly && game.phase === "setup") {
+    return (
+      <div className="pokerGame">
+        <section className="pokerHero">
+          <div>
+            <span className="pokerBadge">Live view</span>
+            <h2>Poker Scorecard</h2>
+            <p>Waiting for the host to share the game…</p>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   if (game.phase === "setup") {
@@ -739,7 +781,9 @@ export function PokerScorecard() {
     <GameScreen
       game={game}
       readOnly={readOnly}
+      shareUrl={shareUrl}
       onAddTransaction={addTransaction}
+      onUpdateTransaction={updateTransaction}
       onDeleteTransaction={deleteTransaction}
       onFinish={finishGame}
       onNewGame={newGame}

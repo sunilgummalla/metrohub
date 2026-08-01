@@ -10,5 +10,8 @@
   "peerDependencies": {
     "react": ">=18",
     "react-dom": ">=18"
+  },
+  "dependencies": {
+    "@metrohub/shared": "workspace:*"
   }
 }
