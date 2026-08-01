@@ -481,11 +481,14 @@
   background: rgba(255, 255, 255, 0.9);
 }
 
-/* Loading / error states */
+/* Loading / error states — shared layout, then per-state colors (no overrides) */
 .mktLoading,
 .mktError {
   padding: 2rem 0;
   text-align: center;
+}
+
+.mktLoading {
   color: var(--muted);
 }
 
