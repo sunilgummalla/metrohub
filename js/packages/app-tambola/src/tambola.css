@@ -1,0 +1,558 @@
+/* ─── Tambola App — theme-aware, all colours from shell tokens ────────────── */
+/* No local token block. All tokens inherited from the shell styles.css.       */
+
+/* ─── Layout ─────────────────────────────────────────────────────────────── */
+.tambolaApp {
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--surface-muted);
+  min-height: 100vh;
+  padding: 0 0 3rem;
+}
+
+.tambolaLayout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+@media (min-width: 900px) {
+  .tambolaLayout {
+    grid-template-columns: 1fr 1.6fr;
+    align-items: start;
+  }
+}
+
+/* ─── Section Cards ───────────────────────────────────────────────────────── */
+.tambolaCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.tambolaCardHeader {
+  padding: 1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tambolaCardTitle {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 0;
+}
+
+.tambolaCardBody {
+  padding: 1.25rem;
+}
+
+/* ─── Number Display ─────────────────────────────────────────────────────── */
+.callerPanel {
+  text-align: center;
+}
+
+.currentNumberWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+}
+
+.currentNumberBadge {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 700;
+  box-shadow: 0 6px 24px rgba(67, 56, 202, 0.30);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
+}
+
+.currentNumberBadge.pop {
+  animation: tambolaPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes tambolaPop {
+  0%   { transform: scale(0.7); opacity: 0.5; }
+  60%  { transform: scale(1.12); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.currentCallName {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--brand);
+  margin: 0;
+  text-align: center;
+}
+
+.currentNumberEmpty {
+  font-size: 1rem;
+  color: var(--muted);
+  padding: 2rem 0;
+}
+
+/* ─── Story Card ─────────────────────────────────────────────────────────── */
+.storyCard {
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.1rem;
+  margin: 0 1.25rem 1.25rem;
+  min-height: 90px;
+}
+
+.storyThemeBadge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--brand);
+  background: rgba(67, 56, 202, 0.08);
+  border-radius: 4px;
+  padding: 2px 7px;
+  margin-bottom: 0.5rem;
+}
+
+.storyText {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0;
+}
+
+.storyThemeTabs {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  padding: 0 1.25rem 1rem;
+}
+
+.storyThemeTab {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.storyThemeTab:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.storyThemeTab.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+/* ─── Controls ───────────────────────────────────────────────────────────── */
+.callerControls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0 1.25rem 1.25rem;
+}
+
+.drawBtn {
+  width: 100%;
+  padding: 0.85rem 1.5rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+  box-shadow: 0 3px 12px rgba(67, 56, 202, 0.25);
+}
+
+.drawBtn:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(67, 56, 202, 0.35);
+}
+
+.drawBtn:active:not(:disabled) { transform: translateY(0); }
+
+.drawBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.autoDrawRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.autoDrawToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.autoDrawToggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
+.speedLabel {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+.speedSelect {
+  font-size: 0.8rem;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.progressBar {
+  flex: 1;
+  height: 6px;
+  background: var(--surface-muted);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand), var(--amber-bright));
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* ─── Number Board ───────────────────────────────────────────────────────── */
+.boardPanel {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 900px) {
+  .boardPanel {
+    grid-column: 2;
+    grid-row: 1 / 3;
+  }
+}
+
+.numberBoard {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  padding: 1rem;
+}
+
+.boardCell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--uncalled);
+  color: var(--uncalled-text);
+  transition: background 0.25s, color 0.25s, transform 0.15s;
+  cursor: default;
+  user-select: none;
+  position: relative;
+}
+
+.boardCell.called {
+  background: var(--called);
+  color: var(--called-text);
+  box-shadow: 0 2px 6px rgba(67, 56, 202, 0.25);
+}
+
+.boardCell.current {
+  background: var(--amber-bright);
+  color: #fff;
+  transform: scale(1.12);
+  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.40);
+  z-index: 1;
+}
+
+/* ─── Last Called Strip ──────────────────────────────────────────────────── */
+.lastCalledStrip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.lastCalledLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.lastCalledChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.lastCalledChip:first-of-type {
+  background: var(--amber-bright);
+  color: #fff;
+}
+
+.lastCalledChip:not(:first-of-type) {
+  background: rgba(67, 56, 202, 0.10);
+  color: var(--brand);
+}
+
+/* ─── Ticket Generator ───────────────────────────────────────────────────── */
+.ticketPanel {
+  grid-column: 1 / -1;
+}
+
+.ticketControls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.ticketCountLabel {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.ticketCountInput {
+  width: 60px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.generateTicketsBtn,
+.printTicketsBtn {
+  padding: 6px 16px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+}
+
+.generateTicketsBtn {
+  background: var(--brand);
+  color: #fff;
+}
+
+.printTicketsBtn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.generateTicketsBtn:hover,
+.printTicketsBtn:hover {
+  opacity: 0.85;
+}
+
+.ticketsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+  padding: 1.25rem;
+}
+
+/* ─── Single Ticket ──────────────────────────────────────────────────────── */
+.tambolaTicket {
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.ticketHeader {
+  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  color: #fff;
+  padding: 6px 12px;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ticketGrid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  border-top: 1px solid var(--border);
+}
+
+.ticketCell {
+  aspect-ratio: 1.1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  background: var(--surface);
+}
+
+.ticketCell:nth-child(9n) { border-right: none; }
+
+.ticketCell.blank {
+  background: var(--surface-muted);
+  color: transparent;
+}
+
+.ticketCell.marked {
+  background: var(--brand);
+  color: #fff;
+}
+
+/* ─── New Game Button ────────────────────────────────────────────────────── */
+.newGameBtn {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  transition: all 0.15s;
+}
+
+.newGameBtn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ─── Share Panel ────────────────────────────────────────────────────────── */
+.tambolaSharePanel {
+  padding: 1rem 1.25rem;
+}
+
+.tambolaShareBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tambolaShareDesc {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.tambolaShareBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid var(--brand);
+  background: var(--surface);
+  color: var(--brand);
+  transition: all 0.15s;
+  align-self: flex-start;
+}
+
+.tambolaShareBtn:hover {
+  background: var(--brand);
+  color: #fff;
+}
+
+/* ─── Read-only badge ────────────────────────────────────────────────────── */
+.tambolaReadOnlyBadge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--warning-bg);
+  color: var(--warning);
+  border: 1px solid var(--warning-border);
+  vertical-align: middle;
+}

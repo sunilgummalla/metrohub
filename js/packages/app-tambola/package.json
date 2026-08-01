@@ -1,0 +1,17 @@
+{
+  "name": "@metrohub/tambola",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tambola (Housie) number caller micro-app for the Money Money portal.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "dependencies": {
+    "@metrohub/shared": "workspace:*"
+  }
+}

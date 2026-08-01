@@ -1,0 +1,627 @@
+/* ─── Bingo App — theme-aware, all colours from shell tokens ─────────────── */
+/* No local token block. All tokens inherited from the shell styles.css.       */
+
+/* ─── Layout ─────────────────────────────────────────────────────────────── */
+.bingoApp {
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--surface-muted);
+  min-height: 100vh;
+  padding: 0 0 3rem;
+}
+
+.bingoLayout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+@media (min-width: 900px) {
+  .bingoLayout {
+    grid-template-columns: 1fr auto;
+    align-items: start;
+  }
+}
+
+/* ─── Section Cards ───────────────────────────────────────────────────────── */
+.bingoCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.bingoCardHeader {
+  padding: 0.75rem 1rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.bingoCardTitle {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bingoCardBody {
+  padding: 1.25rem;
+}
+
+/* ─── Number Display ─────────────────────────────────────────────────────── */
+.bingoCallerPanel {
+  text-align: center;
+}
+
+.bingoCurrentNumberWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+}
+
+.bingoColumnBadge {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--teal);
+  background: rgba(20, 184, 166, 0.10);
+  border-radius: 4px;
+  padding: 3px 10px;
+}
+
+.bingoCurrentNumberBadge {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal), #0f766e);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 700;
+  box-shadow: 0 6px 24px rgba(20, 184, 166, 0.30);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
+}
+
+.bingoCurrentNumberBadge.pop {
+  animation: bingoPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bingoPop {
+  0%   { transform: scale(0.7); opacity: 0.5; }
+  60%  { transform: scale(1.12); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.bingoCurrentCallName {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--teal);
+  margin: 0;
+  text-align: center;
+}
+
+.bingoCurrentNumberEmpty {
+  font-size: 1rem;
+  color: var(--muted);
+  padding: 2rem 0;
+}
+
+/* ─── Story Card ─────────────────────────────────────────────────────────── */
+.bingoStoryCard {
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.1rem;
+  margin: 0 1.25rem 1.25rem;
+  min-height: 90px;
+}
+
+.bingoStoryThemeBadge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--teal);
+  background: rgba(20, 184, 166, 0.10);
+  border-radius: 4px;
+  padding: 2px 7px;
+  margin-bottom: 0.5rem;
+}
+
+.bingoStoryText {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0;
+}
+
+.bingoStoryThemeTabs {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  padding: 0 1.25rem 1rem;
+}
+
+.bingoStoryThemeTab {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.bingoStoryThemeTab:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.bingoStoryThemeTab.active {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+}
+
+/* ─── Controls ───────────────────────────────────────────────────────────── */
+.bingoCallerControls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0 1.25rem 1.25rem;
+}
+
+.bingoDrawBtn {
+  width: 100%;
+  padding: 0.85rem 1.5rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--teal), #0f766e);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+  box-shadow: 0 3px 12px rgba(20, 184, 166, 0.25);
+}
+
+.bingoDrawBtn:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(20, 184, 166, 0.35);
+}
+
+.bingoDrawBtn:active:not(:disabled) { transform: translateY(0); }
+
+.bingoDrawBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.bingoAutoDrawRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.bingoAutoDrawToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.bingoAutoDrawToggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--teal);
+  cursor: pointer;
+}
+
+.bingoSpeedLabel {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+.bingoSpeedSelect {
+  font-size: 0.8rem;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.bingoProgressRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.bingoProgressBar {
+  flex: 1;
+  height: 6px;
+  background: var(--surface-muted);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bingoProgressFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), var(--amber-bright));
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* ─── Number Board (5×15 BINGO layout) ──────────────────────────────────── */
+.bingoBoardPanel {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 900px) {
+  .bingoBoardPanel {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    width: 280px;
+  }
+}
+
+.bingoBoard {
+  padding: 0.5rem 0.6rem;
+}
+
+.bingoBoardHeader {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  margin-bottom: 3px;
+}
+
+.bingoBoardColLabel {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--teal);
+  padding: 1px 0;
+}
+
+.bingoBoardGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+}
+
+.bingoBoardCell {
+  width: 100%;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--uncalled);
+  color: var(--uncalled-text);
+  transition: background 0.25s, color 0.25s, transform 0.15s;
+  cursor: default;
+  user-select: none;
+}
+
+.bingoBoardCell.called {
+  background: var(--teal);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(20, 184, 166, 0.25);
+}
+
+.bingoBoardCell.current {
+  background: var(--amber-bright);
+  color: #fff;
+  transform: scale(1.12);
+  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.40);
+  z-index: 1;
+}
+
+/* ─── Last Called Strip ──────────────────────────────────────────────────── */
+.bingoLastCalledStrip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.bingoLastCalledLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.bingoLastCalledChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.bingoLastCalledChip:first-of-type {
+  background: var(--amber-bright);
+  color: #fff;
+}
+
+.bingoLastCalledChip:not(:first-of-type) {
+  background: rgba(20, 184, 166, 0.12);
+  color: var(--teal);
+}
+
+/* ─── Bingo Card (5×5 with FREE center) ─────────────────────────────────── */
+.bingoTicketPanel {
+  grid-column: 1 / -1;
+}
+
+.bingoTicketControls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.bingoTicketCountLabel {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.bingoTicketCountInput {
+  width: 60px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.bingoGenerateBtn,
+.bingoPrintBtn {
+  padding: 6px 16px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+}
+
+.bingoGenerateBtn {
+  background: var(--teal);
+  color: #fff;
+}
+
+.bingoPrintBtn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.bingoGenerateBtn:hover,
+.bingoPrintBtn:hover {
+  opacity: 0.85;
+}
+
+.bingoTicketsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.25rem;
+  padding: 1.25rem;
+}
+
+/* ─── Single Bingo Card (5×5) ────────────────────────────────────────────── */
+.bingoCard5x5 {
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.bingoCard5x5Header {
+  background: linear-gradient(135deg, var(--teal), #0f766e);
+  color: #fff;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 6px 0;
+}
+
+.bingoCard5x5ColLabel {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.bingoCard5x5Grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border-top: 1px solid var(--border);
+}
+
+.bingoCard5x5Cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  background: var(--surface);
+}
+
+.bingoCard5x5Cell:nth-child(5n) { border-right: none; }
+
+.bingoCard5x5Cell.free {
+  background: var(--free-cell);
+  color: var(--free-cell-text);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bingoCard5x5Cell.marked {
+  background: var(--teal);
+  color: #fff;
+}
+
+/* ─── Close Cards Button ────────────────────────────────────────────────── */
+.bingoCloseCardsBtn {
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  transition: all 0.15s;
+}
+
+.bingoCloseCardsBtn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ─── Share Panel ────────────────────────────────────────────────────────── */
+.bingoShareBody {
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bingoShareDesc {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.bingoShareBtn {
+  align-self: flex-start;
+  padding: 7px 16px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--teal);
+  background: transparent;
+  color: var(--teal);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.bingoShareBtn:hover {
+  background: var(--teal);
+  color: #fff;
+}
+
+.bingoShareBtnCopied {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.bingoShareBtnCopied:hover {
+  background: var(--success);
+  color: #fff;
+}
+
+/* ─── Read-only Badge ────────────────────────────────────────────────────── */
+.bingoReadOnlyBadge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--warning-bg);
+  color: var(--warning);
+  border: 1px solid var(--warning-border);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+  text-transform: none;
+}
+
+/* ─── New Game Button ────────────────────────────────────────────────────── */
+.bingoNewGameBtn {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  transition: all 0.15s;
+}
+
+.bingoNewGameBtn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}

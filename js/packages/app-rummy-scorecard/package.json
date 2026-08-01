@@ -1,5 +1,5 @@
 {
-  "name": "@money/rummy-scorecard",
+  "name": "@metrohub/rummy-scorecard",
   "version": "0.1.0",
   "private": true,
   "description": "Rummy scorecard micro-app for the Money Money portal.",
@@ -10,5 +10,8 @@
   "peerDependencies": {
     "react": ">=18",
     "react-dom": ">=18"
+  },
+  "dependencies": {
+    "@metrohub/shared": "workspace:*"
   }
 }

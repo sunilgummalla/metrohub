@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
-import { PokerScorecard } from "@money/poker-scorecard";
-import { RummyScorecard } from "@money/rummy-scorecard";
+import { PokerScorecard } from "@metrohub/poker-scorecard";
+import { RummyScorecard } from "@metrohub/rummy-scorecard";
+import { TambolaApp } from "@metrohub/tambola";
+import { BingoApp } from "@metrohub/bingo";
+import { PlansApp } from "@metrohub/plans";
+import { MarketplaceApp } from "@metrohub/marketplace";
 import registry from "../../api/app-registry.json";
 
 type PortalApp = (typeof registry.apps)[number];
@@ -11,18 +15,23 @@ const allCategories = "All";
 const APP_ICONS: Record<string, string> = {
   "poker-scorecard": "♠",
   "rummy-scorecard": "🃏",
+  "tambola":         "🎱",
+  "bingo":           "🔢",
   "splits":          "⚖",
   "my-accounts":     "🏦",
   "deals":           "🏷",
   "near-by":         "📍",
+  "plans":           "💳",
+  "marketplace":     "🏪",
 };
 
 // ─── Gradient map per category ────────────────────────────────────────────────
 const CATEGORY_GRADIENTS: Record<string, string> = {
-  Scoreboards: "linear-gradient(135deg,#7c3aed,#a855f7)",
-  Accounting:  "linear-gradient(135deg,#0f766e,#14b8a6)",
-  Shopping:    "linear-gradient(135deg,#b45309,#f59e0b)",
+  Scoreboards:   "linear-gradient(135deg,#7c3aed,#a855f7)",
+  Accounting:    "linear-gradient(135deg,#0f766e,#14b8a6)",
+  Shopping:      "linear-gradient(135deg,#b45309,#f59e0b)",
   "Site Seeing": "linear-gradient(135deg,#2563eb,#60a5fa)",
+  Marketplace:   "linear-gradient(135deg,#4338ca,#7c3aed)",
 };
 
 function categoryGradient(cat: string) {
@@ -41,15 +50,23 @@ function getInitialApp() {
 function ShellHeader({ onHome }: { onHome?: () => void }) {
   return (
     <header className="shellHeader">
-      <a className="brand" href="/" aria-label="Money Money home" onClick={onHome ? (e) => { e.preventDefault(); onHome(); } : undefined}>
-        <span className="brandMark" aria-hidden="true">MM</span>
-        <span className="brandText">
-          <strong>Money Money</strong>
-          <small>Personal portal</small>
-        </span>
+      <a
+        className="brand"
+        href="/"
+        aria-label="Metro Hub home"
+        onClick={onHome ? (e) => { e.preventDefault(); onHome(); } : undefined}
+      >
+        <img
+          src="/brand/logo-horizontal-light-800x267.png"
+          alt="Metro Hub"
+          className="brandLogo"
+          width={168}
+          height={56}
+        />
       </a>
       <nav className="topNav" aria-label="Shell navigation">
         <a href="/">Apps</a>
+        <a href="/marketplace" className="topNavHighlight">Marketplace</a>
         <a href="/apps/my-accounts">Accounts</a>
         <a href="/apps/splits">Splits</a>
       </nav>
@@ -61,9 +78,18 @@ function ShellHeader({ onHome }: { onHome?: () => void }) {
 function ShellFooter() {
   return (
     <footer className="shellFooter">
-      <span className="footerBrand">Money Money</span>
+      <div className="footerLeft">
+        <img
+          src="/brand/icon-72x72.png"
+          alt="Metro Hub"
+          className="footerIcon"
+          width={24}
+          height={24}
+        />
+        <span className="footerBrand">Metro Hub</span>
+      </div>
       <span className="footerMeta">
-        {new Date().getFullYear()} · {registry.apps.length} apps · Personal portal
+        {new Date().getFullYear()} · {registry.apps.length} apps · Personal finance &amp; game nights portal
       </span>
     </footer>
   );
@@ -116,7 +142,7 @@ function CategoryPill({
 
 // ─── Stats strip ─────────────────────────────────────────────────────────────
 function StatsStrip() {
-  const categories = Array.from(new Set(registry.apps.map((a) => a.category)));
+  const cats = Array.from(new Set(registry.apps.map((a) => a.category)));
   return (
     <div className="statsStrip">
       <div className="statItem">
@@ -125,17 +151,25 @@ function StatsStrip() {
       </div>
       <div className="statDivider" />
       <div className="statItem">
-        <span className="statValue">{categories.length}</span>
+        <span className="statValue">{cats.length}</span>
         <span className="statLabel">Categories</span>
       </div>
       <div className="statDivider" />
       <div className="statItem">
         <span className="statValue">1</span>
-        <span className="statLabel">Shell</span>
+        <span className="statLabel">Hub</span>
       </div>
     </div>
   );
 }
+
+// ─── Feature pills ────────────────────────────────────────────────────────────
+const FEATURES = [
+  { icon: "📊", label: "Finance tracking" },
+  { icon: "🃏", label: "Game scorecards" },
+  { icon: "⚖",  label: "Bill splitting" },
+  { icon: "📍", label: "Nearby discovery" },
+];
 
 // ─── Portal Home ──────────────────────────────────────────────────────────────
 function PortalHome() {
@@ -160,33 +194,68 @@ function PortalHome() {
 
   return (
     <main className="portalMain">
+
       {/* ── Hero ── */}
       <section className="portalHero">
+        {/* Decorative background blobs */}
+        <div className="heroBlobGold" aria-hidden="true" />
+        <div className="heroBlobTeal" aria-hidden="true" />
+
         <div className="heroInner">
-          <div className="heroBadge">Personal finance portal</div>
+          {/* Logo mark */}
+          <div className="heroLogoWrap">
+            <img
+              src="/brand/icon-192x192.png"
+              alt="Metro Hub"
+              className="heroLogoMark"
+              width={72}
+              height={72}
+            />
+          </div>
+
+          <div className="heroBadge">⬡ MetroHub · Everything in one place</div>
+
           <h1 className="heroTitle">
-            One shell for<br />
-            <span className="heroAccent">every money app.</span>
+            Your hub for<br />
+            <span className="heroAccentGold">finance</span>
+            <span className="heroAccentSep"> &amp; </span>
+            <span className="heroAccentTeal">game nights.</span>
           </h1>
+
           <p className="heroSubtitle">
             Track accounts, split costs, score game nights, and discover nearby
-            places — all in one consistent shell.
+            places — all in one consistent hub.
           </p>
+
+          {/* Feature pills */}
+          <div className="heroFeatures">
+            {FEATURES.map((f) => (
+              <span key={f.label} className="heroFeaturePill">
+                <span>{f.icon}</span> {f.label}
+              </span>
+            ))}
+          </div>
+
           <div className="heroButtons">
             <a className="heroBtnPrimary" href="/apps/rummy-scorecard">Open Rummy Scorecard</a>
             <a className="heroBtnSecondary" href="#apps">Browse all apps</a>
           </div>
         </div>
+
         <div className="heroVisual">
           <StatsStrip />
           <div className="heroAppPreview">
-            {registry.apps.slice(0, 3).map((app) => (
-              <div key={app.id} className="heroPreviewChip">
+            {registry.apps.slice(0, 4).map((app) => (
+              <a key={app.id} className="heroPreviewChip" href={app.route}>
                 <span style={{ background: categoryGradient(app.category) }} className="heroPreviewIcon">
                   {APP_ICONS[app.id] ?? app.tile.title[0]}
                 </span>
-                <span>{app.tile.title}</span>
-              </div>
+                <div className="heroPreviewChipBody">
+                  <span className="heroPreviewChipTitle">{app.tile.title}</span>
+                  <span className="heroPreviewChipCat">{app.category}</span>
+                </div>
+                <span className="heroPreviewChipArrow">→</span>
+              </a>
             ))}
           </div>
         </div>
@@ -255,6 +324,14 @@ function AppWorkspace({ app }: { app: PortalApp }) {
           <div style={{ padding: "0 22px" }}>
             <RummyScorecard />
           </div>
+        ) : app.id === "tambola" ? (
+          <TambolaApp />
+        ) : app.id === "bingo" ? (
+          <BingoApp />
+        ) : app.id === "plans" ? (
+          <PlansApp />
+        ) : app.id === "marketplace" ? (
+          <MarketplaceApp citySlug="seattle" />
         ) : (
           <div className="viewportBody">
             <span

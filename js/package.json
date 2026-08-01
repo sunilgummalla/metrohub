@@ -1,5 +1,5 @@
 {
-  "name": "money-money-js",
+  "name": "metrohub-js",
   "private": true,
   "scripts": {
     "build": "pnpm -r --if-present run build",
