@@ -6,6 +6,8 @@ const ACTIVE_KEY = "poker-active-v1";
 const HISTORY_KEY = "poker-history-v1";
 const TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_HISTORY = 7;
+// Must match useGameSync's session key: `game-id-<gameType>` with gameType "poker".
+const SYNC_ID_KEY = "game-id-poker";
 
 type TxnKind = "buyIn" | "rebuy" | "addon" | "cashOut";
 
@@ -104,11 +106,28 @@ function clearActiveGame() {
   localStorage.removeItem(ACTIVE_KEY);
 }
 
+/** Validate a persisted/remote game state shape before trusting it. */
+function isValidGameState(state: unknown): state is GameState {
+  if (!state || typeof state !== "object") return false;
+  const phase = (state as { phase?: unknown }).phase;
+  if (phase === "setup") return true;
+  if (phase === "playing" || phase === "finished") {
+    const s = state as { players?: unknown; transactions?: unknown };
+    return Array.isArray(s.players) && Array.isArray(s.transactions);
+  }
+  return false;
+}
+
 function loadGame(): GameState {
   try {
     const raw = localStorage.getItem(ACTIVE_KEY);
     if (!raw) return { phase: "setup" };
     const envelope = JSON.parse(raw) as ActiveEnvelope;
+    // Guard against corrupted / older-format payloads that could crash later.
+    if (!envelope || typeof envelope.savedAt !== "number" || !isValidGameState(envelope.state)) {
+      clearActiveGame();
+      return { phase: "setup" };
+    }
     if (Date.now() - envelope.savedAt > TTL_MS) {
       clearActiveGame();
       return { phase: "setup" };
@@ -120,10 +139,13 @@ function loadGame(): GameState {
 }
 
 function money(value: number) {
+  // parseAmount() accepts cents, so show up to 2 fraction digits (10.5 -> $10.50)
+  // while keeping whole amounts clean ($100, not $100.00).
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(value);
 }
 
@@ -321,6 +343,14 @@ function SetupScreen({
                     key={entry.id}
                     type="button"
                     onClick={() => {
+                      // Restore the sync session id too, so useGameSync resumes the
+                      // same gameId — share links stay valid and later saves/publishes
+                      // don't drift to a freshly-generated id.
+                      try {
+                        localStorage.setItem(SYNC_ID_KEY, entry.id);
+                      } catch {
+                        // Ignore storage failures.
+                      }
                       saveActiveGame(state, entry.id);
                       window.location.reload();
                     }}
@@ -690,7 +720,8 @@ export function PokerScorecard() {
   // ─── SSE live sync (host publishes, read-only viewer subscribes) ────────────
   const onRemoteUpdate = useCallback((remote: GameSyncPayload) => {
     const parsed = remote as unknown as GameState;
-    if (parsed && (parsed.phase === "playing" || parsed.phase === "finished")) {
+    // Validate the remote payload shape before trusting it (same guard as loadGame).
+    if (isValidGameState(parsed) && (parsed.phase === "playing" || parsed.phase === "finished")) {
       setGame(parsed);
     }
   }, []);
