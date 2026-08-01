@@ -541,6 +541,10 @@
   --vm-accent:        var(--brand);
   --vm-accent-light:  var(--surface-muted);
   --vm-text:          var(--text);
+  /* Text/icon color for elements sitting on a saturated --vm-brand/--vm-accent
+     fill. Constant near-white in both themes (matches the shell's on-brand
+     convention, e.g. .mktBadgeFeatured uses color:#fff on var(--brand)). */
+  --vm-on-brand:      #fff;
   --vm-text-muted:    var(--muted);
   --vm-radius:        var(--radius);
   --vm-radius-sm:     var(--radius-sm);
@@ -612,7 +616,7 @@
 
 .vm-search__btn {
   background: var(--vm-brand);
-  color: var(--vm-text);  /* navy on orange = ~7.2:1 contrast (WCAG AA) */
+  color: var(--vm-on-brand);  /* on-brand fill needs light text in both themes */
   border: none;
   border-radius: var(--vm-radius-sm);
   font-weight: 700;
@@ -776,7 +780,7 @@
   top: 0.6rem;
   right: 0.6rem;
   background: var(--vm-brand);
-  color: var(--vm-text);  /* navy on orange = ~7.2:1 contrast (WCAG AA) */
+  color: var(--vm-on-brand);  /* on-brand fill needs light text in both themes */
   font-size: 0.7rem;
   font-weight: 700;
   padding: 0.2rem 0.55rem;
