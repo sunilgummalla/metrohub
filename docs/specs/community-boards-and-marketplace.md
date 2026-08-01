@@ -86,20 +86,24 @@ When a user begins composing a new thread or query, the AI performs a real-time 
 
 1. User types a query or thread title.
 2. AI performs a semantic similarity search against active, non-archived threads.
-3. **If a high-confidence match is found:** The AI presents an inline answer synthesised from the existing thread's content, along with a direct link to that thread. The user is informed that an active thread already covers this topic. The user may still choose to post if they believe their query is genuinely distinct.
+3. **If a high-confidence match is found:** The AI presents an inline answer synthesised from the existing thread's content, along with a direct link to that thread. The user is informed that an active thread already covers this topic and is offered two primary actions: **reply to the existing thread**, or **request a distinct thread** (if they believe their query is genuinely different).
 4. **If no match is found:** The user proceeds to the full post editor.
-5. **If the user insists on posting despite a match:** The post is submitted but flagged for moderator review on moderated boards. On open boards, it is published but the AI adds a note linking to the related thread.
+5. **If the user requests a distinct thread despite a match:** To preserve the *one active thread per topic per board* rule, a second **Active** thread is never auto-published while the matching thread is still Active. Instead, the request is routed into an override workflow:
+   - **Moderated boards:** the post is saved as a **pending override request** and queued for moderator review. The moderator either approves it as a genuinely distinct thread (at which point it becomes Active) or redirects the author to reply on the existing thread.
+   - **Open boards:** the post is held as a **draft pending lightweight moderator confirmation** (with an AI note linking the related thread), rather than published immediately. It only becomes Active once confirmed distinct; otherwise the author is prompted to reply on the existing thread.
 
 #### Post-submission Content Moderation
 
 After a post is submitted, the AI evaluates it against the board's rule set (keywords, topic restrictions, tone guidelines). The rule set is defined by admins and moderators and is continuously refined over time based on moderator override decisions. The AI takes one of the following actions:
 
-| AI Decision | Action |
-| :--- | :--- |
-| **Clear** | Post is published immediately. |
-| **Suspicious** | Post is held pending moderator review. Author is notified. |
-| **Promotional** | Post is blocked. Admin and moderator are alerted for review. |
-| **Violation** | Post is blocked. Author is notified. Moderator/admin receives a detailed flag report. |
+Each AI decision maps to a stored `aiModerationStatus` value (`clear`, `flagged`, `blocked`) so the decision taxonomy and the persisted enum stay aligned:
+
+| AI Decision | Stored `aiModerationStatus` | Action |
+| :--- | :--- | :--- |
+| **Clear** | `clear` | Post is published immediately. |
+| **Suspicious** | `flagged` | Post is held pending moderator review. Author is notified. |
+| **Promotional** | `blocked` | Post is blocked. Admin and moderator are alerted for review. |
+| **Violation** | `blocked` | Post is blocked. Author is notified. Moderator/admin receives a detailed flag report. |
 
 Promotional content — defined as any post that attempts to sell products, services, or drive traffic to a storefront — is always blocked in community boards. This boundary between Community Boards and the Marketplace is enforced by the AI and cannot be bypassed by users.
 
@@ -216,19 +220,17 @@ Every vendor has a storefront, but a storefront is only commercially active when
 
 ### 2.2 Product & Service Lifecycle
 
-Products and services are managed through a four-state lifecycle. The states are not a simple linear progression — they represent independent visibility dimensions (storefront visibility vs. marketplace visibility).
+Products and services are managed through a four-state lifecycle. The four **persisted** states are `draft`, `listed`, `published`, and `unlisted` (matching `Product.status`). The states are not a simple linear progression — they represent independent visibility dimensions (storefront visibility vs. marketplace visibility). *Publish*, *unpublish*, *list*, *unlist*, and *re-list* are **transitions**, not states — in particular, **"unpublish" is a transition from `published` back to `listed`**, not a separate persisted state.
 
 ```
-Draft
-  │
-  ▼
-Listed ──────────────────────────────────────────────────┐
-  │                                                      │
-  ▼                                                      │
-Published ◄──────────────────────────────────────────────┘
-  │
-  ▼
-Unpublished (returns to Listed state)
+States: draft · listed · published · unlisted     (arrows are transitions)
+
+draft ──list──▶ listed ──publish──▶ published
+                  ▲  │                  │
+         re-list  │  │ unlist           │ unpublish
+                  │  ▼                  │
+                unlisted ◀──────────────┘
+                         (unlisting a published item unpublishes it first)
 ```
 
 The rules are:
@@ -237,8 +239,8 @@ The rules are:
 | :--- | :--- | :--- |
 | Draft → Listed | Yes | Vendor action. Item appears on vendor's store page only. |
 | Listed → Published | Yes | Vendor action. Item appears in global marketplace. |
-| Published → Unpublished | Yes | Returns item to Listed state. Still visible on vendor page. |
-| Listed → Unlisted | Yes | Removes from vendor page. Also forces Unpublished if currently Published. |
+| Published → Listed (unpublish) | Yes | Vendor action. Removes item from the global marketplace; it stays `listed` and visible on the vendor page. "Unpublish" is this transition, not a distinct state. |
+| Listed → Unlisted | Yes | Removes from vendor page. If the item is currently `published`, unlisting first unpublishes it (`published` → `listed` → `unlisted`). |
 | Unlisted → Listed | Yes | Vendor can re-list at any time. |
 | Draft → Published | **No** | Must be Listed first. |
 
@@ -299,10 +301,10 @@ The data model is designed to accommodate future carrier integrations. MetroHub 
 | `title` | String | |
 | `descriptionMarkdown` | String | |
 | `type` | Enum | `physical`, `digital`, `service` |
-| `price` | Number | In cents |
+| `price` | Integer | Minor currency units (e.g. cents). Integer only — no fractional/float values. |
 | `currency` | String | ISO 4217, default `USD` |
-| `inventoryCount` | Number | Null = unlimited |
-| `lowStockThreshold` | Number? | |
+| `inventoryCount` | Integer? | Non-negative integer stock count. `null`/absent = unlimited stock. Decremented atomically on order. |
+| `lowStockThreshold` | Integer? | Optional non-negative integer |
 | `status` | Enum | `draft`, `listed`, `published`, `unlisted` |
 | `images` | String[] | Cloudflare R2 URLs |
 | `tags` | String[] | For search indexing |
