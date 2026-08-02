@@ -69,8 +69,19 @@ function loadHistory(): HistoryEntry[] {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
     if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
     const cutoff = Date.now() - TTL_MS;
-    return (JSON.parse(raw) as HistoryEntry[]).filter((entry) => entry.savedAt > cutoff);
+    // Validate each entry so a corrupted/older-format record can't crash
+    // SetupScreen when it reads entry.state.players / .phase.
+    return (parsed as HistoryEntry[]).filter(
+      (entry) =>
+        entry &&
+        typeof entry.id === "string" &&
+        typeof entry.savedAt === "number" &&
+        entry.savedAt > cutoff &&
+        isValidGameState(entry.state)
+    );
   } catch {
     return [];
   }
@@ -370,18 +381,25 @@ function SetupScreen({
 }
 
 function CopyLinkBtn({ url, label }: { url: string; label: string }) {
-  const [copied, setCopied] = useState(false);
+  const [status, setStatus] = useState<"idle" | "ok" | "fail">("idle");
 
-  function handleCopy() {
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
-    });
+  async function handleCopy() {
+    // Clipboard API is unavailable on non-secure origins and can reject when
+    // permission is denied — handle both so there's no unhandled rejection and
+    // the user gets feedback.
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("clipboard unavailable");
+      await navigator.clipboard.writeText(url);
+      setStatus("ok");
+    } catch {
+      setStatus("fail");
+    }
+    window.setTimeout(() => setStatus("idle"), 1800);
   }
 
   return (
     <button className="pokerSecondaryBtn" type="button" onClick={handleCopy}>
-      {copied ? `Copied ${label}` : `Copy ${label}`}
+      {status === "ok" ? `Copied ${label}` : status === "fail" ? "Copy failed — copy manually" : `Copy ${label}`}
     </button>
   );
 }
