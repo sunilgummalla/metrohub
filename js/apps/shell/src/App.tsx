@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { PokerScorecard } from "@metrohub/poker-scorecard";
 import { RummyScorecard } from "@metrohub/rummy-scorecard";
 import { TambolaApp } from "@metrohub/tambola";
 import { BingoApp } from "@metrohub/bingo";
@@ -315,7 +316,11 @@ function AppWorkspace({ app }: { app: PortalApp }) {
           <span>{app.route}</span>
           <span>{app.packageName}</span>
         </div>
-        {app.id === "rummy-scorecard" ? (
+        {app.id === "poker-scorecard" ? (
+          <div style={{ padding: "0 22px" }}>
+            <PokerScorecard />
+          </div>
+        ) : app.id === "rummy-scorecard" ? (
           <div style={{ padding: "0 22px" }}>
             <RummyScorecard />
           </div>

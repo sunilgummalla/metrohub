@@ -24,6 +24,7 @@
   },
   "include": [
     "src",
+    "../../packages/app-poker-scorecard/src",
     "../../packages/app-rummy-scorecard/src",
     "../../packages/app-tambola/src",
     "../../packages/app-bingo/src",
