@@ -2,7 +2,15 @@ FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb
 
 WORKDIR /workspace/js
 ARG PNPM_VERSION=9.15.9
-RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
+# Warm-store support: pin the pnpm store to a fixed path so a BuildKit cache
+# mount can persist it across builds. NPM_REGISTRY defaults to npmjs; point it
+# at a pull-through mirror (e.g. Verdaccio) from CI to warm cold installs too.
+ENV PNPM_HOME=/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+ARG NPM_REGISTRY=https://registry.npmjs.org/
+RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate \
+  && pnpm config set store-dir /pnpm/store --global \
+  && pnpm config set registry "$NPM_REGISTRY" --global
 
 COPY js/package.json js/pnpm-lock.yaml js/pnpm-workspace.yaml ./
 COPY js/apps/shell/package.json apps/shell/package.json
@@ -13,7 +21,8 @@ COPY js/packages/app-bingo/package.json packages/app-bingo/package.json
 COPY js/packages/app-plans/package.json packages/app-plans/package.json
 COPY js/packages/shared/package.json packages/shared/package.json
 COPY js/packages/app-marketplace/package.json packages/app-marketplace/package.json
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile
 
 COPY js/apps/api/app-registry.json apps/api/app-registry.json
 COPY js/apps/shell apps/shell

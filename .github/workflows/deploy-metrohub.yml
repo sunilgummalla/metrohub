@@ -75,7 +75,7 @@ jobs:
   build:
     name: Build and publish images
     needs: target
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     strategy:
       matrix:
         include:
@@ -85,6 +85,12 @@ jobs:
             dockerfile: js/apps/experience/Dockerfile
           - name: shell
             dockerfile: js/apps/shell/Dockerfile
+    env:
+      # Optional pnpm pull-through mirror (e.g. Verdaccio on the runner host).
+      # Set the NPM_REGISTRY repo variable to enable; empty = use npmjs directly.
+      # When set, the URL must be reachable from the BuildKit build container
+      # (bind Verdaccio to the docker host-gateway, or share a docker network).
+      NPM_REGISTRY: ${{ vars.NPM_REGISTRY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -108,10 +114,14 @@ jobs:
             sleep "$delay_seconds"
           done
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: image=moby/buildkit:buildx-stable-1
+      - name: Ensure persistent BuildKit builder
+        # A long-lived 'warm' builder keeps the pnpm-store cache mount and the
+        # layer cache warm between runs. Provisioned on the host, but self-heal
+        # here so the workflow also works on a freshly set-up runner.
+        run: |
+          docker buildx inspect warm >/dev/null 2>&1 \
+            || docker buildx create --name warm --driver docker-container --bootstrap
+          docker buildx use warm
 
       - uses: docker/login-action@v3
         with:
@@ -124,8 +134,15 @@ jobs:
         run: |
           max_attempts=3
 
+          build_args=(--builder warm)
+          if [ -n "${NPM_REGISTRY}" ]; then
+            build_args+=(--add-host "host.docker.internal:host-gateway")
+            build_args+=(--build-arg "NPM_REGISTRY=${NPM_REGISTRY}")
+          fi
+
           for attempt in $(seq 1 "$max_attempts"); do
             if docker buildx build \
+              "${build_args[@]}" \
               --file "${{ matrix.dockerfile }}" \
               --tag "${IMAGE_PREFIX}-${{ matrix.name }}:${{ github.sha }}" \
               --tag "${IMAGE_PREFIX}-${{ matrix.name }}:${{ needs.target.outputs.stack }}" \
