@@ -178,17 +178,53 @@ export class SeedService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    if (process.env.SEED_SAMPLE_DATA !== "true") return;
+    // The app catalog is the shell's routing registry (GET /api/home/apps) — it
+    // must exist in every environment, not just demo ones, or the shell can't
+    // route to any app. Seed it unconditionally (idempotent upsert by appId).
     try {
-      await this.seed();
-      this.logger.log("Sample data seeded (SEED_SAMPLE_DATA=true)");
+      await this.seedApps();
+      this.logger.log("App catalog seeded");
     } catch (err) {
       // Never let seeding crash the API.
+      this.logger.error(`App catalog seed failed: ${(err as Error).message}`);
+    }
+
+    // Demo/sample content (vendors, deals, accounts, the demo persona) is opt-in.
+    if (process.env.SEED_SAMPLE_DATA !== "true") return;
+    try {
+      await this.seedSampleData();
+      this.logger.log("Sample data seeded (SEED_SAMPLE_DATA=true)");
+    } catch (err) {
       this.logger.error(`Sample data seed failed: ${(err as Error).message}`);
     }
   }
 
-  private async seed() {
+  /** App catalog (the shell's micro-app registry, keyed by appId). */
+  private async seedApps() {
+    for (let i = 0; i < APP_CATALOG.length; i++) {
+      const a = APP_CATALOG[i];
+      await this.appModel.updateOne(
+        { appId: a.id },
+        {
+          $set: {
+            packageName: a.packageName,
+            folder: a.folder,
+            displayName: a.displayName,
+            category: a.category,
+            route: a.route,
+            icon: a.icon,
+            tileTitle: a.tile.title,
+            tileDescription: a.tile.description,
+            order: i,
+            active: true,
+          },
+        },
+        { upsert: true },
+      );
+    }
+  }
+
+  private async seedSampleData() {
     // 1. Demo user (owner of the console dashboard)
     await this.userModel.updateOne(
       { email: DEMO_EMAIL },
@@ -296,28 +332,5 @@ export class SeedService implements OnModuleInit {
       { $set: { handle: "Sunil", role: "host", isGuest: false, joinedAt: new Date() } },
       { upsert: true },
     );
-
-    // 8. App catalog (the shell's micro-app registry, keyed by appId)
-    for (let i = 0; i < APP_CATALOG.length; i++) {
-      const a = APP_CATALOG[i];
-      await this.appModel.updateOne(
-        { appId: a.id },
-        {
-          $set: {
-            packageName: a.packageName,
-            folder: a.folder,
-            displayName: a.displayName,
-            category: a.category,
-            route: a.route,
-            icon: a.icon,
-            tileTitle: a.tile.title,
-            tileDescription: a.tile.description,
-            order: i,
-            active: true,
-          },
-        },
-        { upsert: true },
-      );
-    }
   }
 }

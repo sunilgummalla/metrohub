@@ -6,7 +6,9 @@ const ROT_WORDS = ["game nights", "shared bills", "local storefronts", "nearby d
 
 function stars(rating: number | null): string {
   if (rating == null) return "";
-  const full = Math.round(rating);
+  // Ratings come from flexible categoryData — clamp to [0, 5] so out-of-range
+  // values can't produce negative/overflowing slices.
+  const full = Math.max(0, Math.min(5, Math.round(rating)));
   return "★★★★★".slice(0, full) + "☆☆☆☆☆".slice(0, 5 - full);
 }
 
@@ -39,7 +41,11 @@ export function Storefront({ onSignIn }: { onSignIn: () => void }) {
   const [rot, setRot] = useState(0);
 
   useEffect(() => {
-    apiGet<Landing>("/api/home/landing").then(setData).catch(() => setError(true));
+    let alive = true;
+    apiGet<Landing>("/api/home/landing")
+      .then((d) => { if (alive) setData(d); })
+      .catch(() => { if (alive) setError(true); });
+    return () => { alive = false; };
   }, []);
 
   useEffect(() => {
@@ -105,10 +111,19 @@ export function Storefront({ onSignIn }: { onSignIn: () => void }) {
                 <p>{data.featuredDeal.blurb}</p>
                 {data.featuredDeal.vendor && (
                   <div className="sfMeta">
-                    <span className="sfStars">{stars(data.featuredDeal.vendor.rating)}</span>
-                    {data.featuredDeal.vendor.rating?.toFixed(1)} · {data.featuredDeal.vendor.category}
+                    {data.featuredDeal.vendor.rating != null && (
+                      <>
+                        <span className="sfStars">{stars(data.featuredDeal.vendor.rating)}</span>
+                        {data.featuredDeal.vendor.rating.toFixed(1)}{" · "}
+                      </>
+                    )}
+                    {data.featuredDeal.vendor.category}
                     {data.featuredDeal.vendor.distanceMi != null && ` · ${data.featuredDeal.vendor.distanceMi} mi`}
-                    {data.featuredDeal.vendor.open && <span className="sfOpen">Open now</span>}
+                    {data.featuredDeal.vendor.open != null && (
+                      <span className={`sfOpen ${data.featuredDeal.vendor.open ? "" : "sfClosed"}`}>
+                        {data.featuredDeal.vendor.open ? "Open now" : "Closed"}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

@@ -13,11 +13,12 @@ export function Console({ data, apps, onSignOut }: { data: Dashboard; apps: AppI
   const net = data.splits.netMinor;
   const netAbs = money(Math.abs(net), data.splits.currency);
 
-  // Per-app live state for the launcher subtitles.
+  // Per-app live state for the launcher subtitles. Labels mirror the uppercase
+  // KPI badges (LIVE / OPEN); the `.csCat` style uppercases them on render.
   function appState(id: string): { label: string; live?: boolean } {
-    if (game && (id === "rummy-scorecard")) return { label: "live", live: true };
+    if (game && (id === "rummy-scorecard")) return { label: "LIVE", live: true };
     if (id === "my-accounts") return { label: bal };
-    if (id === "splits") return { label: `${data.splits.openCount} open` };
+    if (id === "splits") return { label: `${data.splits.openCount} OPEN` };
     if (id === "marketplace") return { label: `${data.nearby.length} vendors` };
     if (id === "near-by") return { label: `${data.deals.length} deals` };
     return { label: "idle" };
