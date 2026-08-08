@@ -24,7 +24,7 @@ function VendorTile({ v }: { v: VendorCard }) {
         <h4>{v.name}</h4>
         <div className="sfBizCat">{v.category}</div>
         <div className="sfBizRow">
-          {v.rating != null && <span className="sfStars">{stars(v.rating)}</span>}
+          {v.rating != null && <span className="sfStars" aria-hidden="true">{stars(v.rating)}</span>}
           {v.rating != null && <span>{v.rating.toFixed(1)}</span>}
           {v.open != null && (
             <span className={`sfOpen ${v.open ? "" : "sfClosed"}`}>{v.open ? "Open" : "Closed"}</span>
@@ -113,7 +113,7 @@ export function Storefront({ onSignIn }: { onSignIn: () => void }) {
                   <div className="sfMeta">
                     {data.featuredDeal.vendor.rating != null && (
                       <>
-                        <span className="sfStars">{stars(data.featuredDeal.vendor.rating)}</span>
+                        <span className="sfStars" aria-hidden="true">{stars(data.featuredDeal.vendor.rating)}</span>
                         {data.featuredDeal.vendor.rating.toFixed(1)}{" · "}
                       </>
                     )}

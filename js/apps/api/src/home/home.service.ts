@@ -209,14 +209,12 @@ export class HomeService {
     const splitsCurrency = splits[0]?.currency ?? "USD";
     const netMinor = splits.reduce((s, x) => s + x.amountMinor, 0);
 
-    // Active game (join participant -> active session, compute standings from payload)
-    let activeGame: unknown = null;
-    if (participant) {
-      const session = await this.gameModel
-        .findOne({ gameId: participant.gameId, status: "active" })
-        .lean();
-      if (session) activeGame = this.summarizeGame(session);
-    }
+    // Active game (join participant -> active session, compute standings from
+    // payload). Typed via summarizeGame's inferred return, not `unknown`.
+    const session = participant
+      ? await this.gameModel.findOne({ gameId: participant.gameId, status: "active" }).lean()
+      : null;
+    const activeGame = session ? this.summarizeGame(session) : null;
 
     // Nearby deals + vendors for the "near you" tiles (city from the user's vendor if any)
     const citySlug = "seattle";
