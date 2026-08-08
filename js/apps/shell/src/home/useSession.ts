@@ -51,6 +51,7 @@ export function useSession(): Session {
       await load();
     } catch {
       setToken(null);
+      setDashboard(null);
       setStatus("out");
     }
   }, [load]);

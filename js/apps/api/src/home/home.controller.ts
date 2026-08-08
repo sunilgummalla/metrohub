@@ -9,10 +9,10 @@ import { HomeService } from "./home.service";
  *   GET  /api/home/dashboard    -> personalized console payload (Bearer token)
  *
  * The token format (`stub-token-<userId>`) matches the members stub scheme so a
- * future real OAuth flow can drop in without changing the shell. Unlike the
- * members stub, the dashboard is NOT gated by NODE_ENV — it only reads the
- * signed-in user's own seeded home data, so the storefront->console demo flow
- * works in every environment.
+ * future real OAuth flow can drop in without changing the shell. demo-login and
+ * dashboard are gated on SEED_SAMPLE_DATA (not NODE_ENV): they are enabled in
+ * seeded demo/showcase environments — regardless of NODE_ENV — and return 403
+ * where sample data isn't seeded, pending a real JWT/OAuth guard.
  */
 @Controller("home")
 export class HomeController {
