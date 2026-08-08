@@ -6,6 +6,7 @@ RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 COPY js/package.json js/pnpm-lock.yaml js/pnpm-workspace.yaml ./
 COPY js/apps/shell/package.json apps/shell/package.json
+COPY js/packages/app-poker-scorecard/package.json packages/app-poker-scorecard/package.json
 COPY js/packages/app-rummy-scorecard/package.json packages/app-rummy-scorecard/package.json
 COPY js/packages/app-tambola/package.json packages/app-tambola/package.json
 COPY js/packages/app-bingo/package.json packages/app-bingo/package.json
@@ -16,6 +17,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY js/apps/api/app-registry.json apps/api/app-registry.json
 COPY js/apps/shell apps/shell
+COPY js/packages/app-poker-scorecard packages/app-poker-scorecard
 COPY js/packages/app-rummy-scorecard packages/app-rummy-scorecard
 COPY js/packages/app-tambola packages/app-tambola
 COPY js/packages/app-bingo packages/app-bingo
