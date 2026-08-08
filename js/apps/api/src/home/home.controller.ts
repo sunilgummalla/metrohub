@@ -4,6 +4,7 @@ import { HomeService } from "./home.service";
 /**
  * Home aggregation for the shell portal:
  *   POST /api/home/demo-login   -> a session token for the seeded demo user
+ *   GET  /api/home/apps         -> public micro-app catalog (the registry)
  *   GET  /api/home/landing      -> public storefront payload (no auth)
  *   GET  /api/home/dashboard    -> personalized console payload (Bearer token)
  *
@@ -21,6 +22,11 @@ export class HomeController {
   @HttpCode(200)
   demoLogin() {
     return this.homeService.demoLoginToken();
+  }
+
+  @Get("apps")
+  apps() {
+    return this.homeService.getApps();
   }
 
   @Get("landing")

@@ -27,6 +27,8 @@ import {
   SplitSchema,
   Deal,
   DealSchema,
+  App,
+  AppSchema,
 } from "./schemas";
 
 /**
@@ -75,6 +77,7 @@ function buildMongoUri(): string {
       { name: Account.name, schema: AccountSchema },
       { name: Split.name, schema: SplitSchema },
       { name: Deal.name, schema: DealSchema },
+      { name: App.name, schema: AppSchema },
     ]),
   ],
   exports: [MongooseModule],

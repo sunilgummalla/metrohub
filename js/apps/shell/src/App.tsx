@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Home } from "./home/Home";
 import { PokerScorecard } from "@metrohub/poker-scorecard";
 import { RummyScorecard } from "@metrohub/rummy-scorecard";
@@ -6,25 +5,10 @@ import { TambolaApp } from "@metrohub/tambola";
 import { BingoApp } from "@metrohub/bingo";
 import { PlansApp } from "@metrohub/plans";
 import { MarketplaceApp } from "@metrohub/marketplace";
-import registry from "../../api/app-registry.json";
+import { useRegistry } from "./home/useRegistry";
+import type { AppInfo } from "./home/types";
 
-type PortalApp = (typeof registry.apps)[number];
-
-// ─── Icon map per app id ──────────────────────────────────────────────────────
-const APP_ICONS: Record<string, string> = {
-  "poker-scorecard": "♠",
-  "rummy-scorecard": "🃏",
-  "tambola":         "🎱",
-  "bingo":           "🔢",
-  "splits":          "⚖",
-  "my-accounts":     "🏦",
-  "deals":           "🏷",
-  "near-by":         "📍",
-  "plans":           "💳",
-  "marketplace":     "🏪",
-};
-
-// ─── Gradient map per category ────────────────────────────────────────────────
+// ─── Gradient map per category (visual theming, not catalog data) ─────────────
 const CATEGORY_GRADIENTS: Record<string, string> = {
   Scoreboards:   "linear-gradient(135deg,#7c3aed,#a855f7)",
   Accounting:    "linear-gradient(135deg,#0f766e,#14b8a6)",
@@ -38,23 +22,19 @@ function categoryGradient(cat: string) {
 }
 
 // ─── Route helpers ────────────────────────────────────────────────────────────
-function getInitialApp() {
+// The catalog is Mongo-backed (GET /api/home/apps); routes come from there.
+function matchRoute(apps: AppInfo[]): AppInfo | undefined {
   const route = window.location.pathname.replace(/\/+$/, "");
-  return registry.apps.find(
+  return apps.find(
     (app) => route === app.route || route.startsWith(`${app.route}/`)
   );
 }
 
 // ─── Header ───────────────────────────────────────────────────────────────────
-function ShellHeader({ onHome }: { onHome?: () => void }) {
+function ShellHeader() {
   return (
     <header className="shellHeader">
-      <a
-        className="brand"
-        href="/"
-        aria-label="Metro Hub home"
-        onClick={onHome ? (e) => { e.preventDefault(); onHome(); } : undefined}
-      >
+      <a className="brand" href="/" aria-label="Metro Hub home">
         <img
           src="/brand/logo-horizontal-light-800x267.png"
           alt="Metro Hub"
@@ -74,7 +54,7 @@ function ShellHeader({ onHome }: { onHome?: () => void }) {
 }
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
-function ShellFooter() {
+function ShellFooter({ appCount }: { appCount: number }) {
   return (
     <footer className="shellFooter">
       <div className="footerLeft">
@@ -88,21 +68,20 @@ function ShellFooter() {
         <span className="footerBrand">Metro Hub</span>
       </div>
       <span className="footerMeta">
-        {new Date().getFullYear()} · {registry.apps.length} apps · Personal finance &amp; game nights portal
+        {new Date().getFullYear()} · {appCount} apps · Personal finance &amp; game nights portal
       </span>
     </footer>
   );
 }
 
 // ─── App Card ─────────────────────────────────────────────────────────────────
-function AppCard({ app }: { app: PortalApp }) {
-  const icon = APP_ICONS[app.id] ?? app.tile.title[0];
+function AppCard({ app }: { app: AppInfo }) {
   const grad = categoryGradient(app.category);
 
   return (
     <a className="appCard" href={app.route}>
       <div className="appCardIcon" style={{ background: grad }}>
-        <span>{icon}</span>
+        <span>{app.icon || app.tile.title[0]}</span>
       </div>
       <div className="appCardBody">
         <span className="appCardCategory">{app.category}</span>
@@ -115,8 +94,8 @@ function AppCard({ app }: { app: PortalApp }) {
 }
 
 // ─── App Workspace ────────────────────────────────────────────────────────────
-function AppWorkspace({ app }: { app: PortalApp }) {
-  const relatedApps = registry.apps
+function AppWorkspace({ app, apps }: { app: AppInfo; apps: AppInfo[] }) {
+  const relatedApps = apps
     .filter((c) => c.category === app.category && c.id !== app.id)
     .slice(0, 3);
 
@@ -159,7 +138,7 @@ function AppWorkspace({ app }: { app: PortalApp }) {
               aria-hidden="true"
               style={{ background: categoryGradient(app.category) }}
             >
-              {APP_ICONS[app.id] ?? app.tile.title[0]}
+              {app.icon || app.tile.title[0]}
             </span>
             <h2>{app.tile.title}</h2>
             <p>{app.folder}</p>
@@ -188,20 +167,34 @@ function AppWorkspace({ app }: { app: PortalApp }) {
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export function App() {
-  const [selectedApp] = useState(() => getInitialApp());
+  // The app catalog is loaded from Mongo at boot; routing waits on it.
+  const { status, apps } = useRegistry();
+
+  if (status === "loading") {
+    return (
+      <div className="homeSplash">
+        <span className="homeSpin" aria-hidden="true" />
+        <span>Loading your hub…</span>
+      </div>
+    );
+  }
+
+  // On "ready" apps is the live catalog; on "error" it's empty, so any deep
+  // link falls back to the Home experience rather than a blank shell.
+  const selectedApp = matchRoute(apps);
 
   // Home route ("/") is the Storefront (signed-out) / Console (signed-in)
   // experience, which brings its own header & footer. App routes keep the
   // shell frame.
   if (!selectedApp) {
-    return <Home />;
+    return <Home apps={apps} />;
   }
 
   return (
     <div className="shellFrame">
       <ShellHeader />
-      <AppWorkspace app={selectedApp} />
-      <ShellFooter />
+      <AppWorkspace app={selectedApp} apps={apps} />
+      <ShellFooter appCount={apps.length} />
     </div>
   );
 }

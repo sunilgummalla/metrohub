@@ -1,23 +1,17 @@
-import registry from "../../../api/app-registry.json";
 import { money } from "./api";
-import type { Dashboard } from "./types";
+import type { AppInfo, Dashboard } from "./types";
 
-const APP_ICONS: Record<string, string> = {
-  "poker-scorecard": "♠️", "rummy-scorecard": "🃏", tambola: "🎱", bingo: "🎯",
-  "my-accounts": "🏦", splits: "⚖️", plans: "💳", marketplace: "🏪", "near-by": "📍", deals: "🏷️",
-};
 const CATEGORY_LABEL: Record<string, string> = {
   Scoreboards: "Scoreboards", Account: "Money", Accounting: "Money",
   Marketplace: "Local", "Site Seeing": "Discover", Shopping: "Local",
 };
 
-export function Console({ data, onSignOut }: { data: Dashboard; onSignOut: () => void }) {
+export function Console({ data, apps, onSignOut }: { data: Dashboard; apps: AppInfo[]; onSignOut: () => void }) {
   const firstName = data.user.displayName.split(" ")[0];
   const game = data.activeGame;
   const bal = money(data.accounts.totalBalanceMinor, data.accounts.currency);
   const net = data.splits.netMinor;
   const netAbs = money(Math.abs(net), data.splits.currency);
-  const apps = registry.apps as Array<{ id: string; route: string; category: string; tile: { title: string } }>;
 
   // Per-app live state for the launcher subtitles.
   function appState(id: string): { label: string; live?: boolean } {
@@ -91,7 +85,7 @@ export function Console({ data, onSignOut }: { data: Dashboard; onSignOut: () =>
                 const st = appState(a.id);
                 return (
                   <a className="csAppRow" href={a.route} key={a.id}>
-                    <span className="csIc">{APP_ICONS[a.id] ?? a.tile.title[0]}</span>
+                    <span className="csIc">{a.icon || a.tile.title[0]}</span>
                     <span className="csNm">{a.tile.title}</span>
                     <span className="csCat">{CATEGORY_LABEL[a.category] ?? a.category}{" · "}
                       <span className={st.live ? "csLiveTxt" : ""}>{st.label}</span>

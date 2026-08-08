@@ -4,6 +4,8 @@ import { Model, Types } from "mongoose";
 import {
   Account,
   AccountDocument,
+  App,
+  AppDocument,
   Deal,
   DealDocument,
   GameParticipant,
@@ -81,7 +83,29 @@ export class HomeService {
     @InjectModel(SubscriptionPlan.name) private readonly planModel: Model<SubscriptionPlanDocument>,
     @InjectModel(GameSession.name) private readonly gameModel: Model<GameSessionDocument>,
     @InjectModel(GameParticipant.name) private readonly participantModel: Model<GameParticipantDocument>,
+    @InjectModel(App.name) private readonly appModel: Model<AppDocument>,
   ) {}
+
+  /**
+   * The shell's micro-app catalog (the registry that used to live in
+   * app-registry.json). Public — the shell reads it at boot to route and to
+   * render the launcher.
+   */
+  async getApps() {
+    const apps = await this.appModel.find({ active: true }).sort({ order: 1 }).lean();
+    return {
+      apps: apps.map((a) => ({
+        id: a.appId,
+        packageName: a.packageName,
+        folder: a.folder,
+        displayName: a.displayName,
+        category: a.category,
+        route: a.route,
+        icon: a.icon,
+        tile: { title: a.tileTitle, description: a.tileDescription },
+      })),
+    };
+  }
 
   /** Token = the demo user's id so the shell can sign in without real OAuth. */
   async demoLoginToken(): Promise<{ token: string; displayName: string; email: string }> {

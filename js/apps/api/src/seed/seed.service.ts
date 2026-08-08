@@ -4,6 +4,8 @@ import { Model, Types } from "mongoose";
 import {
   Account,
   AccountDocument,
+  App,
+  AppDocument,
   Deal,
   DealDocument,
   GameParticipant,
@@ -19,6 +21,7 @@ import {
   Vendor,
   VendorDocument,
 } from "../database";
+import { APP_CATALOG } from "./app-catalog";
 
 /**
  * Seeds a coherent set of sample data into MongoDB so the storefront (public)
@@ -171,6 +174,7 @@ export class SeedService implements OnModuleInit {
     @InjectModel(Subscription.name) private readonly subModel: Model<SubscriptionDocument>,
     @InjectModel(GameSession.name) private readonly gameModel: Model<GameSessionDocument>,
     @InjectModel(GameParticipant.name) private readonly participantModel: Model<GameParticipantDocument>,
+    @InjectModel(App.name) private readonly appModel: Model<AppDocument>,
   ) {}
 
   async onModuleInit() {
@@ -292,5 +296,28 @@ export class SeedService implements OnModuleInit {
       { $set: { handle: "Sunil", role: "host", isGuest: false, joinedAt: new Date() } },
       { upsert: true },
     );
+
+    // 8. App catalog (the shell's micro-app registry, keyed by appId)
+    for (let i = 0; i < APP_CATALOG.length; i++) {
+      const a = APP_CATALOG[i];
+      await this.appModel.updateOne(
+        { appId: a.id },
+        {
+          $set: {
+            packageName: a.packageName,
+            folder: a.folder,
+            displayName: a.displayName,
+            category: a.category,
+            route: a.route,
+            icon: a.icon,
+            tileTitle: a.tile.title,
+            tileDescription: a.tile.description,
+            order: i,
+            active: true,
+          },
+        },
+        { upsert: true },
+      );
+    }
   }
 }

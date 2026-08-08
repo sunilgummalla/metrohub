@@ -1,13 +1,15 @@
 import { Console } from "./Console";
 import { Storefront } from "./Storefront";
 import { useSession } from "./useSession";
+import type { AppInfo } from "./types";
 import "./home.css";
 
 /**
  * The shell home route. Signed-out visitors get the Storefront landing;
- * signed-in members get their personalized Console dashboard.
+ * signed-in members get their personalized Console dashboard. The app catalog
+ * (`apps`) is loaded once by the shell and threaded to the Console launcher.
  */
-export function Home() {
+export function Home({ apps }: { apps: AppInfo[] }) {
   const { status, dashboard, signIn, signOut } = useSession();
 
   if (status === "loading") {
@@ -19,7 +21,7 @@ export function Home() {
     );
   }
   if (status === "in" && dashboard) {
-    return <Console data={dashboard} onSignOut={signOut} />;
+    return <Console data={dashboard} apps={apps} onSignOut={signOut} />;
   }
   return <Storefront onSignIn={signIn} />;
 }

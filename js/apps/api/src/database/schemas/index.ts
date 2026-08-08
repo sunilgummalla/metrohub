@@ -36,3 +36,6 @@ export type { SplitDocument } from "./split.schema";
 
 export { Deal, DealSchema } from "./deal.schema";
 export type { DealDocument } from "./deal.schema";
+
+export { App, AppSchema } from "./app.schema";
+export type { AppDocument } from "./app.schema";

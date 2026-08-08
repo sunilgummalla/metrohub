@@ -15,7 +15,6 @@ COPY js/packages/shared/package.json packages/shared/package.json
 COPY js/packages/app-marketplace/package.json packages/app-marketplace/package.json
 RUN pnpm install --frozen-lockfile
 
-COPY js/apps/api/app-registry.json apps/api/app-registry.json
 COPY js/apps/shell apps/shell
 COPY js/packages/app-poker-scorecard packages/app-poker-scorecard
 COPY js/packages/app-rummy-scorecard packages/app-rummy-scorecard

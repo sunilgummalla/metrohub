@@ -1,5 +1,20 @@
 // Response shapes from the /api/home/* endpoints.
 
+export interface AppInfo {
+  id: string;
+  packageName: string;
+  folder: string;
+  displayName: string;
+  category: string;
+  route: string;
+  icon: string;
+  tile: { title: string; description: string };
+}
+
+export interface AppRegistry {
+  apps: AppInfo[];
+}
+
 export interface VendorCard {
   id: string;
   name: string;
