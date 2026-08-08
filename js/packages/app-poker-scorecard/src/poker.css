@@ -68,6 +68,11 @@
   grid-template-columns: 1.1fr 1fr 1fr 1.4fr;
 }
 
+/* Give the free-text Note its own full-width row so there's room to type. */
+.pokerNoteField {
+  grid-column: 1 / -1;
+}
+
 .pokerField {
   color: var(--muted, #64748b);
   display: grid;

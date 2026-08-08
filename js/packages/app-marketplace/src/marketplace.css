@@ -981,6 +981,14 @@
   color: var(--vm-text-muted);
 }
 
+/* Address line: keep the pin icon aligned to the first line of a multi-line address. */
+.vm-detail__address {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  line-height: 1.5;
+}
+
 .vm-detail__contact p strong {
   color: var(--vm-text);
 }
