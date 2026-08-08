@@ -4,7 +4,7 @@ NestJS API services live here.
 
 This app owns domain APIs, persistence, integrations, background jobs, server-side business workflows, and the app registry.
 
-The app registry is Mongo-backed. Its canonical definition lives in [`src/seed/app-catalog.ts`](src/seed/app-catalog.ts); `SeedService` upserts it into the `apps` collection on boot (when `SEED_SAMPLE_DATA=true`), and the API exposes it to the experience layer at `GET /api/home/apps`. To add an app, append an entry to the catalog and wire its component in the shell.
+The app registry is Mongo-backed. Its canonical definition lives in [`src/seed/app-catalog.ts`](src/seed/app-catalog.ts); `SeedService` upserts it into the `apps` collection on every boot (unconditionally — it is the shell's routing registry, so it must exist in all environments; only the demo/sample content is gated behind `SEED_SAMPLE_DATA`). The API exposes the catalog to the experience layer at `GET /api/home/apps`. To add an app, append an entry to the catalog and wire its component in the shell.
 
 ## Local development
 

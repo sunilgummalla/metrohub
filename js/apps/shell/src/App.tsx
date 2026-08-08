@@ -7,6 +7,9 @@ import { PlansApp } from "@metrohub/plans";
 import { MarketplaceApp } from "@metrohub/marketplace";
 import { useRegistry } from "./home/useRegistry";
 import type { AppInfo } from "./home/types";
+// Boot splash reuses the homeSplash/homeSpin styles — import them here so the
+// loading UI is styled even before <Home> mounts (e.g. deep-linking an app route).
+import "./home/home.css";
 
 // ─── Gradient map per category (visual theming, not catalog data) ─────────────
 const CATEGORY_GRADIENTS: Record<string, string> = {
