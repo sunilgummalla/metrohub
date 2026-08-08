@@ -176,6 +176,12 @@ export class HomeService {
   }
 
   async getDashboard(userId: string) {
+    // The dashboard is reached with a format-only stub token, so it is gated on
+    // SEED_SAMPLE_DATA (matching demo-login) until a real JWT/OAuth guard lands.
+    // Only demo environments seed the users these tokens can address.
+    if (process.env.SEED_SAMPLE_DATA !== "true") {
+      throw new ForbiddenException("Dashboard is disabled in this environment.");
+    }
     let oid: Types.ObjectId;
     try {
       oid = new Types.ObjectId(userId);

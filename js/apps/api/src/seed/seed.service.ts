@@ -24,10 +24,13 @@ import {
 import { APP_CATALOG } from "./app-catalog";
 
 /**
- * Seeds a coherent set of sample data into MongoDB so the storefront (public)
- * and console (signed-in) home experiences render real data — no static/stubbed
- * content in the shell. Runs once per boot, idempotently (upsert by natural
- * keys), and ONLY when SEED_SAMPLE_DATA === "true".
+ * Seeds MongoDB on boot, idempotently (upsert by natural keys):
+ *   - The app catalog (the shell's routing registry) is seeded UNCONDITIONALLY,
+ *     since GET /api/home/apps must work in every environment.
+ *   - The demo/sample content (vendors, deals, accounts, the demo persona) is
+ *     seeded ONLY when SEED_SAMPLE_DATA === "true".
+ * So the storefront/console home render real data with no static/stubbed content
+ * in the shell.
  */
 
 const CITY = "seattle";
@@ -222,6 +225,12 @@ export class SeedService implements OnModuleInit {
         { upsert: true },
       );
     }
+    // Deactivate any catalog entries that were removed from APP_CATALOG so stale
+    // apps don't linger as active in Mongo (and in GET /api/home/apps).
+    await this.appModel.updateMany(
+      { appId: { $nin: APP_CATALOG.map((a) => a.id) } },
+      { $set: { active: false } },
+    );
   }
 
   private async seedSampleData() {
