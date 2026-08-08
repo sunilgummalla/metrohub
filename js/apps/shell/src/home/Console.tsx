@@ -13,14 +13,21 @@ export function Console({ data, apps, onSignOut }: { data: Dashboard; apps: AppI
   const net = data.splits.netMinor;
   const netAbs = money(Math.abs(net), data.splits.currency);
 
+  // Normalize the payload arrays once so a missing/null field can't crash render.
+  const nearby = data.nearby ?? [];
+  const dealsList = data.deals ?? [];
+  const accountItems = data.accounts.items ?? [];
+  const standings = game?.standings ?? [];
+  const openCount = data.splits.openCount ?? 0;
+
   // Per-app live state for the launcher subtitles. Labels mirror the uppercase
   // KPI badges (LIVE / OPEN); the `.csCat` style uppercases them on render.
   function appState(id: string): { label: string; live?: boolean } {
     if (game && (id === "rummy-scorecard")) return { label: "LIVE", live: true };
     if (id === "my-accounts") return { label: bal };
-    if (id === "splits") return { label: `${data.splits.openCount} OPEN` };
-    if (id === "marketplace") return { label: `${data.nearby.length} vendors` };
-    if (id === "near-by") return { label: `${data.deals.length} deals` };
+    if (id === "splits") return { label: `${openCount} OPEN` };
+    if (id === "marketplace") return { label: `${nearby.length} vendors` };
+    if (id === "near-by") return { label: `${dealsList.length} deals` };
     return { label: "idle" };
   }
 
@@ -42,7 +49,7 @@ export function Console({ data, apps, onSignOut }: { data: Dashboard; apps: AppI
           <h1>Good evening, {firstName}.</h1>
           <span className="csSub">
             {game ? <><b>1 game live</b> · </> : null}
-            {data.splits.openCount} splits open · {data.deals.length} deals near you
+            {openCount} splits open · {dealsList.length} deals near you
           </span>
         </div>
 
@@ -52,7 +59,7 @@ export function Console({ data, apps, onSignOut }: { data: Dashboard; apps: AppI
             {game ? (
               <>
                 <span className="csKv" style={{ textTransform: "capitalize" }}>{game.gameType}</span>
-                <span className="csKm">R{game.round} · {game.leader} leading · {game.standings.length} players</span>
+                <span className="csKm">R{game.round} · {game.leader ?? "—"} leading · {standings.length} players</span>
               </>
             ) : (
               <>
@@ -64,17 +71,17 @@ export function Console({ data, apps, onSignOut }: { data: Dashboard; apps: AppI
           <div className="csKpi" data-edge="acc">
             <span className="csKl">Accounts balance</span>
             <span className="csKv">{bal}</span>
-            <span className="csKm">{data.accounts.items.length} accounts</span>
+            <span className="csKm">{accountItems.length} accounts</span>
           </div>
           <div className="csKpi" data-edge="warn">
-            <span className="csKl">Splits {data.splits.openCount > 0 && <span className="csBadge due">{data.splits.openCount} OPEN</span>}</span>
+            <span className="csKl">Splits {openCount > 0 && <span className="csBadge due">{openCount} OPEN</span>}</span>
             <span className="csKv">{net >= 0 ? "+" : "−"}{netAbs}</span>
             <span className="csKm">{net >= 0 ? "you're owed" : "you owe"} · settle soon</span>
           </div>
           <div className="csKpi" data-edge="good">
             <span className="csKl">Near you <span className="csBadge ok">OPEN</span></span>
-            <span className="csKv">{data.deals.length} deals</span>
-            <span className="csKm">{data.nearby.slice(0, 2).map((v) => v.name).join(" · ") || "—"}</span>
+            <span className="csKv">{dealsList.length} deals</span>
+            <span className="csKm">{nearby.slice(0, 2).map((v) => v.name).join(" · ") || "—"}</span>
           </div>
         </div>
 
@@ -105,8 +112,8 @@ export function Console({ data, apps, onSignOut }: { data: Dashboard; apps: AppI
                 <table className="csTbl">
                   <thead><tr><th>Player</th><th className="csR">Total</th><th className="csR">To bust</th></tr></thead>
                   <tbody>
-                    {game.standings.map((s, i) => (
-                      <tr key={s.name} className={i === 0 ? "csLead" : ""}>
+                    {standings.map((s, i) => (
+                      <tr key={`${i}-${s.name}`} className={i === 0 ? "csLead" : ""}>
                         <td>{i === 0 ? "🏆 " : ""}{s.name}</td>
                         <td className={`csR ${i === 0 ? "csTot" : ""}`}>{s.total}</td>
                         <td className={`csR ${s.toBust <= 20 ? "csWarnTxt" : "csMut"}`}>{s.toBust}</td>

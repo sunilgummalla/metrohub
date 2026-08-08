@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { apiGet, apiPost, getToken, setToken } from "./api";
 import type { Dashboard } from "./types";
 
@@ -20,20 +20,33 @@ export interface Session {
 export function useSession(): Session {
   const [status, setStatus] = useState<SessionStatus>("loading");
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  // Guards against setState after the component unmounts (e.g. navigating to an
+  // app route while a /dashboard or /demo-login request is still in flight).
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const load = useCallback(async () => {
     if (!getToken()) {
-      setDashboard(null);
-      setStatus("out");
+      if (mounted.current) {
+        setDashboard(null);
+        setStatus("out");
+      }
       return;
     }
     try {
       const d = await apiGet<Dashboard>("/api/home/dashboard", true);
+      if (!mounted.current) return;
       setDashboard(d);
       setStatus("in");
     } catch {
       // Bad/expired token — drop it and fall back to the storefront.
       setToken(null);
+      if (!mounted.current) return;
       setDashboard(null);
       setStatus("out");
     }
@@ -44,13 +57,14 @@ export function useSession(): Session {
   }, [load]);
 
   const signIn = useCallback(async () => {
-    setStatus("loading");
+    if (mounted.current) setStatus("loading");
     try {
       const res = await apiPost<{ token: string }>("/api/home/demo-login");
       setToken(res.token);
       await load();
     } catch {
       setToken(null);
+      if (!mounted.current) return;
       setDashboard(null);
       setStatus("out");
     }

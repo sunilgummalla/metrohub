@@ -55,10 +55,10 @@ export function Storefront({ onSignIn }: { onSignIn: () => void }) {
   }, []);
 
   const proPlan = useMemo(
-    () => data?.plans.find((p) => /pro/i.test(p.planId)) ?? data?.plans[1] ?? null,
+    () => data?.plans?.find((p) => /pro/i.test(p.planId)) ?? data?.plans?.[1] ?? null,
     [data],
   );
-  const featuredVendors = data?.featuredVendors.length ? data.featuredVendors : data?.vendors ?? [];
+  const featuredVendors = data?.featuredVendors?.length ? data.featuredVendors : (data?.vendors ?? []);
 
   return (
     <div className="sfApp">
@@ -173,8 +173,8 @@ export function Storefront({ onSignIn }: { onSignIn: () => void }) {
               </a>
             </div>
             <div className="sfProCmp">
-              {proPlan.features.slice(0, 5).map((f) => (
-                <div className="sfLn" key={f}><span className="sfCk">✓</span> {f} <b>{proPlan.name}</b></div>
+              {proPlan.features.slice(0, 5).map((f, i) => (
+                <div className="sfLn" key={`${i}-${f}`}><span className="sfCk">✓</span> {f} <b>{proPlan.name}</b></div>
               ))}
             </div>
           </div>

@@ -28,8 +28,15 @@ function categoryGradient(cat: string) {
 // The catalog is Mongo-backed (GET /api/home/apps); routes come from there.
 function matchRoute(apps: AppInfo[]): AppInfo | undefined {
   const route = window.location.pathname.replace(/\/+$/, "");
-  return apps.find(
-    (app) => route === app.route || route.startsWith(`${app.route}/`)
+  const routed = apps.filter((app) => app.route); // ignore malformed empty routes
+  // Prefer an exact route match; fall back to a nested path (e.g. /apps/x/123),
+  // longest route first so a more specific app wins over a prefix.
+  return (
+    routed.find((app) => route === app.route) ??
+    routed
+      .slice()
+      .sort((a, b) => b.route.length - a.route.length)
+      .find((app) => route.startsWith(`${app.route}/`))
   );
 }
 

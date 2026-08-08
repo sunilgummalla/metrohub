@@ -30,7 +30,8 @@ export class HomeController {
   }
 
   @Get("landing")
-  landing(@Query("citySlug") citySlug?: string) {
+  landing(@Query("citySlug") citySlug?: unknown) {
+    // citySlug is validated/coerced in the service (qs can yield a non-string).
     return this.homeService.getLanding(citySlug);
   }
 

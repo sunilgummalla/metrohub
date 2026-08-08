@@ -24,7 +24,7 @@ export function useRegistry(): Registry {
     apiGet<AppRegistry>("/api/home/apps")
       .then((r) => {
         if (!alive) return;
-        setApps(r.apps);
+        setApps(Array.isArray(r?.apps) ? r.apps : []);
         setStatus("ready");
       })
       .catch(() => {

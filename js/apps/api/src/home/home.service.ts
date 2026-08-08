@@ -53,8 +53,12 @@ interface VendorLean {
 function toVendorCard(v: VendorLean) {
   const cd = (v.categoryData ?? {}) as Record<string, unknown>;
   const coords = v.location?.coordinates;
-  const distanceMi =
-    coords ? haversineMi(CITY_CENTER, { lng: coords[0], lat: coords[1] }) : null;
+  const hasCoords =
+    Array.isArray(coords) && coords.length === 2 &&
+    typeof coords[0] === "number" && typeof coords[1] === "number";
+  const distanceMi = hasCoords
+    ? haversineMi(CITY_CENTER, { lng: coords[0], lat: coords[1] })
+    : null;
   return {
     id: String(v._id),
     name: v.businessName,
@@ -68,6 +72,25 @@ function toVendorCard(v: VendorLean) {
     open: typeof cd.open === "boolean" ? cd.open : null,
     hoursLabel: typeof cd.hoursLabel === "string" ? cd.hoursLabel : null,
     distanceMi,
+  };
+}
+
+interface PlanLean {
+  planId: string;
+  name: string;
+  intervalDays: number;
+  prices?: { INR?: number; USD?: number; CAD?: number };
+  features?: string[];
+}
+
+/** Map a plan doc to the public card shape (drops Mongo internals: _id/__v/etc.). */
+function toPlanCard(p: PlanLean) {
+  return {
+    planId: p.planId,
+    name: p.name,
+    intervalDays: p.intervalDays,
+    prices: { INR: p.prices?.INR ?? 0, USD: p.prices?.USD ?? 0, CAD: p.prices?.CAD ?? 0 },
+    features: p.features ?? [],
   };
 }
 
@@ -87,9 +110,8 @@ export class HomeService {
   ) {}
 
   /**
-   * The shell's micro-app catalog (the registry that used to live in
-   * app-registry.json). Public — the shell reads it at boot to route and to
-   * render the launcher.
+   * The shell's micro-app catalog (the Mongo-backed app registry). Public — the
+   * shell reads it at boot to route and to render the launcher.
    */
   async getApps() {
     const apps = await this.appModel.find({ active: true }).sort({ order: 1 }).lean();
@@ -128,8 +150,12 @@ export class HomeService {
     };
   }
 
-  async getLanding(citySlugRaw?: string) {
-    const citySlug = (citySlugRaw ?? "seattle").trim().toLowerCase() || "seattle";
+  async getLanding(citySlugRaw?: unknown) {
+    // Coerce to string first: with Express's default qs parser, a crafted query
+    // like `?citySlug[$ne]=x` arrives as an object, which would both crash
+    // `.trim()` (500) and, unguarded, reach Mongo as a `$ne` operator.
+    const citySlugStr = typeof citySlugRaw === "string" ? citySlugRaw : "";
+    const citySlug = citySlugStr.trim().toLowerCase() || "seattle";
     const [featured, vendors, plans, deals, vendorCount, gamesLive, neighbors] = await Promise.all([
       this.vendorModel.find({ citySlug, status: "approved", featured: true }).limit(4).lean(),
       this.vendorModel.find({ citySlug, status: "approved" }).limit(8).lean(),
@@ -161,7 +187,7 @@ export class HomeService {
       featuredVendors: (featured as unknown as VendorLean[]).map(toVendorCard),
       vendors: (vendors as unknown as VendorLean[]).map(toVendorCard),
       deals: deals.map((d) => this.toDealCard(d, vById.get(String(d.vendorId)))),
-      plans,
+      plans: (plans as unknown as PlanLean[]).map(toPlanCard),
     };
   }
 
@@ -189,7 +215,14 @@ export class HomeService {
       throw new NotFoundException("Unknown user");
     }
     const user = await this.userModel.findById(oid).lean();
-    if (!user) throw new NotFoundException("Unknown user");
+    // Demo-only guard: the stub token is just the user id (no secret), so the
+    // dashboard is restricted to the seeded demo persona. A forged/guessed id
+    // for any other user is rejected, and missing vs. non-demo return the same
+    // 403 so ids can't be probed. Replace with a real per-user auth guard when
+    // OAuth lands.
+    if (!user || user.email !== DEMO_EMAIL) {
+      throw new ForbiddenException("Dashboard is only available for the demo user.");
+    }
 
     const [sub, accounts, splits, participant, plans] = await Promise.all([
       this.subModel.findOne({ userId: oid }).lean(),
@@ -206,14 +239,20 @@ export class HomeService {
       membership = { planId: sub.planId, name: plan?.name ?? sub.planId, status: sub.status };
     }
 
-    // Accounts summary
+    // Accounts summary. Only sum same-currency accounts — minor units aren't
+    // additive across currencies; other-currency accounts still appear in items.
     const currency = accounts[0]?.currency ?? "USD";
-    const totalBalanceMinor = accounts.reduce((s, a) => s + a.balanceMinor, 0);
+    const totalBalanceMinor = accounts
+      .filter((a) => a.currency === currency)
+      .reduce((s, a) => s + a.balanceMinor, 0);
 
     // Splits summary (signed: + owed to you). Currency comes from the split
-    // records themselves, not the accounts — they may differ.
+    // records themselves, not the accounts — they may differ — and the net only
+    // sums splits in that currency.
     const splitsCurrency = splits[0]?.currency ?? "USD";
-    const netMinor = splits.reduce((s, x) => s + x.amountMinor, 0);
+    const netMinor = splits
+      .filter((x) => x.currency === splitsCurrency)
+      .reduce((s, x) => s + x.amountMinor, 0);
 
     // Active game (join participant -> active session, compute standings from
     // payload). Typed via summarizeGame's inferred return, not `unknown`.
@@ -222,7 +261,7 @@ export class HomeService {
       : null;
     const activeGame = session ? this.summarizeGame(session) : null;
 
-    // Nearby deals + vendors for the "near you" tiles (city from the user's vendor if any)
+    // Nearby deals + vendors for the "near you" tiles. Single demo city for now.
     const citySlug = "seattle";
     const [deals, nearbyVendors] = await Promise.all([
       this.dealModel.find({ citySlug, active: true }).limit(5).lean(),
@@ -246,7 +285,7 @@ export class HomeService {
       activeGame,
       deals: deals.map((d) => ({ id: String(d._id), title: d.title, blurb: d.blurb, kind: d.kind })),
       nearby: (nearbyVendors as unknown as VendorLean[]).map(toVendorCard),
-      plans,
+      plans: (plans as unknown as PlanLean[]).map(toPlanCard),
     };
   }
 
@@ -262,7 +301,12 @@ export class HomeService {
     const target = typeof p.targetScore === "number" ? p.targetScore : 0;
     const standings = players
       .map((pl) => {
-        const total = rounds.reduce((sum, r) => sum + (r.entries?.[pl.id]?.score ?? 0), 0);
+        // payload comes from the untyped game-state store — coerce each score
+        // and drop non-finite values so a bad entry can't NaN the total/sort.
+        const total = rounds.reduce((sum, r) => {
+          const n = Number(r.entries?.[pl.id]?.score);
+          return sum + (Number.isFinite(n) ? n : 0);
+        }, 0);
         return { name: pl.name, total, toBust: Math.max(0, target - total) };
       })
       .sort((a, b) => a.total - b.total);
