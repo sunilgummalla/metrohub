@@ -753,6 +753,7 @@ function Scorecard({
             {ranked.map((p: PlayerWithTotal) => {
               const total = p.total;
               const isBusted = p.status === "busted";
+              const remaining = targetScore - total;
               // Leader = lowest total among active players
               const leader = findLeader(players, rounds);
               const isLeader = !isBusted && leader?.id === p.id;
@@ -765,8 +766,8 @@ function Scorecard({
                   {isBusted ? (
                     <span className="rummyBustedTag">Bust</span>
                   ) : (
-                    <span className={`rummyToBust ${targetScore - total <= 20 ? "rummyDangerMargin" : ""}`}>
-                      {targetScore - total} to bust
+                    <span className={`rummyToBust ${remaining <= 20 ? "rummyDangerMargin" : ""}`}>
+                      {remaining} to bust
                     </span>
                   )}
                 </td>
