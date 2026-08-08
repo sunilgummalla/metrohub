@@ -202,8 +202,9 @@ function ledgerTotals(ledger: PlayerLedger[]) {
     totalBuyIns,
     totalCashOuts,
     // Round to whole cents so exact `=== 0` / `!== 0` checks aren't defeated by
-    // floating-point drift from summing decimal amounts.
-    bankBalance: Math.round((totalBuyIns - totalCashOuts) * 100) / 100,
+    // floating-point drift from summing decimal amounts. `|| 0` also normalizes a
+    // rounded `-0` to `+0` so it never renders as "-$0".
+    bankBalance: Math.round((totalBuyIns - totalCashOuts) * 100) / 100 || 0,
     netTotal: ledger.reduce((sum, row) => sum + row.net, 0),
   };
 }
