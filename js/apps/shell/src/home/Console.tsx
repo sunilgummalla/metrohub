@@ -27,7 +27,8 @@ export function Console({ data, apps, onSignOut }: { data: Dashboard; apps: AppI
     if (id === "my-accounts") return { label: bal };
     if (id === "splits") return { label: `${openCount} OPEN` };
     if (id === "marketplace") return { label: `${nearby.length} vendors` };
-    if (id === "near-by") return { label: `${dealsList.length} deals` };
+    if (id === "deals") return { label: `${dealsList.length} deals` };
+    if (id === "near-by") return { label: `${nearby.length} nearby` };
     return { label: "idle" };
   }
 
