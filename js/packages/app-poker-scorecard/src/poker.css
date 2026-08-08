@@ -89,6 +89,9 @@
 
 .pokerInput:focus {
   border-color: var(--brand);
+  /* Plain fallback first so the focus ring survives if color-mix is unsupported
+     (outline is removed, so this is the only focus indicator). */
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 16%, transparent);
   outline: none;
 }
