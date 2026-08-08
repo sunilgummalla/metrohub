@@ -654,8 +654,6 @@ function Scorecard({
                 </div>
               </th>
             ))}
-            {/* Total row */}
-            <th className="rummyThTotal rummyThTotalCol">Round Sum</th>
           </tr>
         </thead>
         <tbody>
@@ -745,20 +743,6 @@ function Scorecard({
                     </td>
                   );
                 })}
-
-                {/* Round sum column: sum of all players' scores in this round */}
-                <td className="rummyRoundRowTotal">
-                  {isCancelled ? (
-                    <span className="rummyCancelledLabel">Cancelled</span>
-                  ) : (
-                    <span className="rummyRoundSum">
-                      {ranked.reduce((sum: number, p: PlayerWithTotal) => {
-                        const e = round.entries[p.id];
-                        return sum + (e ? e.score : 0);
-                      }, 0)}
-                    </span>
-                  )}
-                </td>
               </tr>
             );
           })}
@@ -769,6 +753,7 @@ function Scorecard({
             {ranked.map((p: PlayerWithTotal) => {
               const total = p.total;
               const isBusted = p.status === "busted";
+              const remaining = targetScore - total;
               // Leader = lowest total among active players
               const leader = findLeader(players, rounds);
               const isLeader = !isBusted && leader?.id === p.id;
@@ -778,16 +763,16 @@ function Scorecard({
                     {isLeader && "🏆 "}
                     {total}
                   </span>
-                  {!isBusted && (
-                    <span className={`rummyToBust ${targetScore - total <= 20 ? "rummyDangerMargin" : ""}`}>
-                      {targetScore - total} to bust
+                  {isBusted ? (
+                    <span className="rummyBustedTag">Bust</span>
+                  ) : (
+                    <span className={`rummyToBust ${remaining <= 20 ? "rummyDangerMargin" : ""}`}>
+                      {remaining} to bust
                     </span>
                   )}
-                  {isBusted && <span className="rummyBustedTag">Bust</span>}
                 </td>
               );
             })}
-            <td />
           </tr>
         </tbody>
       </table>

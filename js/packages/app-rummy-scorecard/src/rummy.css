@@ -525,6 +525,62 @@
 .rummyTotalBusted { color: var(--danger); }
 .rummyTotalWinner { color: var(--success); }
 
+/* Final totals row: overall score (rummyTotalVal) stacked above the bust margin
+   (rummyToBust). Without display:block these spans render inline and the two
+   numbers run together (e.g. "37" + "213 to bust" -> "37213 to bust"). */
+.rummyTotalsRow td {
+  background: var(--surface-muted);
+  border-top: 2px solid var(--border-strong, var(--border));
+}
+
+.rummyTotalVal {
+  display: block;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.rummyTotalLeader .rummyTotalVal { color: var(--brand); }
+.rummyTotalBusted .rummyTotalVal { color: var(--danger); }
+
+.rummyToBust {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.rummyDangerMargin {
+  color: var(--danger) !important;
+  font-weight: 900;
+}
+
+.rummyBustedTag {
+  display: inline-block;
+  margin-top: 2px;
+  background: var(--danger-bg, #fee2e2);
+  border: 1px solid var(--danger-border, #fca5a5);
+  border-radius: 4px;
+  color: var(--danger, #b91c1c);
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 6px;
+  text-transform: uppercase;
+}
+
+.rummyRejoinedTag {
+  display: inline-block;
+  background: var(--surface-muted);
+  border: 1px solid var(--brand);
+  border-radius: 4px;
+  color: var(--brand);
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 6px;
+  text-transform: uppercase;
+}
+
 /* ─── Entry form ──────────────────────────────────────────────────────────── */
 .rummyEntryForm {
   display: grid;
@@ -655,4 +711,301 @@
   .rummySetupCard { padding: 20px; }
   .rummyStatsBar { grid-template-columns: repeat(2, 1fr); }
   .rummyEntryGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Restored styles — the Aurora retheme (PR #27) rewrote rummy.css and dropped
+   these classes while RummyScorecard.tsx kept referencing them. Recovered from
+   the feat/game-share-sse baseline and remapped to Aurora semantic tokens so
+   they follow light/dark mode. Covers: empty board, share panel/dropdown,
+   read-only badge, cancel-confirm banner, round-entry panel + event picker,
+   finished/winner screen, and the game-history browser.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.rummyEmptyBoard {
+  display: grid;
+  place-items: center;
+  min-height: 80px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 24px;
+}
+
+/* ─── Share button + dropdown ─────────────────────────────────────────────── */
+.rummySharePanel { position: relative; }
+
+.rummyShareBtn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1.5px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.rummyShareBtn:hover { background: var(--primary); color: #fff; }
+
+.rummyShareBtnCopied { border-color: var(--success); color: var(--success); }
+.rummyShareBtnCopied:hover { background: var(--success); color: #fff; }
+
+.rummyShareDropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 100;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,0.12));
+  min-width: 280px;
+  overflow: hidden;
+}
+.rummyShareDropdownItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.rummyShareDropdownItem:last-child { border-bottom: none; }
+.rummyShareDropdownItem strong { display: block; font-size: 13px; color: var(--text); }
+.rummyShareDropdownItem p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+
+.rummyReadOnlyBadge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--warning-bg);
+  color: var(--warning);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+}
+
+/* ─── Cancel confirmation banner ──────────────────────────────────────────── */
+.rummyCancelConfirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  border-radius: 8px 8px 0 0;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--warning);
+}
+.rummyCancelConfirmActions { display: flex; gap: 8px; flex-shrink: 0; }
+
+.rummyIconBtnActive {
+  background: var(--danger-bg) !important;
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 2px var(--danger-border);
+}
+
+/* ─── Round entry panel + event picker ────────────────────────────────────── */
+.rummyEntryPanel {
+  display: grid;
+  gap: 18px;
+  border: 2px solid var(--brand);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+.rummyEntryTable {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.rummyEntryTableHead {
+  display: grid;
+  grid-template-columns: 130px 1fr 100px;
+  gap: 12px;
+  align-items: center;
+  background: var(--surface-muted);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.rummyEntryTableRow {
+  display: grid;
+  grid-template-columns: 130px 1fr 100px;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
+  background: var(--ev-bg, var(--surface));
+  transition: background 160ms;
+}
+.rummyEntryTableRow:last-child { border-bottom: none; }
+.rummyEntryPlayerName {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rummyEventPicker { display: flex; flex-wrap: wrap; gap: 6px; }
+.rummyEventBtn {
+  min-height: 30px;
+  border: 1px solid var(--ev-border, var(--border));
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0 10px;
+  transition: background 120ms, border-color 120ms, color 120ms;
+}
+.rummyEventBtn:hover {
+  background: var(--ev-bg, var(--surface-muted));
+  border-color: var(--ev-border, var(--brand));
+  color: var(--ev-text, var(--brand-dark));
+}
+.rummyEventBtn.active {
+  background: var(--ev-bg, var(--surface-muted));
+  border-color: var(--ev-border, var(--brand));
+  color: var(--ev-text, var(--brand-dark));
+  box-shadow: 0 0 0 2px var(--ev-border, var(--brand));
+}
+.rummyEventBtnWrapper { display: inline-flex; }
+.rummyEventBtnWrapperDisabled { cursor: not-allowed; }
+.rummyEventBtn[aria-disabled="true"],
+.rummyEventBtn[aria-disabled="true"]:hover,
+.rummyEventBtnDisabled,
+.rummyEventBtnDisabled:hover {
+  opacity: 0.35;
+  background: var(--surface-muted) !important;
+  color: var(--muted) !important;
+  border-color: var(--border) !important;
+  text-decoration: line-through;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+.rummyEntryScore { display: grid; place-items: center; }
+.rummyScoreInput { text-align: center; font-size: 18px; font-weight: 800; min-height: 38px; }
+.rummyOverriddenScore {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  min-height: 38px;
+  border: 1px solid var(--ev-border, var(--border));
+  border-radius: 8px;
+  background: var(--ev-bg, var(--surface-muted));
+  color: var(--ev-text, var(--text));
+  font-size: 20px;
+  font-weight: 900;
+}
+
+/* ─── Finished / winner screen ────────────────────────────────────────────── */
+.rummyFinished { display: grid; gap: 22px; padding: 22px 0 34px; }
+.rummyWinnerCard {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgb(15 118 110 / 10%), rgb(37 99 235 / 6%)), var(--surface);
+  padding: 40px 28px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.rummyWinnerTrophy { font-size: 52px; line-height: 1; }
+.rummyWinnerCard h2 { font-size: 36px; margin: 0; }
+.rummyWinnerScore { color: var(--muted); font-size: 15px; margin: 0; }
+.rummyFinishedActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+/* ─── Game history browser ────────────────────────────────────────────────── */
+.rummyHistorySection { margin-top: 24px; max-width: 640px; margin-left: auto; margin-right: auto; }
+.rummyHistorySectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.rummyHistoryCount {
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 10px;
+}
+.rummyHistoryList { display: flex; flex-direction: column; gap: 10px; }
+.rummyHistoryCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.rummyHistoryCard:hover { border-color: var(--brand); box-shadow: var(--shadow); }
+.rummyHistoryCardActive {
+  border-color: var(--brand);
+  background: linear-gradient(135deg, rgb(15 118 110 / 5%), var(--surface));
+}
+.rummyHistoryCardBody { flex: 1; min-width: 0; }
+.rummyHistoryCardTop { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.rummyHistoryPhase {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.rummyHistoryCardActive .rummyHistoryPhase { color: var(--brand); }
+.rummyHistoryDate { font-size: 12px; color: var(--muted); margin-left: auto; }
+.rummyHistoryPlayers {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rummyHistoryMeta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.rummyHistoryCardActions { display: flex; gap: 8px; flex-shrink: 0; }
+.rummyHistoryResumeBtn { border-color: var(--brand); color: var(--brand); font-weight: 700; }
+.rummyHistoryResumeBtn:hover { background: var(--brand); color: #fff; }
+
+/* ─── Responsive — round entry table ──────────────────────────────────────── */
+@media (max-width: 900px) {
+  .rummyEntryTableHead,
+  .rummyEntryTableRow { grid-template-columns: 100px 1fr 80px; }
+}
+@media (max-width: 640px) {
+  .rummyEntryTableHead { display: none; }
+  .rummyEntryTableRow { grid-template-columns: 1fr; gap: 8px; padding: 14px; }
+  .rummyEntryScore { place-items: start; }
 }
