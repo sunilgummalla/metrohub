@@ -169,10 +169,14 @@ export class HomeService {
     const vById = new Map(vendors.concat(featured).map((v) => [String(v._id), v as unknown as VendorLean]));
 
     // Deals may reference vendors outside the limited lists above — fetch any
-    // missing ones so every deal card resolves its vendor.
+    // missing ones so every deal card resolves its vendor. Apply the same
+    // city + approved constraints as the main lists so the public landing can't
+    // surface an unapproved/out-of-city vendor via a deal (it just stays null).
     const missingVendorIds = [...new Set(deals.map((d) => String(d.vendorId)).filter((id) => !vById.has(id)))];
     if (missingVendorIds.length) {
-      const extra = await this.vendorModel.find({ _id: { $in: missingVendorIds } }).lean();
+      const extra = await this.vendorModel
+        .find({ _id: { $in: missingVendorIds }, citySlug, status: "approved" })
+        .lean();
       for (const v of extra) vById.set(String(v._id), v as unknown as VendorLean);
     }
 
