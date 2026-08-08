@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import {
@@ -107,8 +107,18 @@ export class HomeService {
     };
   }
 
-  /** Token = the demo user's id so the shell can sign in without real OAuth. */
+  /**
+   * Token = the demo user's id so the shell can sign in without real OAuth.
+   *
+   * Gated on SEED_SAMPLE_DATA so this token-minting endpoint only exists where
+   * the demo persona is actually seeded (the demo/showcase deployments). In any
+   * environment without sample data it is disabled — no unauthenticated token
+   * issuance. This is a stub pending real OAuth.
+   */
   async demoLoginToken(): Promise<{ token: string; displayName: string; email: string }> {
+    if (process.env.SEED_SAMPLE_DATA !== "true") {
+      throw new ForbiddenException("Demo login is disabled in this environment.");
+    }
     const user = await this.userModel.findOne({ email: DEMO_EMAIL }).lean();
     if (!user) throw new NotFoundException("Demo user is not seeded (SEED_SAMPLE_DATA must be on).");
     return {
@@ -131,6 +141,15 @@ export class HomeService {
     ]);
 
     const vById = new Map(vendors.concat(featured).map((v) => [String(v._id), v as unknown as VendorLean]));
+
+    // Deals may reference vendors outside the limited lists above — fetch any
+    // missing ones so every deal card resolves its vendor.
+    const missingVendorIds = [...new Set(deals.map((d) => String(d.vendorId)).filter((id) => !vById.has(id)))];
+    if (missingVendorIds.length) {
+      const extra = await this.vendorModel.find({ _id: { $in: missingVendorIds } }).lean();
+      for (const v of extra) vById.set(String(v._id), v as unknown as VendorLean);
+    }
+
     const featuredDeal = deals.find((d) => d.kind === "featured") ?? deals[0] ?? null;
 
     return {
@@ -185,7 +204,9 @@ export class HomeService {
     const currency = accounts[0]?.currency ?? "USD";
     const totalBalanceMinor = accounts.reduce((s, a) => s + a.balanceMinor, 0);
 
-    // Splits summary (signed: + owed to you)
+    // Splits summary (signed: + owed to you). Currency comes from the split
+    // records themselves, not the accounts — they may differ.
+    const splitsCurrency = splits[0]?.currency ?? "USD";
     const netMinor = splits.reduce((s, x) => s + x.amountMinor, 0);
 
     // Active game (join participant -> active session, compute standings from payload)
@@ -213,7 +234,7 @@ export class HomeService {
         items: accounts.map((a) => ({ name: a.name, kind: a.kind, balanceMinor: a.balanceMinor, currency: a.currency })),
       },
       splits: {
-        currency,
+        currency: splitsCurrency,
         netMinor,
         openCount: splits.length,
         items: splits.map((s) => ({ counterparty: s.counterparty, context: s.context, amountMinor: s.amountMinor, currency: s.currency })),
