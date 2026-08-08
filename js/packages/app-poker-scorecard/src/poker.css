@@ -10,7 +10,7 @@
 .pokerStats {
   border: 1px solid var(--border, #dbe3ef);
   background: var(--surface, #fff);
-  box-shadow: 0 14px 40px rgb(15 23 42 / 8%);
+  box-shadow: var(--shadow-md);
 }
 
 .pokerPanel {
@@ -44,10 +44,10 @@
 .pokerBadge,
 .pokerReadOnly {
   align-items: center;
-  background: #ecfdf5;
-  border: 1px solid #99f6e4;
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
   border-radius: 999px;
-  color: #115e59;
+  color: var(--success);
   display: inline-flex;
   font-size: 12px;
   font-weight: 800;
@@ -83,7 +83,7 @@
 }
 
 .pokerInput {
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border, #dbe3ef);
   border-radius: 8px;
   color: var(--text, #0f172a);
@@ -93,8 +93,11 @@
 }
 
 .pokerInput:focus {
-  border-color: #0f766e;
-  box-shadow: 0 0 0 3px rgb(15 118 110 / 13%);
+  border-color: var(--brand);
+  /* Plain fallback first so the focus ring survives if color-mix is unsupported
+     (outline is removed, so this is the only focus indicator). */
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 16%, transparent);
   outline: none;
 }
 
@@ -113,10 +116,10 @@
 }
 
 .pokerPlayerNum {
-  background: #f1f5f9;
+  background: var(--surface-muted);
   border: 1px solid var(--border, #dbe3ef);
   border-radius: 8px;
-  color: #475569;
+  color: var(--muted);
   display: grid;
   font-weight: 900;
   height: 34px;
@@ -136,19 +139,19 @@
 }
 
 .pokerPrimaryBtn {
-  background: #0f766e;
-  border: 1px solid #0f766e;
+  background: var(--brand);
+  border: 1px solid var(--brand);
   color: #fff;
   min-height: 42px;
   padding: 9px 14px;
 }
 
 .pokerPrimaryBtn:hover {
-  background: #115e59;
+  background: var(--brand-dark);
 }
 
 .pokerSecondaryBtn {
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border, #dbe3ef);
   color: var(--text, #0f172a);
   min-height: 38px;
@@ -156,11 +159,11 @@
 }
 
 .pokerSecondaryBtn:hover {
-  border-color: #0f766e;
+  border-color: var(--brand);
 }
 
 .pokerIconBtn {
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border, #dbe3ef);
   color: var(--text, #0f172a);
   height: 34px;
@@ -168,9 +171,9 @@
 }
 
 .pokerDangerSoft:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  color: #991b1b;
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger);
 }
 
 .pokerError,
@@ -182,18 +185,18 @@
 }
 
 .pokerError {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
 .pokerNotice {
-  background: #fffbeb;
-  border: 1px solid #fcd34d;
-  color: #92400e;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  color: var(--warning);
 }
 
 .pokerHistoryCard {
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border, #dbe3ef);
   border-radius: 8px;
   color: inherit;
@@ -235,7 +238,7 @@
 }
 
 .pokerStat {
-  background: #fff;
+  background: var(--surface);
   display: grid;
   gap: 5px;
   padding: 16px;
@@ -253,7 +256,7 @@
 }
 
 .pokerBalanced strong {
-  color: #0f766e;
+  color: var(--success);
 }
 
 .pokerLedger {
@@ -267,7 +270,7 @@
 }
 
 .pokerTable th {
-  background: #f8fafc;
+  background: var(--surface-muted);
   color: var(--muted, #64748b);
   font-size: 12px;
   text-align: left;
@@ -288,12 +291,12 @@
 }
 
 .pokerPositive {
-  color: #047857;
+  color: var(--success);
   font-weight: 900;
 }
 
 .pokerNegative {
-  color: #b91c1c;
+  color: var(--danger);
   font-weight: 900;
 }
 
@@ -315,7 +318,7 @@
 }
 
 .pokerEmpty {
-  background: #f8fafc;
+  background: var(--surface-muted);
   border: 1px dashed var(--border, #dbe3ef);
   border-radius: 8px;
   color: var(--muted, #64748b);
