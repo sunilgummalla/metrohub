@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { Home } from "./home/Home";
 import { PokerScorecard } from "@metrohub/poker-scorecard";
 import { RummyScorecard } from "@metrohub/rummy-scorecard";
 import { TambolaApp } from "@metrohub/tambola";
@@ -8,8 +9,6 @@ import { MarketplaceApp } from "@metrohub/marketplace";
 import registry from "../../api/app-registry.json";
 
 type PortalApp = (typeof registry.apps)[number];
-
-const allCategories = "All";
 
 // ─── Icon map per app id ──────────────────────────────────────────────────────
 const APP_ICONS: Record<string, string> = {
@@ -115,185 +114,6 @@ function AppCard({ app }: { app: PortalApp }) {
   );
 }
 
-// ─── Category pill ────────────────────────────────────────────────────────────
-function CategoryPill({
-  label,
-  active,
-  count,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  count: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      className={`categoryPill ${active ? "categoryPillActive" : ""}`}
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-    >
-      {label}
-      <span className="categoryPillCount">{count}</span>
-    </button>
-  );
-}
-
-// ─── Stats strip ─────────────────────────────────────────────────────────────
-function StatsStrip() {
-  const cats = Array.from(new Set(registry.apps.map((a) => a.category)));
-  return (
-    <div className="statsStrip">
-      <div className="statItem">
-        <span className="statValue">{registry.apps.length}</span>
-        <span className="statLabel">Apps</span>
-      </div>
-      <div className="statDivider" />
-      <div className="statItem">
-        <span className="statValue">{cats.length}</span>
-        <span className="statLabel">Categories</span>
-      </div>
-      <div className="statDivider" />
-      <div className="statItem">
-        <span className="statValue">1</span>
-        <span className="statLabel">Hub</span>
-      </div>
-    </div>
-  );
-}
-
-// ─── Feature pills ────────────────────────────────────────────────────────────
-const FEATURES = [
-  { icon: "📊", label: "Finance tracking" },
-  { icon: "🃏", label: "Game scorecards" },
-  { icon: "⚖",  label: "Bill splitting" },
-  { icon: "📍", label: "Nearby discovery" },
-];
-
-// ─── Portal Home ──────────────────────────────────────────────────────────────
-function PortalHome() {
-  const categories = useMemo(
-    () => [allCategories, ...Array.from(new Set(registry.apps.map((a) => a.category)))],
-    []
-  );
-  const [activeCategory, setActiveCategory] = useState(allCategories);
-
-  const visibleApps = useMemo(
-    () =>
-      activeCategory === allCategories
-        ? registry.apps
-        : registry.apps.filter((a) => a.category === activeCategory),
-    [activeCategory]
-  );
-
-  const countFor = (cat: string) =>
-    cat === allCategories
-      ? registry.apps.length
-      : registry.apps.filter((a) => a.category === cat).length;
-
-  return (
-    <main className="portalMain">
-
-      {/* ── Hero ── */}
-      <section className="portalHero">
-        {/* Decorative background blobs */}
-        <div className="heroBlobGold" aria-hidden="true" />
-        <div className="heroBlobTeal" aria-hidden="true" />
-
-        <div className="heroInner">
-          {/* Logo mark */}
-          <div className="heroLogoWrap">
-            <img
-              src="/brand/icon-192x192.png"
-              alt="Metro Hub"
-              className="heroLogoMark"
-              width={72}
-              height={72}
-            />
-          </div>
-
-          <div className="heroBadge">⬡ MetroHub · Everything in one place</div>
-
-          <h1 className="heroTitle">
-            Your hub for<br />
-            <span className="heroAccentGold">finance</span>
-            <span className="heroAccentSep"> &amp; </span>
-            <span className="heroAccentTeal">game nights.</span>
-          </h1>
-
-          <p className="heroSubtitle">
-            Track accounts, split costs, score game nights, and discover nearby
-            places — all in one consistent hub.
-          </p>
-
-          {/* Feature pills */}
-          <div className="heroFeatures">
-            {FEATURES.map((f) => (
-              <span key={f.label} className="heroFeaturePill">
-                <span>{f.icon}</span> {f.label}
-              </span>
-            ))}
-          </div>
-
-          <div className="heroButtons">
-            <a className="heroBtnPrimary" href="/apps/rummy-scorecard">Open Rummy Scorecard</a>
-            <a className="heroBtnSecondary" href="#apps">Browse all apps</a>
-          </div>
-        </div>
-
-        <div className="heroVisual">
-          <StatsStrip />
-          <div className="heroAppPreview">
-            {registry.apps.slice(0, 4).map((app) => (
-              <a key={app.id} className="heroPreviewChip" href={app.route}>
-                <span style={{ background: categoryGradient(app.category) }} className="heroPreviewIcon">
-                  {APP_ICONS[app.id] ?? app.tile.title[0]}
-                </span>
-                <div className="heroPreviewChipBody">
-                  <span className="heroPreviewChipTitle">{app.tile.title}</span>
-                  <span className="heroPreviewChipCat">{app.category}</span>
-                </div>
-                <span className="heroPreviewChipArrow">→</span>
-              </a>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── App launcher ── */}
-      <section className="appsSection" id="apps">
-        <div className="appsSectionHeader">
-          <div>
-            <h2 className="appsSectionTitle">Your apps</h2>
-            <p className="appsSectionSub">{visibleApps.length} app{visibleApps.length !== 1 ? "s" : ""} available</p>
-          </div>
-        </div>
-
-        {/* Category pills */}
-        <div className="categoryPills">
-          {categories.map((cat) => (
-            <CategoryPill
-              key={cat}
-              label={cat}
-              active={cat === activeCategory}
-              count={countFor(cat)}
-              onClick={() => setActiveCategory(cat)}
-            />
-          ))}
-        </div>
-
-        {/* App grid */}
-        <div className="appsGrid">
-          {visibleApps.map((app) => (
-            <AppCard app={app} key={app.id} />
-          ))}
-        </div>
-      </section>
-    </main>
-  );
-}
-
 // ─── App Workspace ────────────────────────────────────────────────────────────
 function AppWorkspace({ app }: { app: PortalApp }) {
   const relatedApps = registry.apps
@@ -370,10 +190,17 @@ function AppWorkspace({ app }: { app: PortalApp }) {
 export function App() {
   const [selectedApp] = useState(() => getInitialApp());
 
+  // Home route ("/") is the Storefront (signed-out) / Console (signed-in)
+  // experience, which brings its own header & footer. App routes keep the
+  // shell frame.
+  if (!selectedApp) {
+    return <Home />;
+  }
+
   return (
     <div className="shellFrame">
       <ShellHeader />
-      {selectedApp ? <AppWorkspace app={selectedApp} /> : <PortalHome />}
+      <AppWorkspace app={selectedApp} />
       <ShellFooter />
     </div>
   );

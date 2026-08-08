@@ -81,6 +81,9 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS:-}
       - MONGO_URI_FILE=/run/secrets/mongo_uri
       - MONGO_DB=${MONGO_DB:?}
+      # Seed coherent sample data on boot so the storefront/console home render
+      # real content. Idempotent (upsert by natural keys); safe to re-run.
+      - SEED_SAMPLE_DATA=${SEED_SAMPLE_DATA:-true}
     networks:
       - edge
       - data
