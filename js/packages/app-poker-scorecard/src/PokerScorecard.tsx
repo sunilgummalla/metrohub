@@ -117,6 +117,16 @@ function clearActiveGame() {
   localStorage.removeItem(ACTIVE_KEY);
 }
 
+/** True when this page was opened via a read-only share link (?game=<id>&ro=1). */
+function isReadOnlyUrl(): boolean {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("ro") === "1" && !!params.get("game");
+  } catch {
+    return false;
+  }
+}
+
 /** Validate a persisted/remote game state shape before trusting it. */
 function isValidGameState(state: unknown): state is GameState {
   if (!state || typeof state !== "object") return false;
@@ -191,7 +201,9 @@ function ledgerTotals(ledger: PlayerLedger[]) {
   return {
     totalBuyIns,
     totalCashOuts,
-    bankBalance: totalBuyIns - totalCashOuts,
+    // Round to whole cents so exact `=== 0` / `!== 0` checks aren't defeated by
+    // floating-point drift from summing decimal amounts.
+    bankBalance: Math.round((totalBuyIns - totalCashOuts) * 100) / 100,
     netTotal: ledger.reduce((sum, row) => sum + row.net, 0),
   };
 }
@@ -733,7 +745,9 @@ function GameScreen({
 }
 
 export function PokerScorecard() {
-  const [game, setGame] = useState<GameState>(() => loadGame());
+  // Read-only viewers start empty so the "waiting for host" placeholder governs
+  // until the first SSE snapshot arrives — never their own device's stale game.
+  const [game, setGame] = useState<GameState>(() => (isReadOnlyUrl() ? { phase: "setup" } : loadGame()));
 
   // ─── SSE live sync (host publishes, read-only viewer subscribes) ────────────
   const onRemoteUpdate = useCallback((remote: GameSyncPayload) => {
@@ -753,6 +767,10 @@ export function PokerScorecard() {
   // Persist every state change to localStorage and publish to viewers (host only)
   useEffect(() => {
     if (readOnly) return;
+    if (game.phase === "setup") {
+      clearActiveGame(); // no active game to persist; leave the slot empty
+      return;
+    }
     saveActiveGame(game, gameId);
     publish(game as unknown as GameSyncPayload);
     if (game.phase === "finished") archiveGame(game, gameId);
@@ -796,7 +814,7 @@ export function PokerScorecard() {
   function finishGame() {
     if (game.phase !== "playing") return;
     const finished = { ...game, phase: "finished" as const, finishedAt: Date.now() };
-    archiveGame(finished, gameId);
+    // The persist effect archives on the finished state, so no direct archive here.
     setGame(finished);
   }
 

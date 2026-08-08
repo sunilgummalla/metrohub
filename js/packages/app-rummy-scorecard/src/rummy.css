@@ -413,7 +413,6 @@
 
 .rummyThRoundLabel  { text-align: left !important; width: 90px; min-width: 90px; }
 .rummyThPlayerCol   { min-width: 100px; text-align: center !important; }
-.rummyThTotalCol    { min-width: 80px; text-align: center !important; }
 
 .rummyPlayerColHeader {
   display: flex;
@@ -879,12 +878,12 @@
 .rummyEventBtn:hover {
   background: var(--ev-bg, var(--surface-muted));
   border-color: var(--ev-border, var(--brand));
-  color: var(--ev-text, var(--brand-dark));
+  color: var(--ev-text, var(--brand));
 }
 .rummyEventBtn.active {
   background: var(--ev-bg, var(--surface-muted));
   border-color: var(--ev-border, var(--brand));
-  color: var(--ev-text, var(--brand-dark));
+  color: var(--ev-text, var(--brand));
   box-shadow: 0 0 0 2px var(--ev-border, var(--brand));
 }
 .rummyEventBtnWrapper { display: inline-flex; }
