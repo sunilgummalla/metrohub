@@ -525,6 +525,62 @@
 .rummyTotalBusted { color: var(--danger); }
 .rummyTotalWinner { color: var(--success); }
 
+/* Final totals row: overall score (rummyTotalVal) stacked above the bust margin
+   (rummyToBust). Without display:block these spans render inline and the two
+   numbers run together (e.g. "37" + "213 to bust" -> "37213 to bust"). */
+.rummyTotalsRow td {
+  background: var(--surface-muted);
+  border-top: 2px solid var(--border-strong, var(--border));
+}
+
+.rummyTotalVal {
+  display: block;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.rummyTotalLeader .rummyTotalVal { color: var(--brand); }
+.rummyTotalBusted .rummyTotalVal { color: var(--danger); }
+
+.rummyToBust {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.rummyDangerMargin {
+  color: var(--danger) !important;
+  font-weight: 900;
+}
+
+.rummyBustedTag {
+  display: inline-block;
+  margin-top: 2px;
+  background: var(--danger-bg, #fee2e2);
+  border: 1px solid var(--danger-border, #fca5a5);
+  border-radius: 4px;
+  color: var(--danger, #b91c1c);
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 6px;
+  text-transform: uppercase;
+}
+
+.rummyRejoinedTag {
+  display: inline-block;
+  background: var(--surface-muted);
+  border: 1px solid var(--brand);
+  border-radius: 4px;
+  color: var(--brand);
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 6px;
+  text-transform: uppercase;
+}
+
 /* ─── Entry form ──────────────────────────────────────────────────────────── */
 .rummyEntryForm {
   display: grid;
