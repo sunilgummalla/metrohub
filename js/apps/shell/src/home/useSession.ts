@@ -31,7 +31,8 @@ export function useSession(): Session {
   }, []);
 
   const load = useCallback(async () => {
-    if (!getToken()) {
+    const token = getToken();
+    if (!token) {
       if (mounted.current) {
         setDashboard(null);
         setStatus("out");
@@ -40,12 +41,15 @@ export function useSession(): Session {
     }
     try {
       const d = await apiGet<Dashboard>("/api/home/dashboard", true);
-      if (!mounted.current) return;
+      // Bail if we unmounted or the token changed mid-flight (sign-out or a
+      // newer sign-in) — otherwise we'd flip the UI back to a stale auth state.
+      if (!mounted.current || getToken() !== token) return;
       setDashboard(d);
       setStatus("in");
     } catch {
-      // Bad/expired token — drop it and fall back to the storefront.
-      setToken(null);
+      // Only act if this is still the current token — don't clobber a newer one.
+      if (getToken() !== token) return;
+      setToken(null); // bad/expired token — fall back to the storefront
       if (!mounted.current) return;
       setDashboard(null);
       setStatus("out");
