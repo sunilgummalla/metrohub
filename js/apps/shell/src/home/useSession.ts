@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { apiGet, apiPost, getToken, setToken } from "./api";
+import { apiGet, apiPost, ApiError, getToken, setToken } from "./api";
 import type { Dashboard } from "./types";
 
 export type SessionStatus = "loading" | "out" | "in";
@@ -46,10 +46,17 @@ export function useSession(): Session {
       if (!mounted.current || getToken() !== token) return;
       setDashboard(d);
       setStatus("in");
-    } catch {
+    } catch (err) {
       // Only act if this is still the current token — don't clobber a newer one.
       if (getToken() !== token) return;
-      setToken(null); // bad/expired token — fall back to the storefront
+      // Drop the token only on a 401 (invalid/expired token). Everything else —
+      // transient errors (network, 5xx, timeout) and 403s (which the API also
+      // uses for non-auth cases: dashboard disabled when SEED_SAMPLE_DATA is
+      // off, or a non-demo persona) — keeps the token so a valid user isn't
+      // logged out and a reload/retry can recover.
+      if (err instanceof ApiError && err.status === 401) {
+        setToken(null);
+      }
       if (!mounted.current) return;
       setDashboard(null);
       setStatus("out");
