@@ -49,10 +49,12 @@ export function useSession(): Session {
     } catch (err) {
       // Only act if this is still the current token — don't clobber a newer one.
       if (getToken() !== token) return;
-      // Drop the token only on an auth failure (401/403). Transient errors
-      // (network, 5xx, timeout) keep the token so the user isn't logged out and
-      // a later reload/retry can recover the session.
-      if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+      // Drop the token only on a 401 (invalid/expired token). Everything else —
+      // transient errors (network, 5xx, timeout) and 403s (which the API also
+      // uses for non-auth cases: dashboard disabled when SEED_SAMPLE_DATA is
+      // off, or a non-demo persona) — keeps the token so a valid user isn't
+      // logged out and a reload/retry can recover.
+      if (err instanceof ApiError && err.status === 401) {
         setToken(null);
       }
       if (!mounted.current) return;
