@@ -179,9 +179,11 @@ export function App() {
   }
 
   // App routes reuse the storefront shell (same background, container, and
-  // shared TopNav) so the header is identical across the whole app.
+  // shared TopNav) so the header is identical across the whole app. The column
+  // layout lets the content grow and keeps the footer pinned to the bottom on
+  // short pages.
   return (
-    <div className="sfApp">
+    <div className="sfApp appShell">
       <div className="sfWrap">
         <TopNav />
         <AppWorkspace app={selectedApp} apps={apps} />
