@@ -89,7 +89,7 @@ class MemberGuard implements CanActivate {
 
     // Validate that the request carries a well-formed stub Bearer token.
     // extractMemberIdOrThrow will re-validate below; this guard just ensures
-    // the request is rejected early with a 403 before reaching the handler.
+    // the request is rejected early with a 401 before reaching the handler.
     const request = context.switchToHttp().getRequest<{ headers: Record<string, string> }>();
     if (!parseStubBearerToken(request.headers["authorization"])) {
       throw new UnauthorizedException(

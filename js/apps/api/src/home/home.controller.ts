@@ -47,5 +47,5 @@ export class HomeController {
 function extractUserId(req: { headers: Record<string, string | string[] | undefined> }): string {
   const id = parseStubBearerToken(req.headers["authorization"] ?? req.headers["Authorization"]);
   if (!id) throw new UnauthorizedException("Missing or invalid Bearer session token");
-  return id.toLowerCase();
+  return id;
 }

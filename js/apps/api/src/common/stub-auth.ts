@@ -16,5 +16,7 @@ export function parseStubBearerToken(
   const bearer = /^Bearer\s+(\S.*)$/i.exec(h.trim());
   if (!bearer) return null;
   const match = /^stub-token-([a-f0-9]{24})$/i.exec(bearer[1].trim());
-  return match ? match[1] : null;
+  // Normalize to lowercase — the regex is case-insensitive, so return a
+  // canonical id regardless of the case the client sent.
+  return match ? match[1].toLowerCase() : null;
 }
