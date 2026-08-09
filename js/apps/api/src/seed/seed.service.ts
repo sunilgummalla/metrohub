@@ -251,9 +251,10 @@ export class SeedService implements OnModuleInit {
     const vendorIdByName = new Map<string, Types.ObjectId>();
     for (const v of VENDORS) {
       await this.vendorModel.updateOne(
-        { citySlug: CITY, businessName: v.businessName },
+        // Scope the match to the demo owner so re-seeding can't overwrite a real
+        // vendor that happens to share { citySlug, businessName }.
+        { citySlug: CITY, businessName: v.businessName, ownerId: userId },
         {
-          $setOnInsert: { ownerId: userId },
           $set: {
             status: "approved",
             category: v.category,
@@ -275,7 +276,7 @@ export class SeedService implements OnModuleInit {
         },
         { upsert: true },
       );
-      const doc = await this.vendorModel.findOne({ citySlug: CITY, businessName: v.businessName }, { _id: 1 }).lean();
+      const doc = await this.vendorModel.findOne({ citySlug: CITY, businessName: v.businessName, ownerId: userId }, { _id: 1 }).lean();
       if (doc) vendorIdByName.set(v.businessName, doc._id as Types.ObjectId);
     }
 
