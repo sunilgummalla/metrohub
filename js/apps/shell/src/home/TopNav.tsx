@@ -1,4 +1,5 @@
-import "./home.css";
+// home.css is imported by the entry points that render this (App.tsx and
+// Home.tsx), so it isn't re-imported here to avoid a hidden global side effect.
 
 const LINKS: Array<{ label: string; href: string; pro?: boolean }> = [
   { label: "Marketplace", href: "/marketplace" },

@@ -181,7 +181,7 @@ export function App() {
   // App routes reuse the storefront shell (same background, container, and
   // shared TopNav) so the header is identical across the whole app.
   return (
-    <div className="sfApp appFrame">
+    <div className="sfApp">
       <div className="sfWrap">
         <TopNav />
         <AppWorkspace app={selectedApp} apps={apps} />
