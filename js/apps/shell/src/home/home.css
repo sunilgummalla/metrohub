@@ -1,7 +1,10 @@
 /* ══════════════════════════════════════════════════════════════════════
    Shell home — Storefront (signed-out) + Console (signed-in).
-   All colours come from the shell's Aurora tokens (styles.css), so both
-   screens follow light and dark automatically.
+   Colours come from the shell's Aurora tokens (styles.css) so both screens
+   follow light and dark automatically. The one exception: a few vibrant
+   storefront surfaces (the ad ribbon + category tiles) use fixed, non-flipping
+   colours defined as local --sf-* tokens on .sfApp — the theme tokens flip
+   light in dark mode and would break text contrast there.
    ══════════════════════════════════════════════════════════════════════ */
 
 .homeSplash{
