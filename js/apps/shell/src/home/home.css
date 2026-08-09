@@ -1,0 +1,202 @@
+/* ══════════════════════════════════════════════════════════════════════
+   Shell home — Storefront (signed-out) + Console (signed-in).
+   Colours come from the shell's Aurora tokens (styles.css) so both screens
+   follow light and dark automatically. The one exception: a few vibrant
+   storefront surfaces (the ad ribbon + category tiles) use fixed, non-flipping
+   colours defined as local --sf-* tokens on .sfApp — the theme tokens flip
+   light in dark mode and would break text contrast there.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.homeSplash{
+  min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;color:var(--muted);font-family:var(--font-body);font-size:15px;
+}
+.homeSpin{
+  width:26px;height:26px;border-radius:50%;
+  border:2.5px solid var(--border);border-top-color:var(--brand);
+  animation:homeSpin 0.7s linear infinite;
+}
+@keyframes homeSpin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.homeSpin{animation:none}}
+
+.sfWrap,.csWrap{width:min(1160px,100% - clamp(28px,7vw,80px));margin-inline:auto}
+.sfApp button,.csApp button{font:inherit}
+
+/* ─────────────────────────── STOREFRONT ─────────────────────────── */
+.sfApp{
+  --coral:#e0567a; --coral-soft:#fbe7ee;
+  /* Fixed, non-flipping surfaces. Unlike the theme --amber/--teal/--coral
+     tokens (which flip to light values in dark mode), these stay saturated in
+     both schemes so their text — dark on the ad ribbon, white on the tiles —
+     always meets contrast. Tweak the palette here, not inline. */
+  --sf-ad-grad:linear-gradient(100deg,#fbbf24,#f59e0b);
+  --sf-ad-ink:#3d2b00;
+  --sf-tile-play:linear-gradient(155deg,#4338ca,#7c3aed);
+  --sf-tile-manage:linear-gradient(155deg,#0f766e,#047857);
+  --sf-tile-shop:linear-gradient(155deg,#be185d,#c2410c);
+  background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;
+}
+:root[data-theme="dark"] .sfApp{ --coral:#f27a99; --coral-soft:#3a1f2a; }
+
+/* App-route shell: column layout so content grows and the footer stays pinned
+   to the bottom of the viewport on short app pages. */
+.appShell{display:flex;flex-direction:column}
+.appShell>.sfWrap{flex:1}
+
+.sfNav{display:flex;align-items:center;gap:22px;padding:22px 0}
+.sfWord{font-weight:900;font-size:21px;letter-spacing:-.03em;display:flex;align-items:center;gap:10px;color:var(--text)}
+.sfMark{width:29px;height:29px;border-radius:9px;background:linear-gradient(140deg,var(--brand),var(--coral));display:grid;place-items:center;color:#fff;font-weight:900;font-size:15px}
+.sfMarkSm{width:22px;height:22px;font-size:12px}
+.sfLinks{display:flex;gap:2px;margin-left:8px}
+.sfLinks a{padding:8px 13px;border-radius:9px;font-weight:650;font-size:14.5px;color:var(--muted)}
+.sfLinks a:hover{color:var(--text);background:var(--surface-muted)}
+.sfLinkPro{color:var(--coral) !important;font-weight:800}
+.sfSp{flex:1}
+.sfBtn{border:1.5px solid var(--border-strong);background:transparent;color:var(--text);border-radius:11px;padding:9px 16px;font-weight:750;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.sfBtn:hover{border-color:var(--brand);color:var(--brand)}
+.sfBtnFill{background:var(--brand);border-color:transparent;color:#fff}
+.sfBtnFill:hover{background:var(--brand-dark);color:#fff}
+
+.sfHero{display:grid;grid-template-columns:1.15fr .85fr;gap:34px;align-items:center;padding:20px 0 30px}
+.sfTag{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--brand);background:var(--surface-muted);padding:6px 12px;border-radius:999px}
+.sfH1{font-size:clamp(38px,5.6vw,66px);line-height:1;font-weight:900;letter-spacing:-.035em;margin:18px 0 0;text-wrap:balance;color:var(--text)}
+.sfRot{color:var(--coral);display:inline-block;min-width:5ch;transition:opacity .18s ease}
+.sfSub{font-size:17px;line-height:1.55;color:var(--muted);max-width:46ch;margin:20px 0 24px}
+.sfCta{display:flex;gap:12px;flex-wrap:wrap}
+.sfTrust{display:flex;gap:22px;margin-top:24px;font-size:13.5px;color:var(--muted)}
+.sfTrust b{color:var(--text);font-variant-numeric:tabular-nums}
+
+.sfFeature{background:var(--surface);border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow-lg);overflow:hidden}
+/* Fixed amber ribbon with dark text — readable in light & dark (the amber
+   tokens flip light in dark mode, so white text on them fails contrast). */
+.sfAd{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--sf-ad-grad);color:var(--sf-ad-ink);font-weight:800;font-size:12.5px}
+.sfAdTag{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.1em;border:1px solid rgba(0,0,0,.38);border-radius:5px;padding:2px 6px}
+.sfFb{padding:18px}
+.sfFb h3{margin:0 0 5px;font-size:19px;font-weight:850;letter-spacing:-.01em;color:var(--text)}
+.sfFb p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
+.sfMeta{display:flex;gap:8px;align-items:center;margin-top:14px;font-size:12.5px;color:var(--muted)}
+.sfStars{color:var(--amber-bright);letter-spacing:.04em}
+.sfOpen{margin-left:auto;font-size:11px;font-weight:800;color:var(--success);background:var(--success-bg);border-radius:999px;padding:2px 8px}
+.sfClosed{color:var(--muted);background:var(--surface-muted)}
+
+.sfCats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:18px 0}
+.sfCat{border-radius:20px;padding:22px;min-height:180px;display:flex;flex-direction:column;color:#fff;box-shadow:var(--shadow-lg)}
+/* Fixed, saturated tile gradients so white text stays readable in both themes.
+   (The --teal/--coral/--amber tokens flip to light values in dark mode.) */
+.sfCatPlay{background:var(--sf-tile-play)}
+.sfCatManage{background:var(--sf-tile-manage)}
+.sfCatShop{background:var(--sf-tile-shop)}
+.sfKk{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;opacity:.85}
+.sfKkCoral{color:var(--coral);opacity:1}
+.sfCat h3{margin:8px 0 4px;font-size:24px;font-weight:900;letter-spacing:-.02em}
+.sfCat p{margin:0;font-size:14px;opacity:.92;line-height:1.45;max-width:30ch}
+.sfApps{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto;padding-top:16px}
+.sfApps span,.sfApps a{background:rgba(255,255,255,.16);border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:700}
+.sfApps a{color:#fff;text-decoration:none;transition:background .15s ease}
+.sfApps a:hover{background:rgba(255,255,255,.32)}
+
+.sfSec{display:flex;align-items:baseline;gap:12px;padding:16px 0 12px}
+.sfSec h2{margin:0;font-size:25px;font-weight:900;letter-spacing:-.02em;color:var(--text)}
+.sfSec a{margin-left:auto;font-weight:750;font-size:14px;color:var(--brand)}
+.sfWeek{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding-bottom:8px}
+.sfMuted{color:var(--muted);font-size:14px;padding:14px}
+.sfBiz{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-md);transition:transform .16s;display:block}
+.sfBiz:hover{transform:translateY(-3px)}
+.sfBizTop{height:64px;display:flex;align-items:center;justify-content:center;font-size:26px;background:var(--surface-muted)}
+.sfBizBody{padding:13px 14px}
+.sfBizBody h4{margin:0 0 3px;font-size:15px;font-weight:800;color:var(--text)}
+.sfBizCat{font-size:12px;color:var(--muted)}
+.sfBizRow{display:flex;align-items:center;gap:6px;margin-top:9px;font-size:12.5px;font-weight:700;color:var(--text)}
+
+.sfPro{display:grid;grid-template-columns:1fr 1fr;margin:22px 0 12px;border-radius:22px;overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow-lg)}
+.sfProTxt{padding:30px 32px;background:var(--surface)}
+.sfProTxt h3{margin:10px 0 8px;font-size:27px;font-weight:900;letter-spacing:-.02em;color:var(--text)}
+.sfProTxt p{margin:0 0 18px;color:var(--muted);font-size:15px;line-height:1.55;max-width:40ch}
+.sfProCmp{background:linear-gradient(160deg,var(--brand),var(--brand-dark));color:#fff;padding:28px 30px;display:flex;flex-direction:column;gap:11px;justify-content:center}
+.sfLn{display:flex;align-items:center;gap:11px;font-size:14px;font-weight:600}
+.sfLn b{margin-left:auto;font-weight:800}
+.sfCk{width:20px;height:20px;border-radius:6px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:12px}
+.sfFoot{border-top:1px solid var(--border);margin-top:10px;padding:22px 0 42px;color:var(--muted);font-size:13px;display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+
+/* ─────────────────────────── CONSOLE ─────────────────────────── */
+.csApp{
+  --acc:var(--brand);
+  background:
+    radial-gradient(80% 60% at 100% 0,color-mix(in srgb,var(--brand) 8%,transparent),transparent 60%),
+    var(--bg);
+  color:var(--text);font-family:var(--font-body);min-height:100vh;
+}
+.csTop{display:flex;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)}
+.csBrand{font-family:var(--font-display);font-weight:800;letter-spacing:.04em;font-size:14px;display:flex;align-items:center;gap:10px;color:var(--text)}
+.csM{width:26px;height:26px;border-radius:7px;background:linear-gradient(150deg,var(--brand),var(--brand-dark));display:grid;place-items:center;color:#fff;font-weight:900;font-size:13px}
+.csSearch{margin-left:6px;flex:1;max-width:420px;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--muted);font-size:12.5px}
+.csSearch kbd{margin-left:auto;background:var(--surface-muted);border:1px solid var(--border);border-radius:5px;padding:2px 6px;font-size:11px}
+.csSp{flex:1}
+.csUser{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted)}
+.csDot{width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px var(--success-bg)}
+.csPro{font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--brand);background:var(--surface-muted);border:1px solid var(--border);border-radius:999px;padding:2px 8px}
+.csLink{border:0;background:transparent;color:var(--muted);cursor:pointer;font-weight:650;font-size:13px}
+.csLink:hover{color:var(--brand)}
+
+.csHd{display:flex;align-items:baseline;gap:12px;padding:24px 0 12px;flex-wrap:wrap}
+.csHd h1{font-size:22px;margin:0;font-weight:800;letter-spacing:-.01em;color:var(--text)}
+.csSub{color:var(--muted);font-size:13px}
+.csSub b{color:var(--danger)}
+
+.csKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:6px 0 8px}
+.csKpi{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:15px 16px;display:flex;flex-direction:column;gap:9px;position:relative;overflow:hidden}
+.csKpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brand)}
+.csKpi[data-edge="crit"]::before{background:var(--danger)}
+.csKpi[data-edge="warn"]::before{background:var(--warning)}
+.csKpi[data-edge="good"]::before{background:var(--success)}
+.csKpi[data-edge="acc"]::before{background:var(--brand)}
+.csKl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.csKv{font-size:26px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--text)}
+.csKm{font-size:12px;color:var(--muted)}
+.csBadge{font-size:10.5px;font-weight:800;letter-spacing:.05em;padding:2px 7px;border-radius:5px}
+.csBadge.live{color:var(--danger);background:var(--danger-bg)}
+.csBadge.ok{color:var(--success);background:var(--success-bg)}
+.csBadge.due{color:var(--warning);background:var(--warning-bg)}
+
+.csGrid{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;padding:14px 0 8px;align-items:start}
+.csPanel{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.csPh{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.csPhr{margin-left:auto;text-transform:none;letter-spacing:0;color:var(--faint)}
+.csLaunch{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
+.csAppRow{background:var(--surface);padding:14px 15px;display:flex;align-items:center;gap:12px;transition:background .14s}
+.csAppRow:hover{background:var(--surface-muted)}
+.csIc{width:36px;height:36px;border-radius:9px;background:var(--surface-muted);border:1px solid var(--border);display:grid;place-items:center;font-size:18px}
+.csNm{font-weight:700;font-size:14px;color:var(--text)}
+.csCat{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+.csLiveTxt{color:var(--danger);font-weight:800}
+.csGo{margin-left:auto;color:var(--faint);font-size:16px}
+
+.csTbl{width:100%;border-collapse:collapse;font-size:13px}
+.csTbl th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);text-align:left;padding:10px 16px;font-weight:600}
+.csTbl td{padding:11px 16px;border-top:1px solid var(--border);font-variant-numeric:tabular-nums;color:var(--text)}
+.csR{text-align:right}
+.csMut{color:var(--muted)}
+.csWarnTxt{color:var(--warning);font-weight:700}
+.csTbl tr.csLead td{background:color-mix(in srgb,var(--brand) 6%,transparent)}
+.csTot{color:var(--brand);font-weight:800}
+.csPf{display:flex;gap:10px;padding:13px 16px;border-top:1px solid var(--border)}
+.csBtn{border:1px solid var(--border);background:var(--surface-muted);color:var(--text);border-radius:9px;padding:9px 14px;font-weight:700;font-size:13px;display:inline-flex;align-items:center}
+.csBtnAcc{background:var(--brand);color:#fff;border-color:transparent}
+.csEmpty{padding:18px;color:var(--muted);font-size:14px}
+
+.csFoot{border-top:1px solid var(--border);margin-top:12px;padding:18px 0 40px;color:var(--faint);font-size:12px;display:flex;gap:18px;flex-wrap:wrap}
+.csSp2{flex:1}
+
+/* responsive */
+@media(max-width:900px){
+  .sfHero,.sfPro{grid-template-columns:1fr}
+  .csGrid{grid-template-columns:1fr}
+  .csKpis{grid-template-columns:repeat(2,1fr)}
+  .sfCats{grid-template-columns:1fr}
+  .sfWeek{grid-template-columns:repeat(2,1fr)}
+  .csLaunch{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  .sfWeek,.csKpis{grid-template-columns:1fr}
+  .sfLinks,.csSearch{display:none}
+}

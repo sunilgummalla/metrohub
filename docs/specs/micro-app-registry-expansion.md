@@ -41,5 +41,5 @@ These packages will be registered in the API's JSON registry and dynamically loa
 Each new React-based micro-app will follow the established pattern:
 1.  Created under `js/packages/<folder-name>`.
 2.  Exports metadata (display name, category, route, tile).
-3.  Registered in `js/apps/api/src/.../app-registry.json`.
-4.  Fetched by the Next.js experience layer and rendered by the React shell.
+3.  Registered in the Mongo-backed app catalog (`js/apps/api/src/seed/app-catalog.ts`), seeded into the `apps` collection and served at `GET /api/home/apps`.
+4.  Fetched by the experience layer and rendered by the React shell (which binds each app id to its bundled component).

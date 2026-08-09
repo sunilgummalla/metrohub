@@ -13,6 +13,7 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import { MembersService } from "./members.service";
 import { ForgotPasswordDto, LoginDto, RegisterDto, UpdateProfileDto } from "./members.dto";
+import { parseStubBearerToken } from "../common/stub-auth";
 
 /**
  * Members REST API — vendor self-service endpoints.
@@ -116,11 +117,8 @@ function extractMemberIdOrThrow(req: { headers: Record<string, string> }): strin
     process.env["ALLOW_STUB_AUTH"] === "true" &&
     process.env["NODE_ENV"] !== "production";
 
-  const auth = req.headers["authorization"] ?? "";
-  const token = auth.replace(/^Bearer\s+/i, "");
-  const match = /^stub-token-([a-f0-9]{24})$/i.exec(token);
-
-  if (!match) {
+  const memberId = parseStubBearerToken(req.headers["authorization"]);
+  if (!memberId) {
     throw new UnauthorizedException(
       "Missing or invalid Authorization token — please log in again",
     );
@@ -130,5 +128,5 @@ function extractMemberIdOrThrow(req: { headers: Record<string, string> }): strin
       "Stub auth is disabled in this environment — use a real JWT",
     );
   }
-  return match[1];
+  return memberId;
 }

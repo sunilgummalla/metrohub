@@ -27,3 +27,15 @@ export type { BoosterConfigDocument, BoosterPeriod } from "./booster-config.sche
 
 export { VendorSubscriptionTier, VendorSubscriptionTierSchema } from "./vendor-subscription-tier.schema";
 export type { VendorSubscriptionTierDocument } from "./vendor-subscription-tier.schema";
+
+export { Account, AccountSchema } from "./account.schema";
+export type { AccountDocument } from "./account.schema";
+
+export { Split, SplitSchema } from "./split.schema";
+export type { SplitDocument } from "./split.schema";
+
+export { Deal, DealSchema } from "./deal.schema";
+export type { DealDocument } from "./deal.schema";
+
+export { App, AppSchema } from "./app.schema";
+export type { AppDocument } from "./app.schema";

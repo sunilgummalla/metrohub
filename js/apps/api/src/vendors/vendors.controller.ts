@@ -18,6 +18,7 @@ import {
 import { VendorsService } from "./vendors.service";
 import { BrowseVendorsQueryDto, CreateVendorDto, UpdateVendorDto } from "./vendors.dto";
 import { VendorStatus } from "../database";
+import { parseStubBearerToken } from "../common/stub-auth";
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
 
@@ -88,11 +89,9 @@ class MemberGuard implements CanActivate {
 
     // Validate that the request carries a well-formed stub Bearer token.
     // extractMemberIdOrThrow will re-validate below; this guard just ensures
-    // the request is rejected early with a 403 before reaching the handler.
+    // the request is rejected early with a 401 before reaching the handler.
     const request = context.switchToHttp().getRequest<{ headers: Record<string, string> }>();
-    const auth = request.headers["authorization"] ?? "";
-    const token = auth.replace(/^Bearer\s+/i, "");
-    if (!/^stub-token-[a-f0-9]{24}$/i.test(token)) {
+    if (!parseStubBearerToken(request.headers["authorization"])) {
       throw new UnauthorizedException(
         "Missing or invalid Authorization token — please log in again",
       );
@@ -124,11 +123,8 @@ function extractMemberIdOrThrow(req: { headers: Record<string, string> }): strin
     process.env["ALLOW_STUB_AUTH"] === "true" &&
     process.env["NODE_ENV"] !== "production";
 
-  const auth = req.headers["authorization"] ?? "";
-  const token = auth.replace(/^Bearer\s+/i, "");
-  const match = /^stub-token-([a-f0-9]{24})$/i.exec(token);
-
-  if (!match) {
+  const memberId = parseStubBearerToken(req.headers["authorization"]);
+  if (!memberId) {
     throw new UnauthorizedException(
       "Missing or invalid Authorization token — please log in again",
     );
@@ -138,7 +134,7 @@ function extractMemberIdOrThrow(req: { headers: Record<string, string> }): strin
       "Stub auth is disabled in this environment — use a real JWT",
     );
   }
-  return match[1];
+  return memberId;
 }
 
 /** Allowed vendor status values for runtime validation */
