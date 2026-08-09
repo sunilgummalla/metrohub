@@ -327,7 +327,9 @@ export class SeedService implements OnModuleInit {
       { gameId: DEMO_GAME_ID },
       {
         $set: {
-          joinCode: "FRIDAY-RUMMY",
+          // Lowercase adjective-noun-NN, matching generateJoinCode() — joinByCode
+          // looks up joinCode.toLowerCase(), so an uppercase code is unjoinable.
+          joinCode: "friday-rummy-01",
           gameType: "rummy",
           payload: rummyPayload(),
           status: "active",
