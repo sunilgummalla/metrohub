@@ -67,7 +67,7 @@ export function Storefront({ onSignIn }: { onSignIn: () => void }) {
           <a className="sfWord" href="/"><span className="sfMark">M</span> MetroHub</a>
           <div className="sfLinks">
             <a href="/marketplace">Marketplace</a>
-            <a href="/">Games</a>
+            <a href="/apps/rummy-scorecard">Games</a>
             <a href="/apps/my-accounts">Money</a>
             <a href="/apps/near-by">Near By</a>
             <a href="/plans" className="sfLinkPro">Pro</a>
@@ -132,12 +132,17 @@ export function Storefront({ onSignIn }: { onSignIn: () => void }) {
         </header>
 
         <div className="sfCats">
-          <a className="sfCat sfCatPlay" href="/">
+          <div className="sfCat sfCatPlay">
             <span className="sfKk">Play</span>
             <h3>Game nights</h3>
             <p>Live scorecards for the whole table, synced and shareable.</p>
-            <div className="sfApps"><span>♠️ Poker</span><span>🃏 Rummy</span><span>🎱 Tambola</span><span>🎯 Bingo</span></div>
-          </a>
+            <div className="sfApps">
+              <a href="/apps/poker-scorecard">♠️ Poker</a>
+              <a href="/apps/rummy-scorecard">🃏 Rummy</a>
+              <a href="/apps/tambola">🎱 Tambola</a>
+              <a href="/apps/bingo">🎯 Bingo</a>
+            </div>
+          </div>
           <a className="sfCat sfCatManage" href="/apps/my-accounts">
             <span className="sfKk">Manage</span>
             <h3>Money</h3>
