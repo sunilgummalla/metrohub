@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiGet, money } from "./api";
+import { TopNav } from "./TopNav";
 import type { Landing, VendorCard } from "./types";
 
 const ROT_WORDS = ["game nights", "shared bills", "local storefronts", "nearby deals"];
@@ -63,19 +64,7 @@ export function Storefront({ onSignIn }: { onSignIn: () => void }) {
   return (
     <div className="sfApp">
       <div className="sfWrap">
-        <nav className="sfNav">
-          <a className="sfWord" href="/"><span className="sfMark">M</span> MetroHub</a>
-          <div className="sfLinks">
-            <a href="/marketplace">Marketplace</a>
-            <a href="/apps/rummy-scorecard">Games</a>
-            <a href="/apps/my-accounts">Money</a>
-            <a href="/apps/near-by">Near By</a>
-            <a href="/plans" className="sfLinkPro">Pro</a>
-          </div>
-          <span className="sfSp" />
-          <button className="sfBtn" type="button" onClick={onSignIn}>Sign in</button>
-          <button className="sfBtn sfBtnFill" type="button" onClick={onSignIn}>Get MetroHub Pro</button>
-        </nav>
+        <TopNav onSignIn={onSignIn} />
 
         <header className="sfHero">
           <div>

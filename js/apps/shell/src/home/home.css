@@ -47,7 +47,7 @@
 .sfLinks a:hover{color:var(--text);background:var(--surface-muted)}
 .sfLinkPro{color:var(--coral) !important;font-weight:800}
 .sfSp{flex:1}
-.sfBtn{border:1.5px solid var(--border-strong);background:transparent;color:var(--text);border-radius:11px;padding:9px 16px;font-weight:750;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.sfBtn{border:1.5px solid var(--border-strong);background:transparent;color:var(--text);border-radius:11px;padding:9px 16px;font-weight:750;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
 .sfBtn:hover{border-color:var(--brand);color:var(--brand)}
 .sfBtnFill{background:var(--brand);border-color:transparent;color:#fff}
 .sfBtnFill:hover{background:var(--brand-dark);color:#fff}

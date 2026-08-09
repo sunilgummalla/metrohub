@@ -167,67 +167,8 @@ html, body {
 
 a { color: inherit; text-decoration: none; }
 
-/* ── Shell frame ───────────────────────────────────────────────────────────── */
-.shellFrame {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  /* Soft aurora wash at the very top of the page — light, never dark */
-  background:
-    radial-gradient(900px 420px at 15% -5%, rgba(99, 102, 241, 0.10), transparent 60%),
-    radial-gradient(900px 420px at 85% -5%, rgba(245, 158, 11, 0.10), transparent 60%),
-    var(--bg);
-}
-
-/* ── Header ────────────────────────────────────────────────────────────────── */
-.shellHeader {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 80px;
-  padding: 0 40px;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--line);
-}
-
-.brand { display: inline-flex; align-items: center; }
-
-.brandLogo {
-  height: 56px;
-  width: auto;
-  display: block;
-}
-
-.topNav {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.topNav a {
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ink-soft);
-  padding: 10px 18px;
-  border-radius: 999px;
-  transition: color 0.15s ease, background 0.15s ease;
-}
-
-.topNavHighlight {
-  color: var(--indigo) !important;
-  font-weight: 700;
-  background: rgba(99, 102, 241, 0.08) !important;
-}
-
-.topNav a:hover {
-  color: var(--indigo);
-  background: var(--surface-2);
-}
+/* App workspace frame reuses the storefront shell (.sfApp) + shared <TopNav>,
+   so the header is identical across storefront and app pages. */
 
 /* ── Portal main ───────────────────────────────────────────────────────────── */
 .portalMain {
@@ -693,15 +634,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ── Workspace (individual app pages) ─────────────────────────────────────── */
-.shellMain {
-  flex: 1;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 40px 32px 80px;
-}
-
-.workspaceMain { display: flex; flex-direction: column; gap: 28px; }
+.workspaceMain { display: flex; flex-direction: column; gap: 28px; padding: 8px 0 72px; }
 
 .workspaceHeader {
   display: flex;
@@ -865,10 +798,6 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (max-width: 640px) {
-  .shellHeader { padding: 0 20px; height: 68px; }
-  .brandLogo { height: 44px; }
-  .topNav a { padding: 8px 12px; font-size: 14px; }
-  .portalMain, .shellMain { padding: 24px 18px 56px; }
   .portalHero { padding: 28px 20px; }
   .heroTitle { font-size: 34px; }
   .heroButtons a { width: 100%; text-align: center; }
