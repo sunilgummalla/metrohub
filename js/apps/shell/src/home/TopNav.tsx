@@ -17,8 +17,8 @@ const LINKS: Array<{ label: string; href: string; pro?: boolean }> = [
  */
 export function TopNav({ onSignIn }: { onSignIn?: () => void }) {
   return (
-    <nav className="sfNav">
-      <a className="sfWord" href="/"><span className="sfMark">M</span> MetroHub</a>
+    <nav className="sfNav" aria-label="Primary">
+      <a className="sfWord" href="/" aria-label="MetroHub home"><span className="sfMark" aria-hidden="true">M</span> MetroHub</a>
       <div className="sfLinks">
         {LINKS.map((l) => (
           <a key={l.href} href={l.href} className={l.pro ? "sfLinkPro" : undefined}>{l.label}</a>
