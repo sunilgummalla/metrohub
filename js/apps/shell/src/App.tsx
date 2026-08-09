@@ -6,6 +6,7 @@ import { BingoApp } from "@metrohub/bingo";
 import { PlansApp } from "@metrohub/plans";
 import { MarketplaceApp } from "@metrohub/marketplace";
 import { useRegistry } from "./home/useRegistry";
+import { TopNav } from "./home/TopNav";
 import type { AppInfo } from "./home/types";
 // Boot splash reuses the homeSplash/homeSpin styles — import them here so the
 // loading UI is styled even before <Home> mounts (e.g. deep-linking an app route).
@@ -37,29 +38,6 @@ function matchRoute(apps: AppInfo[]): AppInfo | undefined {
       .slice()
       .sort((a, b) => b.route.length - a.route.length)
       .find((app) => route.startsWith(`${app.route}/`))
-  );
-}
-
-// ─── Header ───────────────────────────────────────────────────────────────────
-function ShellHeader() {
-  return (
-    <header className="shellHeader">
-      <a className="brand" href="/" aria-label="Metro Hub home">
-        <img
-          src="/brand/logo-horizontal-light-800x267.png"
-          alt="Metro Hub"
-          className="brandLogo"
-          width={168}
-          height={56}
-        />
-      </a>
-      <nav className="topNav" aria-label="Shell navigation">
-        <a href="/">Apps</a>
-        <a href="/marketplace" className="topNavHighlight">Marketplace</a>
-        <a href="/apps/my-accounts">Accounts</a>
-        <a href="/apps/splits">Splits</a>
-      </nav>
-    </header>
   );
 }
 
@@ -110,7 +88,7 @@ function AppWorkspace({ app, apps }: { app: AppInfo; apps: AppInfo[] }) {
     .slice(0, 3);
 
   return (
-    <main className="shellMain workspaceMain">
+    <main className="workspaceMain">
       <section className="workspaceHeader">
         <div>
           <p className="eyebrow">{app.category}</p>
@@ -200,10 +178,16 @@ export function App() {
     return <Home apps={apps} />;
   }
 
+  // App routes reuse the storefront shell (same background, container, and
+  // shared TopNav) so the header is identical across the whole app. The column
+  // layout lets the content grow and keeps the footer pinned to the bottom on
+  // short pages.
   return (
-    <div className="shellFrame">
-      <ShellHeader />
-      <AppWorkspace app={selectedApp} apps={apps} />
+    <div className="sfApp appShell">
+      <div className="sfWrap">
+        <TopNav />
+        <AppWorkspace app={selectedApp} apps={apps} />
+      </div>
       <ShellFooter appCount={apps.length} />
     </div>
   );

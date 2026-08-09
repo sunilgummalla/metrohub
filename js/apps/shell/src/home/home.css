@@ -38,6 +38,11 @@
 }
 :root[data-theme="dark"] .sfApp{ --coral:#f27a99; --coral-soft:#3a1f2a; }
 
+/* App-route shell: column layout so content grows and the footer stays pinned
+   to the bottom of the viewport on short app pages. */
+.appShell{display:flex;flex-direction:column}
+.appShell>.sfWrap{flex:1}
+
 .sfNav{display:flex;align-items:center;gap:22px;padding:22px 0}
 .sfWord{font-weight:900;font-size:21px;letter-spacing:-.03em;display:flex;align-items:center;gap:10px;color:var(--text)}
 .sfMark{width:29px;height:29px;border-radius:9px;background:linear-gradient(140deg,var(--brand),var(--coral));display:grid;place-items:center;color:#fff;font-weight:900;font-size:15px}
@@ -47,7 +52,7 @@
 .sfLinks a:hover{color:var(--text);background:var(--surface-muted)}
 .sfLinkPro{color:var(--coral) !important;font-weight:800}
 .sfSp{flex:1}
-.sfBtn{border:1.5px solid var(--border-strong);background:transparent;color:var(--text);border-radius:11px;padding:9px 16px;font-weight:750;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.sfBtn{border:1.5px solid var(--border-strong);background:transparent;color:var(--text);border-radius:11px;padding:9px 16px;font-weight:750;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
 .sfBtn:hover{border-color:var(--brand);color:var(--brand)}
 .sfBtnFill{background:var(--brand);border-color:transparent;color:#fff}
 .sfBtnFill:hover{background:var(--brand-dark);color:#fff}
