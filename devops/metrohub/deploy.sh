@@ -54,10 +54,14 @@ bash scripts/sync-secrets.sh --file "$SEC" --catalog scripts/secrets.catalog --s
 #    compose file (e.g. the per-env Dozzle that moved to the shared base tier);
 #    without it a removed service lingers.
 CORS_ORIGINS="${CORS_ORIGINS:-}"
+# Optional — gates seeding of demo/sample records on API boot (the app catalog
+# routing registry is always seeded regardless). Defaults OFF here so a manual
+# deploy seeds no demo data; the CI pipeline passes "true" for the demo stacks.
+SEED_SAMPLE_DATA="${SEED_SAMPLE_DATA:-false}"
 # Export every var docker-stack.yml substitutes — including MONGO_DB (${MONGO_DB:?})
 # — so `docker stack deploy` sees them even when deploy.sh is sourced rather than
 # executed (a child process only inherits EXPORTED vars).
-export STACK_NAME APP_DOMAIN API_IMAGE EXPERIENCE_IMAGE SHELL_IMAGE CORS_ORIGINS MONGO_DB
+export STACK_NAME APP_DOMAIN API_IMAGE EXPERIENCE_IMAGE SHELL_IMAGE CORS_ORIGINS MONGO_DB SEED_SAMPLE_DATA
 docker stack deploy --with-registry-auth --prune -c docker-stack.yml "$STACK_NAME"
 
 docker service ls --filter "label=com.docker.stack.namespace=$STACK_NAME"

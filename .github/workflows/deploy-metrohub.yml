@@ -42,6 +42,7 @@ jobs:
       app_domain: ${{ steps.target.outputs.app_domain }}
       cors_origins: ${{ steps.target.outputs.cors_origins }}
       mongo_db: ${{ steps.target.outputs.mongo_db }}
+      seed_sample_data: ${{ steps.target.outputs.seed_sample_data }}
     steps:
       - id: target
         run: |
@@ -66,11 +67,17 @@ jobs:
             mongo_db="metrohub_prod"
           fi
 
+          # dev + prod are demo/showcase deployments — seed the sample data that
+          # backs the storefront/console home. Seeding is idempotent and only
+          # touches demo records (upsert by natural keys).
+          seed_sample_data="true"
+
           echo "environment=$environment" >> "$GITHUB_OUTPUT"
           echo "stack=$stack" >> "$GITHUB_OUTPUT"
           echo "app_domain=$app_domain" >> "$GITHUB_OUTPUT"
           echo "cors_origins=https://$app_domain" >> "$GITHUB_OUTPUT"
           echo "mongo_db=$mongo_db" >> "$GITHUB_OUTPUT"
+          echo "seed_sample_data=$seed_sample_data" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build and publish images
@@ -181,6 +188,7 @@ jobs:
           APP_DOMAIN: ${{ needs.target.outputs.app_domain }}
           CORS_ORIGINS: ${{ needs.target.outputs.cors_origins }}
           MONGO_DB: ${{ needs.target.outputs.mongo_db }}
+          SEED_SAMPLE_DATA: ${{ needs.target.outputs.seed_sample_data }}
           API_IMAGE: ${{ env.IMAGE_PREFIX }}-api:${{ github.sha }}
           EXPERIENCE_IMAGE: ${{ env.IMAGE_PREFIX }}-experience:${{ github.sha }}
           SHELL_IMAGE: ${{ env.IMAGE_PREFIX }}-shell:${{ github.sha }}
@@ -188,4 +196,4 @@ jobs:
           REDEPLOY_BASE: ${{ github.event_name == 'workflow_dispatch' && inputs.redeploy_base || 'false' }}
         run: |
           ssh -i ~/.ssh/metrohub "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            "cd /opt/metrohub/deploy && chmod +x deploy.sh scripts/sync-secrets.sh && STACK_NAME='$STACK_NAME' APP_DOMAIN='$APP_DOMAIN' CORS_ORIGINS='$CORS_ORIGINS' MONGO_DB='$MONGO_DB' REDEPLOY_BASE='$REDEPLOY_BASE' API_IMAGE='$API_IMAGE' EXPERIENCE_IMAGE='$EXPERIENCE_IMAGE' SHELL_IMAGE='$SHELL_IMAGE' ./deploy.sh"
+            "cd /opt/metrohub/deploy && chmod +x deploy.sh scripts/sync-secrets.sh && STACK_NAME='$STACK_NAME' APP_DOMAIN='$APP_DOMAIN' CORS_ORIGINS='$CORS_ORIGINS' MONGO_DB='$MONGO_DB' SEED_SAMPLE_DATA='$SEED_SAMPLE_DATA' REDEPLOY_BASE='$REDEPLOY_BASE' API_IMAGE='$API_IMAGE' EXPERIENCE_IMAGE='$EXPERIENCE_IMAGE' SHELL_IMAGE='$SHELL_IMAGE' ./deploy.sh"
