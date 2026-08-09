@@ -50,8 +50,10 @@
 .sfTrust b{color:var(--text);font-variant-numeric:tabular-nums}
 
 .sfFeature{background:var(--surface);border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow-lg);overflow:hidden}
-.sfAd{display:flex;align-items:center;gap:10px;padding:10px 14px;background:linear-gradient(100deg,var(--amber-bright),var(--amber));color:#fff;font-weight:800;font-size:12.5px}
-.sfAdTag{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.1em;border:1px solid rgba(255,255,255,.55);border-radius:5px;padding:2px 6px}
+/* Fixed amber ribbon with dark text — readable in light & dark (the amber
+   tokens flip light in dark mode, so white text on them fails contrast). */
+.sfAd{display:flex;align-items:center;gap:10px;padding:10px 14px;background:linear-gradient(100deg,#fbbf24,#f59e0b);color:#3d2b00;font-weight:800;font-size:12.5px}
+.sfAdTag{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.1em;border:1px solid rgba(0,0,0,.38);border-radius:5px;padding:2px 6px}
 .sfFb{padding:18px}
 .sfFb h3{margin:0 0 5px;font-size:19px;font-weight:850;letter-spacing:-.01em;color:var(--text)}
 .sfFb p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
@@ -62,9 +64,11 @@
 
 .sfCats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:18px 0}
 .sfCat{border-radius:20px;padding:22px;min-height:180px;display:flex;flex-direction:column;color:#fff;box-shadow:var(--shadow-lg)}
-.sfCatPlay{background:linear-gradient(155deg,var(--brand),#7b4bd8)}
-.sfCatManage{background:linear-gradient(155deg,var(--teal),var(--teal-bright))}
-.sfCatShop{background:linear-gradient(155deg,var(--coral),var(--amber-bright))}
+/* Fixed, saturated tile gradients so white text stays readable in both themes.
+   (The --teal/--coral/--amber tokens flip to light values in dark mode.) */
+.sfCatPlay{background:linear-gradient(155deg,#4338ca,#7c3aed)}
+.sfCatManage{background:linear-gradient(155deg,#0f766e,#047857)}
+.sfCatShop{background:linear-gradient(155deg,#be185d,#c2410c)}
 .sfKk{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;opacity:.85}
 .sfKkCoral{color:var(--coral);opacity:1}
 .sfCat h3{margin:8px 0 4px;font-size:24px;font-weight:900;letter-spacing:-.02em}
