@@ -1,5 +1,6 @@
 import { Controller, Get, HttpCode, Post, Query, Req, UnauthorizedException } from "@nestjs/common";
 import { HomeService } from "./home.service";
+import { parseStubBearerToken } from "../common/stub-auth";
 
 /**
  * Home aggregation for the shell portal:
@@ -44,13 +45,7 @@ export class HomeController {
 
 /** Parse `Authorization: Bearer stub-token-<24hex>` and return the 24-hex user id. */
 function extractUserId(req: { headers: Record<string, string | string[] | undefined> }): string {
-  const raw = req.headers["authorization"] ?? req.headers["Authorization"];
-  const header = Array.isArray(raw) ? raw[0] : raw;
-  if (!header) throw new UnauthorizedException("Missing Authorization header");
-  // Require the Bearer scheme explicitly (don't accept a bare token).
-  const bearer = /^Bearer\s+(\S.*)$/i.exec(header.trim());
-  if (!bearer) throw new UnauthorizedException("Authorization must use the Bearer scheme");
-  const match = /^stub-token-([a-f0-9]{24})$/i.exec(bearer[1].trim());
-  if (!match) throw new UnauthorizedException("Invalid session token");
-  return match[1].toLowerCase();
+  const id = parseStubBearerToken(req.headers["authorization"] ?? req.headers["Authorization"]);
+  if (!id) throw new UnauthorizedException("Missing or invalid Bearer session token");
+  return id.toLowerCase();
 }
