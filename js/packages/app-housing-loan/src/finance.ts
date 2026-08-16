@@ -96,7 +96,10 @@ export function buildRateSchedule(inp: LoanInputs, months: number): number[] {
   const { introYears, adjustEveryYears, indexPct, marginPct, capInitialPct, capPeriodicPct, capLifetimePct } = inp.arm;
   const introMonths = Math.max(0, Math.round(introYears * 12));
   const adjMonths = Math.max(1, Math.round(adjustEveryYears * 12));
-  const fullyIndexed = indexPct + marginPct;
+  // Carry the occupancy pricing add-on through the whole loan (not just the
+  // intro rate), so a non-zero add-on doesn't vanish after the first reset.
+  const fullyIndexed = indexPct + marginPct + inp.occupancyRateAdjPct;
+  const floor = marginPct + inp.occupancyRateAdjPct;
   const lifetimeMax = start + capLifetimePct;
 
   const rates: number[] = [];
@@ -107,7 +110,7 @@ export function buildRateSchedule(inp: LoanInputs, months: number): number[] {
       // adjustment month
       const cap = adjustments === 0 ? capInitialPct : capPeriodicPct;
       const target = clamp(fullyIndexed, current - cap, current + cap);
-      current = clamp(target, marginPct, lifetimeMax); // floor at margin, ceiling at lifetime
+      current = clamp(target, floor, lifetimeMax); // floor at margin(+add-on), ceiling at lifetime
       adjustments++;
     }
     rates.push(current);
