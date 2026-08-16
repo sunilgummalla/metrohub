@@ -254,11 +254,11 @@ export function HousingLoanApp() {
               <span className="hlMuted">Intro P&amp;I {money(am.firstPI)} → max P&amp;I {money(am.maxPI)}</span>
             )}
             <div className="hlBreak">
-              <span><i className="hlDotP" /> P&amp;I {money(am.firstPI)}</span>
-              <span><i className="hlDotT" /> Tax {money(esc.tax)}</span>
-              <span><i className="hlDotI2" /> Ins {money(esc.insurance)}</span>
-              {esc.pmi > 0 && <span><i className="hlDotM" /> PMI {money(esc.pmi)}</span>}
-              {esc.hoa > 0 && <span><i className="hlDotH" /> HOA {money(esc.hoa)}</span>}
+              <span><i className="hlDotP" aria-hidden="true" /> P&amp;I {money(am.firstPI)}</span>
+              <span><i className="hlDotT" aria-hidden="true" /> Tax {money(esc.tax)}</span>
+              <span><i className="hlDotI2" aria-hidden="true" /> Ins {money(esc.insurance)}</span>
+              {esc.pmi > 0 && <span><i className="hlDotM" aria-hidden="true" /> PMI {money(esc.pmi)}</span>}
+              {esc.hoa > 0 && <span><i className="hlDotH" aria-hidden="true" /> HOA {money(esc.hoa)}</span>}
             </div>
           </section>
 

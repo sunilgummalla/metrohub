@@ -84,9 +84,10 @@ export function amortizedPayment(balance: number, r: number, n: number): number 
 
 /**
  * Build the annual-rate path (one entry per month). Fixed loans are flat. ARMs
- * hold the intro rate, then move toward the fully-indexed rate (index + margin)
- * bounded by the initial / periodic / lifetime caps — the standard "if rates
- * rise" projection.
+ * hold the intro rate, then step toward the fully-indexed rate (index + margin)
+ * — which may be higher OR lower than the intro rate — by at most the initial /
+ * periodic cap per adjustment, never exceeding the lifetime cap and floored at
+ * the margin (a simplified ARM floor).
  */
 export function buildRateSchedule(inp: LoanInputs, months: number): number[] {
   const start = inp.baseRatePct + inp.occupancyRateAdjPct;
@@ -205,7 +206,7 @@ export function computeApr(inp: LoanInputs, am: Amortization): number {
   const pv = (monthlyRate: number) =>
     flows.reduce((acc, pay, i) => acc + pay / (1 + monthlyRate) ** (i + 1), 0);
 
-  let lo = 0, hi = 1; // 0%..1200% monthly bounds
+  let lo = 0, hi = 1; // monthly-rate search bounds: 0..1.0 (0%..100% per month)
   for (let i = 0; i < 80; i++) {
     const mid = (lo + hi) / 2;
     if (pv(mid) > net) lo = mid;
