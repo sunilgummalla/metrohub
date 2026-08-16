@@ -68,7 +68,9 @@ function weightedPick(pool: Entrant[]): Entrant | null {
 }
 
 export function RaffleApp() {
-  const saved = useRef<Saved | null>(load()).current;
+  // Read persisted state once per mount (a useRef(load()) initializer would
+  // re-run load() — JSON.parse + localStorage — on every render).
+  const saved = useMemo(() => load(), []);
   const [title, setTitle] = useState(saved?.title ?? "Friday Night Raffle");
   const [prize, setPrize] = useState(saved?.prize ?? "Grand Prize");
   const [entrants, setEntrants] = useState<Entrant[]>(saved?.entrants ?? []);
