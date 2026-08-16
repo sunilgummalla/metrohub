@@ -90,6 +90,13 @@ export function HousingLoanApp() {
     setDown((d) => Math.max(d, minDown));
   };
 
+  // Clamp the down payment when the price drops below it, so derived state
+  // (loan amount, down %) can't go invalid.
+  const setHomePrice = (n: number) => {
+    setPrice(n);
+    setDown((d) => Math.min(d, n));
+  };
+
   const loanAmount = Math.max(0, price - down);
   const downPct = price > 0 ? (down / price) * 100 : 0;
   const pmiApplies = OCC[occ].pmi && downPct < 20;
@@ -145,7 +152,7 @@ export function HousingLoanApp() {
                 </button>
               ))}
             </div>
-            <Field label="Home price" prefix="$" step={5000} value={price} onChange={setPrice} />
+            <Field label="Home price" prefix="$" step={5000} value={price} onChange={setHomePrice} />
             <Field label="Down payment" prefix="$" step={5000} max={price} value={down} onChange={setDown}
               hint={`${pct(downPct)} · min ${OCC[occ].minDownPct}%`} />
             <div className="hlPresets">
