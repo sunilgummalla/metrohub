@@ -108,12 +108,15 @@ export function RaffleApp() {
     const name = newName.trim();
     if (!name) return;
     const tickets = Math.max(1, Math.round(newTickets) || 1);
-    const existing = entrants.find((e) => e.name.toLowerCase() === name.toLowerCase());
-    if (existing) {
-      setEntrants((es) => es.map((e) => (e.id === existing.id ? { ...e, tickets: e.tickets + tickets } : e)));
-    } else {
-      setEntrants((es) => [...es, { id: `e${idRef.current++}`, name, tickets }]);
-    }
+    const newId = `e${idRef.current++}`;
+    // Match the existing entrant inside the updater against the latest state, so
+    // rapid successive adds stack tickets instead of racing into duplicates.
+    setEntrants((es) => {
+      const existing = es.find((e) => e.name.toLowerCase() === name.toLowerCase());
+      return existing
+        ? es.map((e) => (e.id === existing.id ? { ...e, tickets: e.tickets + tickets } : e))
+        : [...es, { id: newId, name, tickets }];
+    });
     setNewName("");
     setNewTickets(1);
   }
