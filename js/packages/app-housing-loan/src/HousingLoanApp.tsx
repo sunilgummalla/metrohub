@@ -161,10 +161,14 @@ export function HousingLoanApp() {
             <Field label="Down payment" prefix="$" step={5000} max={price} value={down} onChange={setDown}
               hint={`${pct(downPct)} · min ${OCC[occ].minDownPct}%`} />
             <div className="hlPresets">
-              {[OCC[occ].minDownPct, 10, 20].filter((v, i, a) => a.indexOf(v) === i).map((p) => (
-                <button key={p} type="button" className={`hlChip ${Math.round(downPct) === p ? "hlChipOn" : ""}`}
-                  onClick={() => setDown(Math.round((price * p) / 100))}>{p}%</button>
-              ))}
+              {/* Only offer presets at or above this occupancy's minimum down %. */}
+              {[...new Set([OCC[occ].minDownPct, 10, 20, 25])]
+                .filter((p) => p >= OCC[occ].minDownPct)
+                .sort((a, b) => a - b)
+                .map((p) => (
+                  <button key={p} type="button" className={`hlChip ${Math.round(downPct) === p ? "hlChipOn" : ""}`}
+                    onClick={() => setDown(Math.round((price * p) / 100))}>{p}%</button>
+                ))}
             </div>
 
             <div className="hlSeg hlSeg2">
@@ -268,7 +272,7 @@ export function HousingLoanApp() {
             <div className="hlKV"><span>Loan amount</span><b>{money(loanAmount)}</b></div>
             <div className="hlKV"><span>Cash to close</span><b>{money(cashToClose)}</b></div>
             <div className="hlKV"><span>Total interest</span><b className="hlInterest">{money(am.totalInterest)}</b></div>
-            <div className="hlKV"><span>Total of payments</span><b>{money(loanAmount + am.totalInterest + am.totalPmi)}</b></div>
+            <div className="hlKV"><span>Total P&amp;I + PMI</span><b>{money(loanAmount + am.totalInterest + am.totalPmi)}</b></div>
             <div className="hlKV"><span>Effective APR</span><b>{pct(apr, 3)}</b></div>
             {(extra > 0 || oneTime > 0) && am.payoffMonths < years * 12 && (
               <div className="hlKV"><span>Payoff</span><b>{(am.payoffMonths / 12).toFixed(1)} yrs <span className="hlSaved">({(years - am.payoffMonths / 12).toFixed(1)} yrs early)</span></b></div>
