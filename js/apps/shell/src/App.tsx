@@ -5,6 +5,7 @@ import { TambolaApp } from "@metrohub/tambola";
 import { BingoApp } from "@metrohub/bingo";
 import { PlansApp } from "@metrohub/plans";
 import { MarketplaceApp } from "@metrohub/marketplace";
+import { HousingLoanApp } from "@metrohub/housing-loan";
 import { useRegistry } from "./home/useRegistry";
 import { TopNav } from "./home/TopNav";
 import type { AppInfo } from "./home/types";
@@ -119,6 +120,8 @@ function AppWorkspace({ app, apps }: { app: AppInfo; apps: AppInfo[] }) {
           <PlansApp />
         ) : app.id === "marketplace" ? (
           <MarketplaceApp citySlug="seattle" />
+        ) : app.id === "housing-loan" ? (
+          <HousingLoanApp />
         ) : (
           <div className="viewportBody">
             <span

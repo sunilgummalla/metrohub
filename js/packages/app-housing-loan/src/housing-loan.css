@@ -1,0 +1,118 @@
+/* Housing loan calculator — inherits the shell's Aurora tokens (theme-aware). */
+.hlApp {
+  --hl-pi: var(--teal, #0f766e);
+  --hl-tax: #2563eb;
+  --hl-ins: var(--brand, #4338ca);
+  --hl-pmi: var(--amber-bright, #f59e0b);
+  --hl-hoa: var(--muted, #64748b);
+  padding: 2px 22px 8px;
+  font-family: var(--font-body);
+  color: var(--text);
+}
+
+.hlDisclaimer {
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--surface-muted, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 14px;
+}
+
+.hlGrid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 16px; align-items: start; }
+@media (max-width: 820px) { .hlGrid { grid-template-columns: 1fr; } }
+
+.hlInputsCol, .hlResultsCol { display: flex; flex-direction: column; gap: 16px; }
+
+.hlCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 16px);
+  box-shadow: var(--shadow-sm);
+  padding: 18px;
+}
+.hlH3 { margin: 0 0 14px; font-size: 14.5px; font-weight: 800; letter-spacing: -0.01em; color: var(--text); }
+
+/* ── fields ── */
+.hlField { display: block; margin-bottom: 12px; }
+.hlField:last-child { margin-bottom: 0; }
+.hlLabel { display: block; font-size: 12.5px; font-weight: 650; color: var(--muted); margin-bottom: 6px; }
+.hlMuted { color: var(--faint, var(--muted)); font-weight: 600; }
+
+.hlInput {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--surface-muted, var(--bg));
+  border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 0 11px;
+  transition: border-color 0.15s ease;
+}
+.hlInput:focus-within { border-color: var(--brand); }
+.hlAffix { color: var(--muted); font-weight: 700; font-size: 14px; white-space: nowrap; }
+.hlInput input {
+  flex: 1; min-width: 0; border: none; background: transparent; color: var(--text);
+  font: inherit; font-size: 15.5px; font-weight: 700; padding: 9px 0; outline: none;
+  font-variant-numeric: tabular-nums;
+}
+.hlInput input::-webkit-outer-spin-button, .hlInput input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.hlInput input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+.hlRow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hlRow3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.hlRow .hlField, .hlRow3 .hlField { margin-bottom: 12px; }
+
+.hlSub { margin-top: 4px; padding: 12px; border: 1px dashed var(--border); border-radius: 12px; background: var(--surface-muted, transparent); }
+.hlNote { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+
+.hlPresets { display: flex; gap: 6px; margin: -4px 0 12px; }
+.hlChip { border: 1.5px solid var(--border); background: transparent; color: var(--muted); border-radius: 8px; padding: 5px 11px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.hlChip:hover { color: var(--text); }
+.hlChipOn { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+/* ── segmented control ── */
+.hlSeg { display: flex; gap: 4px; background: var(--surface-muted, var(--bg)); border: 1px solid var(--border); border-radius: 11px; padding: 4px; margin-bottom: 14px; }
+.hlSeg2 { margin-top: 4px; }
+.hlSegBtn { flex: 1; border: none; background: transparent; color: var(--muted); border-radius: 8px; padding: 8px 6px; font-size: 13px; font-weight: 750; cursor: pointer; }
+.hlSegBtn:hover { color: var(--text); }
+.hlSegOn { background: var(--surface); color: var(--brand); box-shadow: var(--shadow-sm); }
+
+/* ── hero ── */
+.hlHero { display: flex; flex-direction: column; gap: 3px; }
+.hlHeroValue { font-size: 34px; font-weight: 900; letter-spacing: -0.03em; color: var(--brand); line-height: 1.05; font-variant-numeric: tabular-nums; }
+.hlBreak { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+.hlBreak i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
+.hlDotP { background: var(--hl-pi); } .hlDotT { background: var(--hl-tax); } .hlDotI2 { background: var(--hl-ins); }
+.hlDotM { background: var(--hl-pmi); } .hlDotH { background: var(--hl-hoa); }
+
+/* ── summary ── */
+.hlSummary { display: flex; flex-direction: column; gap: 9px; }
+.hlKV { display: flex; justify-content: space-between; align-items: baseline; font-size: 13.5px; color: var(--muted); }
+.hlKV b { color: var(--text); font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; }
+.hlInterest { color: var(--hl-pmi); }
+.hlSaved { color: var(--success, #16a34a); font-weight: 700; font-size: 12px; }
+
+.hlSplitBar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--surface-muted, var(--bg)); margin-top: 6px; }
+.hlSplitP { background: var(--hl-pi); } .hlSplitI { background: var(--hl-pmi); }
+.hlSplitLegend { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--muted); }
+
+/* ── qualification ── */
+.hlQual { border-left: 4px solid var(--border); }
+.hlQual.hlPass { border-left-color: var(--success, #16a34a); }
+.hlQual.hlFail { border-left-color: var(--danger, #dc2626); }
+.hlQualTop { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hlQualValue { font-size: 26px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.hlBadge { margin-left: auto; font-size: 11px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; }
+.hlBadge.ok { color: var(--success, #16a34a); background: var(--success-bg, rgba(22,163,74,.12)); }
+.hlBadge.no { color: var(--danger, #dc2626); background: var(--danger-bg, rgba(220,38,38,.12)); }
+
+.hlToggle { align-self: flex-start; border: 1.5px solid var(--border-strong, var(--border)); background: transparent; color: var(--text); border-radius: 11px; padding: 9px 15px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.hlToggle:hover { background: var(--surface-muted, var(--bg)); }
+
+/* ── amortization table ── */
+.hlTableCard { margin-top: 16px; padding: 0; overflow: hidden; }
+.hlTableScroll { overflow-x: auto; }
+.hlTable { width: 100%; border-collapse: collapse; font-size: 13px; }
+.hlTable th { text-align: left; padding: 11px 16px; font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--faint, var(--muted)); font-weight: 700; border-bottom: 1px solid var(--border); background: var(--surface-muted, transparent); }
+.hlTable td { padding: 10px 16px; border-bottom: 1px solid var(--border); color: var(--text); font-variant-numeric: tabular-nums; }
+.hlTable tbody tr:last-child td { border-bottom: none; }
+.hlR { text-align: right; }
