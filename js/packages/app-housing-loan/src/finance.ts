@@ -209,8 +209,12 @@ export function computeApr(inp: LoanInputs, am: Amortization): number {
   const pv = (monthlyRate: number) =>
     flows.reduce((acc, pay, i) => acc + pay / (1 + monthlyRate) ** (i + 1), 0);
 
-  let lo = 0, hi = 1; // monthly-rate search bounds: 0..1.0 (0%..100% per month)
-  for (let i = 0; i < 80; i++) {
+  // pv decreases as the monthly rate rises. Grow the upper bound until pv(hi)
+  // brackets net (needed when heavy prepaid charges make net small), capped to
+  // avoid a runaway; then bisect.
+  let lo = 0, hi = 1;
+  while (pv(hi) > net && hi < 1e4) hi *= 2;
+  for (let i = 0; i < 100; i++) {
     const mid = (lo + hi) / 2;
     if (pv(mid) > net) lo = mid;
     else hi = mid;
