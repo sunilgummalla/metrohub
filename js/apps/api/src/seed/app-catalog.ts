@@ -128,4 +128,14 @@ export const APP_CATALOG: AppCatalogEntry[] = [
     icon: "📍",
     tile: { title: "Near By", description: "Discover nearby places to visit." },
   },
+  {
+    id: "raffle",
+    packageName: "@metrohub/raffle",
+    folder: "app-raffle",
+    displayName: "Raffle",
+    category: "Scoreboards",
+    route: "/apps/raffle",
+    icon: "🎟️",
+    tile: { title: "Raffle", description: "Run a raffle — add entrants and draw a random winner." },
+  },
 ];

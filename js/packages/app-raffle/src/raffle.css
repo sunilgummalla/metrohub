@@ -1,0 +1,98 @@
+/* Raffle — inherits the shell's Aurora tokens (theme-aware). */
+.rfApp { padding: 4px 22px 8px; font-family: var(--font-body); color: var(--text); }
+
+.rfGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 820px) { .rfGrid { grid-template-columns: 1fr; } }
+.rfCol { display: flex; flex-direction: column; gap: 16px; }
+
+.rfCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 16px);
+  box-shadow: var(--shadow-sm);
+  padding: 18px;
+}
+.rfH3 { margin: 0; font-size: 14.5px; font-weight: 800; letter-spacing: -0.01em; color: var(--text); }
+.rfPh { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+.rfPhr { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+
+/* ── inputs ── */
+.rfField { display: block; margin-bottom: 12px; }
+.rfField:last-child { margin-bottom: 0; }
+.rfLabel { display: block; font-size: 12.5px; font-weight: 650; color: var(--muted); margin-bottom: 6px; }
+.rfInput {
+  width: 100%; border: 1.5px solid var(--border); background: var(--surface-muted, var(--bg));
+  color: var(--text); font: inherit; font-size: 15px; font-weight: 600;
+  border-radius: 10px; padding: 10px 12px; outline: none; transition: border-color 0.15s ease;
+}
+.rfInput:focus { border-color: var(--brand); }
+
+.rfAdd { display: flex; gap: 8px; margin-bottom: 14px; }
+.rfAddName { flex: 1; min-width: 0; }
+.rfTicketBox { position: relative; width: 92px; flex: none; }
+.rfAddTickets { width: 100%; padding-right: 30px; font-variant-numeric: tabular-nums; }
+.rfAddTickets::-webkit-outer-spin-button, .rfAddTickets::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.rfAddTickets[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+.rfTix { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); font-size: 13px; pointer-events: none; }
+
+.rfBtn { border: 1.5px solid var(--border-strong, var(--border)); background: transparent; color: var(--text); border-radius: 10px; padding: 10px 16px; font-size: 14px; font-weight: 750; cursor: pointer; }
+.rfBtn:hover { background: var(--surface-muted, var(--bg)); }
+.rfBtnFill { background: var(--brand); border-color: var(--brand); color: #fff; }
+.rfBtnFill:hover { background: var(--brand-dark, var(--brand)); color: #fff; }
+
+.rfEmpty { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.rfLink { margin-top: 12px; border: none; background: none; color: var(--muted); font: inherit; font-size: 12.5px; font-weight: 650; cursor: pointer; text-decoration: underline; padding: 0; }
+.rfLink:hover { color: var(--text); }
+
+/* ── entrant list ── */
+.rfList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.rfRow { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 12px; padding: 9px 2px; border-bottom: 1px solid var(--border); }
+.rfRow:last-child { border-bottom: none; }
+.rfName { font-weight: 700; font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.rfWon .rfName { color: var(--muted); }
+.rfWonTag { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--success, #16a34a); background: var(--success-bg, rgba(22,163,74,.12)); border-radius: 999px; padding: 2px 7px; }
+.rfOdds { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rfTickets { font-size: 13px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rfX { border: none; background: none; color: var(--faint, var(--muted)); font-size: 20px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.rfX:hover { color: var(--danger, #dc2626); }
+
+/* ── draw stage ── */
+.rfStage { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;
+  background: var(--surface); /* fallback if color-mix is unsupported */
+  background: linear-gradient(160deg, color-mix(in srgb, var(--brand) 10%, var(--surface)), var(--surface)); }
+.rfStageTitle { font-size: 13px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
+.rfReveal {
+  width: 100%; min-height: 128px; border-radius: 14px;
+  background: var(--surface-muted, var(--bg)); border: 1px dashed var(--border);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 16px;
+}
+.rfPlaceholder { color: var(--faint, var(--muted)); font-size: 15px; font-weight: 600; }
+.rfRollName { font-size: 26px; font-weight: 800; color: var(--muted); letter-spacing: -0.01em; animation: rfFlic 0.08s steps(1) infinite; }
+.rfRolling { border-style: solid; border-color: var(--brand); }
+.rfWinner { border-style: solid; border-color: var(--success, #16a34a); background: var(--success-bg, rgba(22,163,74,.10)); animation: rfPop 0.35s ease; }
+.rfConfetti { font-size: 26px; }
+.rfWinnerName { font-size: 30px; font-weight: 900; letter-spacing: -0.02em; color: var(--text); line-height: 1.1; }
+.rfWinnerPrize { font-size: 14px; color: var(--muted); font-weight: 600; }
+
+.rfDraw { width: 100%; background: var(--brand); border-color: var(--brand); color: #fff; font-size: 16px; padding: 13px; border-radius: 12px; }
+.rfDraw:hover:not(:disabled) { background: var(--brand-dark, var(--brand)); }
+.rfDraw:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.rfCheck { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); font-weight: 600; cursor: pointer; }
+.rfCheck input { width: 16px; height: 16px; accent-color: var(--brand); }
+.rfPoolNote { font-size: 12px; color: var(--faint, var(--muted)); }
+
+/* ── winners ── */
+.rfWinners { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.rfWinnerRow { display: flex; align-items: center; gap: 11px; padding: 9px 2px; border-bottom: 1px solid var(--border); }
+.rfWinnerRow:last-child { border-bottom: none; }
+.rfMedal { font-size: 17px; }
+.rfWinnerRowName { font-weight: 700; font-size: 14px; color: var(--text); }
+.rfWinnerRowPrize { margin-left: auto; font-size: 12.5px; color: var(--muted); }
+
+@keyframes rfPop { 0% { transform: scale(0.94); } 60% { transform: scale(1.03); } 100% { transform: scale(1); } }
+@keyframes rfFlic { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) {
+  .rfRollName { animation: none; }
+  .rfWinner { animation: none; }
+}
