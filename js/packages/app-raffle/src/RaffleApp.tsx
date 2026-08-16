@@ -126,10 +126,13 @@ export function RaffleApp() {
   }
 
   function draw() {
-    if (drawing || pool.length === 0) return;
+    // Ref-based re-entry guard (set synchronously) — `drawing` state is async,
+    // so it can't stop a rapid double-click from starting a second interval.
+    if (rollTimer.current !== null || pool.length === 0) return;
     const w = weightedPick(pool);
     if (!w) return;
     const commit = () => {
+      if (rollTimer.current !== null) { window.clearInterval(rollTimer.current); rollTimer.current = null; }
       const winner: Winner = { name: w.name, prize: prize.trim() || "Prize" };
       setRolling(null);
       setDrawing(false);
@@ -137,17 +140,17 @@ export function RaffleApp() {
       setWinners((ws) => [winner, ...ws]);
     };
     // Respect reduced motion: skip the rolling animation and reveal immediately.
-    const reduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // (Guard matchMedia — it can be undefined in non-browser environments.)
+    const reduced =
+      typeof window !== "undefined" && typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) { setLatest(null); commit(); return; }
     setLatest(null);
     setDrawing(true);
     let ticks = 0;
     rollTimer.current = window.setInterval(() => {
       setRolling(pool[Math.floor(Math.random() * pool.length)].name);
-      if (++ticks >= 16) {
-        if (rollTimer.current) window.clearInterval(rollTimer.current);
-        commit();
-      }
+      if (++ticks >= 16) commit();
     }, 80);
   }
 
