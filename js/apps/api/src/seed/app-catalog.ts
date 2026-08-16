@@ -79,6 +79,16 @@ export const APP_CATALOG: AppCatalogEntry[] = [
     tile: { title: "My Accounts", description: "Review personal account information." },
   },
   {
+    id: "housing-loan",
+    packageName: "@metrohub/housing-loan",
+    folder: "app-housing-loan",
+    displayName: "Housing Loan Calculator",
+    category: "Accounting",
+    route: "/apps/housing-loan",
+    icon: "🏡",
+    tile: { title: "Housing Loan Calculator", description: "Estimate mortgage payments, interest, and amortization." },
+  },
+  {
     id: "deals",
     packageName: "@metrohub/deals",
     folder: "app-deals",

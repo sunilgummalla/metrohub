@@ -1,0 +1,188 @@
+/* Housing loan calculator — inherits the shell's Aurora tokens (theme-aware). */
+.hlApp {
+  --hl-principal: var(--teal, #0f766e);
+  --hl-interest: var(--amber-bright, #f59e0b);
+  padding: 4px 22px 8px;
+  font-family: var(--font-body);
+  color: var(--text);
+}
+
+.hlGrid {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 18px;
+}
+@media (max-width: 760px) {
+  .hlGrid { grid-template-columns: 1fr; }
+}
+
+.hlCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 16px);
+  box-shadow: var(--shadow-sm);
+  padding: 22px;
+}
+
+.hlH2 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+/* ── Inputs ── */
+.hlField { display: block; margin-bottom: 16px; }
+.hlLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--muted);
+  margin-bottom: 7px;
+}
+.hlMuted { color: var(--faint, var(--muted)); font-weight: 600; }
+
+.hlMoneyInput {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-muted, var(--bg));
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  padding: 0 12px;
+  transition: border-color 0.15s ease;
+}
+.hlMoneyInput:focus-within { border-color: var(--brand); }
+.hlPrefix, .hlSuffix { color: var(--muted); font-weight: 700; font-size: 15px; }
+.hlMoneyInput input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 750;
+  padding: 11px 0;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+/* Hide number spinners for a cleaner look */
+.hlMoneyInput input::-webkit-outer-spin-button,
+.hlMoneyInput input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.hlMoneyInput input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+.hlRow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hlRow .hlField { margin-bottom: 16px; }
+
+.hlPresets { display: flex; gap: 6px; margin-top: 8px; }
+.hlChip {
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 9px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hlChip:hover { border-color: var(--border-strong, var(--brand)); color: var(--text); }
+.hlChipOn { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+.hlLoanLine {
+  margin: 4px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.hlLoanLine b { color: var(--text); font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* ── Results ── */
+.hlResults { display: flex; flex-direction: column; gap: 18px; }
+.hlPayment { display: flex; flex-direction: column; gap: 2px; }
+.hlPaymentValue {
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--brand);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.hlStats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hlStat {
+  background: var(--surface-muted, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.hlStatLabel { font-size: 12px; color: var(--muted); font-weight: 600; }
+.hlStatValue { font-size: 19px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.hlInterest { color: var(--hl-interest); }
+
+.hlSplit { display: flex; flex-direction: column; gap: 9px; }
+.hlSplitBar {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-muted, var(--bg));
+}
+.hlSplitPrincipal { background: var(--hl-principal); }
+.hlSplitInterest { background: var(--hl-interest); }
+.hlSplitLegend {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+.hlSplitLegend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 6px; }
+.hlDotP { background: var(--hl-principal); }
+.hlDotI { background: var(--hl-interest); }
+
+.hlToggle {
+  align-self: flex-start;
+  border: 1.5px solid var(--border-strong, var(--border));
+  background: transparent;
+  color: var(--text);
+  border-radius: 11px;
+  padding: 9px 15px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hlToggle:hover { background: var(--surface-muted, var(--bg)); }
+
+/* ── Amortization table ── */
+.hlTableCard { margin-top: 18px; padding: 0; overflow: hidden; }
+.hlTableScroll { overflow-x: auto; }
+.hlTable { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.hlTable th {
+  text-align: left;
+  padding: 12px 18px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--faint, var(--muted));
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-muted, transparent);
+}
+.hlTable td {
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.hlTable tbody tr:last-child td { border-bottom: none; }
+.hlR { text-align: right; }
