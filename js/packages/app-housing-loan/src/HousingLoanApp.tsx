@@ -230,7 +230,7 @@ export function HousingLoanApp() {
               <>
                 <div className="hlRow">
                   <Field label="Expected rent" prefix="$" suffix="/mo" step={100} value={rent} onChange={setRent} />
-                  <Field label="Expenses/vacancy" suffix="%" step={1} value={expensePct} onChange={setExpensePct} />
+                  <Field label="Expenses/vacancy" suffix="%" step={1} min={0} max={100} value={expensePct} onChange={setExpensePct} />
                 </div>
                 <Field label="DSCR minimum" step={0.05} value={dscrMin} onChange={setDscrMin} hint="lender threshold" />
               </>

@@ -214,6 +214,7 @@ export function computeApr(inp: LoanInputs, am: Amortization): number {
   // avoid a runaway; then bisect.
   let lo = 0, hi = 1;
   while (pv(hi) > net && hi < 1e4) hi *= 2;
+  if (pv(hi) > net) return hi * 12 * 100; // net ≈ 0 — root beyond the cap; return it
   for (let i = 0; i < 100; i++) {
     const mid = (lo + hi) / 2;
     if (pv(mid) > net) lo = mid;
