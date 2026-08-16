@@ -159,12 +159,15 @@ export function amortize(inp: LoanInputs): Amortization {
     // level payment); keep rows consistent (payment === principal + interest).
     const paidPI = principal + interest;
 
-    const pmi = balance > pmiDropBalance ? pmiMonthly : 0;
-    if (pmi === 0 && pmiMonthly > 0 && out.pmiEndsMonth === null && balance <= pmiDropBalance) {
+    const endBalance = Math.max(0, balance - principal - extra);
+    // PMI drops once equity reaches 20% — decide on the END-of-month balance so
+    // it isn't charged in the month the balance crosses ≤ 80% LTV.
+    const pmi = endBalance > pmiDropBalance ? pmiMonthly : 0;
+    if (pmi === 0 && pmiMonthly > 0 && out.pmiEndsMonth === null && endBalance <= pmiDropBalance) {
       out.pmiEndsMonth = m;
     }
 
-    balance = Math.max(0, balance - principal - extra);
+    balance = endBalance;
 
     if (m === 1) out.firstPI = payment; // scheduled level payment (for display)
     out.maxPI = Math.max(out.maxPI, payment);

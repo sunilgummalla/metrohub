@@ -33,7 +33,7 @@ function Field(props: {
         {prefix && <span className="hlAffix">{prefix}</span>}
         <input
           type="number" value={value} step={step} min={min} max={max}
-          onChange={(e) => { const n = Number(e.target.value); onChange(Number.isFinite(n) ? Math.max(min, max != null ? Math.min(max, n) : n) : 0); }}
+          onChange={(e) => { const n = Number(e.target.value); onChange(Number.isFinite(n) ? Math.max(min, max != null ? Math.min(max, n) : n) : min); }}
           aria-label={label}
         />
         {suffix && <span className="hlAffix">{suffix}</span>}
