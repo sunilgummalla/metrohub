@@ -1,216 +1,317 @@
 import { useMemo, useState } from "react";
+import {
+  amortize, computeApr, monthlyEscrow, pointsBreakeven,
+  type LoanInputs, type Occupancy, type LoanType,
+} from "./finance";
 import "./housing-loan.css";
 
 const money = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(
-    Number.isFinite(n) ? n : 0,
-  );
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(Number.isFinite(n) ? n : 0);
 const money2 = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(
-    Number.isFinite(n) ? n : 0,
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(Number.isFinite(n) ? n : 0);
+const pct = (n: number, d = 1) => `${(Number.isFinite(n) ? n : 0).toFixed(d)}%`;
+
+/** Illustrative, editable per-occupancy defaults (not financial advice). */
+const OCC: Record<Occupancy, { label: string; minDownPct: number; rateAdjPct: number; pmi: boolean }> = {
+  primary: { label: "Primary", minDownPct: 5, rateAdjPct: 0, pmi: true },
+  secondary: { label: "Secondary", minDownPct: 10, rateAdjPct: 0.375, pmi: true },
+  vacation: { label: "Vacation", minDownPct: 10, rateAdjPct: 0.375, pmi: true },
+  investment: { label: "Investment", minDownPct: 20, rateAdjPct: 0.75, pmi: false },
+};
+
+// ── small field helpers ──────────────────────────────────────────────────────
+function Field(props: {
+  label: string; value: number; onChange: (n: number) => void;
+  prefix?: string; suffix?: string; step?: number; min?: number; max?: number; hint?: string;
+}) {
+  const { label, value, onChange, prefix, suffix, step = 1, min = 0, max, hint } = props;
+  return (
+    <label className="hlField">
+      <span className="hlLabel">{label}{hint && <span className="hlMuted"> · {hint}</span>}</span>
+      <div className="hlInput">
+        {prefix && <span className="hlAffix">{prefix}</span>}
+        <input
+          type="number" value={value} step={step} min={min} max={max}
+          onChange={(e) => { const n = Number(e.target.value); onChange(Number.isFinite(n) ? Math.max(min, max != null ? Math.min(max, n) : n) : 0); }}
+          aria-label={label}
+        />
+        {suffix && <span className="hlAffix">{suffix}</span>}
+      </div>
+    </label>
   );
-
-interface YearRow {
-  year: number;
-  principal: number;
-  interest: number;
-  balance: number;
 }
-
-interface Result {
-  loanAmount: number;
-  monthly: number;
-  totalInterest: number;
-  totalPaid: number;
-  schedule: YearRow[];
-}
-
-/** Standard amortized-loan math. Returns per-year aggregates and totals. */
-function compute(loanAmount: number, annualRatePct: number, years: number): Result {
-  const n = Math.max(0, Math.round(years * 12));
-  const r = annualRatePct / 100 / 12;
-  const empty: Result = { loanAmount, monthly: 0, totalInterest: 0, totalPaid: 0, schedule: [] };
-  if (loanAmount <= 0 || n === 0) return empty;
-
-  const monthly = r === 0 ? loanAmount / n : (loanAmount * r * (1 + r) ** n) / ((1 + r) ** n - 1);
-  if (!Number.isFinite(monthly)) return empty;
-
-  const schedule: YearRow[] = [];
-  let balance = loanAmount;
-  let yearPrincipal = 0;
-  let yearInterest = 0;
-  let totalInterest = 0;
-
-  for (let m = 1; m <= n; m++) {
-    const interest = balance * r;
-    let principal = monthly - interest;
-    if (principal > balance) principal = balance; // final payment
-    balance = Math.max(0, balance - principal);
-    yearPrincipal += principal;
-    yearInterest += interest;
-    totalInterest += interest;
-    if (m % 12 === 0 || m === n) {
-      schedule.push({ year: Math.ceil(m / 12), principal: yearPrincipal, interest: yearInterest, balance });
-      yearPrincipal = 0;
-      yearInterest = 0;
-    }
-  }
-
-  return { loanAmount, monthly, totalInterest, totalPaid: loanAmount + totalInterest, schedule };
-}
-
-const DOWN_PRESETS = [5, 10, 20];
 
 export function HousingLoanApp() {
+  const [occ, setOcc] = useState<Occupancy>("primary");
   const [price, setPrice] = useState(450000);
   const [down, setDown] = useState(90000);
-  const [rate, setRate] = useState(6.5);
   const [years, setYears] = useState(30);
+
+  const [loanType, setLoanType] = useState<LoanType>("fixed");
+  const [rate, setRate] = useState(6.5);
+  const [occRateAdj, setOccRateAdj] = useState(0);
+
+  // ARM
+  const [introYears, setIntroYears] = useState(5);
+  const [adjEvery, setAdjEvery] = useState(1);
+  const [indexPct, setIndexPct] = useState(4.5);
+  const [marginPct, setMarginPct] = useState(2.75);
+  const [capInitial, setCapInitial] = useState(2);
+  const [capPeriodic, setCapPeriodic] = useState(1);
+  const [capLifetime, setCapLifetime] = useState(5);
+
+  // PITI
+  const [taxPct, setTaxPct] = useState(1.1);
+  const [insAnnual, setInsAnnual] = useState(1800);
+  const [hoa, setHoa] = useState(0);
+  const [pmiPct, setPmiPct] = useState(0.6);
+
+  // Extra + costs
+  const [extra, setExtra] = useState(0);
+  const [oneTime, setOneTime] = useState(0);
+  const [points, setPoints] = useState(0);
+  const [closing, setClosing] = useState(6000);
+  const [rateNoPoints, setRateNoPoints] = useState(0);
+
+  // Qualification
+  const [income, setIncome] = useState(11000);
+  const [otherDebts, setOtherDebts] = useState(600);
+  const [dtiCap, setDtiCap] = useState(43);
+  const [rent, setRent] = useState(3200);
+  const [expensePct, setExpensePct] = useState(25);
+  const [dscrMin, setDscrMin] = useState(1.2);
+
   const [showTable, setShowTable] = useState(false);
+
+  const chooseOcc = (o: Occupancy) => {
+    setOcc(o);
+    setOccRateAdj(OCC[o].rateAdjPct);
+    const minDown = Math.round((price * OCC[o].minDownPct) / 100);
+    setDown((d) => Math.max(d, minDown));
+  };
 
   const loanAmount = Math.max(0, price - down);
   const downPct = price > 0 ? (down / price) * 100 : 0;
+  const pmiApplies = OCC[occ].pmi && downPct < 20;
+  const isInvestment = occ === "investment";
 
-  const result = useMemo(() => compute(loanAmount, rate, years), [loanAmount, rate, years]);
-  const principalShare = result.totalPaid > 0 ? (result.loanAmount / result.totalPaid) * 100 : 0;
+  const inp: LoanInputs = {
+    homePrice: price, downPayment: down, termYears: years,
+    loanType, baseRatePct: rate, occupancyRateAdjPct: occRateAdj,
+    arm: { introYears, adjustEveryYears: adjEvery, indexPct, marginPct, capInitialPct: capInitial, capPeriodicPct: capPeriodic, capLifetimePct: capLifetime },
+    propertyTaxAnnualPct: taxPct, insuranceAnnual: insAnnual, hoaMonthly: hoa, pmiAnnualPct: pmiPct, pmiApplies,
+    extraMonthly: extra, oneTimeExtra: oneTime, pointsPct: points, closingCosts: closing,
+  };
 
-  const setDownByPct = (pct: number) => setDown(Math.round((price * pct) / 100));
+  const am = useMemo(() => amortize(inp), [price, down, years, loanType, rate, occRateAdj, introYears, adjEvery, indexPct, marginPct, capInitial, capPeriodic, capLifetime, taxPct, insAnnual, hoa, pmiPct, pmiApplies, extra, oneTime]);
+  const apr = useMemo(() => computeApr(inp, am), [am, points, closing]);
+
+  const firstPmi = am.months[0]?.pmi ?? 0;
+  const esc = monthlyEscrow(inp, firstPmi);
+  const totalMonthly = am.firstPI + esc.tax + esc.insurance + esc.hoa + esc.pmi;
+  const cashToClose = down + (points / 100) * loanAmount + closing;
+  const principalShare = am.totalInterest + loanAmount > 0 ? (loanAmount / (loanAmount + am.totalInterest)) * 100 : 0;
+
+  // break-even for points (needs the alternative no-points rate)
+  const be = useMemo(() => {
+    if (rateNoPoints <= 0) return null;
+    const noPts = amortize({ ...inp, baseRatePct: rateNoPoints, pointsPct: 0 });
+    return pointsBreakeven(am.firstPI, noPts.firstPI, (points / 100) * loanAmount);
+  }, [rateNoPoints, am.firstPI, points, loanAmount]);
+
+  // qualification
+  const dtiBack = income > 0 ? ((totalMonthly + otherDebts) / income) * 100 : 0;
+  const dtiFront = income > 0 ? (totalMonthly / income) * 100 : 0;
+  const dtiPass = dtiBack <= dtiCap;
+  const effRent = rent * (1 - expensePct / 100);
+  const dscr = totalMonthly > 0 ? effRent / totalMonthly : 0;
+  const dscrPass = dscr >= dscrMin;
 
   return (
     <div className="hlApp">
+      <div className="hlDisclaimer">Estimates for illustration only — not financial advice. Every value is editable.</div>
+
       <div className="hlGrid">
-        {/* ── Inputs ── */}
-        <section className="hlCard hlInputs" aria-label="Loan inputs">
-          <h2 className="hlH2">Loan details</h2>
-
-          <label className="hlField">
-            <span className="hlLabel">Home price</span>
-            <div className="hlMoneyInput">
-              <span className="hlPrefix">$</span>
-              <input
-                type="number" min={0} step={5000} value={price}
-                onChange={(e) => setPrice(Math.max(0, Number(e.target.value)))}
-                aria-label="Home price"
-              />
-            </div>
-          </label>
-
-          <label className="hlField">
-            <span className="hlLabel">
-              Down payment <span className="hlMuted">· {downPct.toFixed(1)}%</span>
-            </span>
-            <div className="hlMoneyInput">
-              <span className="hlPrefix">$</span>
-              <input
-                type="number" min={0} max={price} step={5000} value={down}
-                onChange={(e) => setDown(Math.min(price, Math.max(0, Number(e.target.value))))}
-                aria-label="Down payment"
-              />
-            </div>
-            <div className="hlPresets">
-              {DOWN_PRESETS.map((p) => (
-                <button
-                  key={p} type="button"
-                  className={`hlChip ${Math.round(downPct) === p ? "hlChipOn" : ""}`}
-                  onClick={() => setDownByPct(p)}
-                >
-                  {p}%
+        {/* ══ LEFT: inputs ══ */}
+        <div className="hlInputsCol">
+          {/* Property & loan */}
+          <section className="hlCard">
+            <h3 className="hlH3">Property &amp; loan</h3>
+            <div className="hlSeg" role="tablist" aria-label="Occupancy">
+              {(Object.keys(OCC) as Occupancy[]).map((o) => (
+                <button key={o} type="button" role="tab" aria-selected={occ === o}
+                  className={`hlSegBtn ${occ === o ? "hlSegOn" : ""}`} onClick={() => chooseOcc(o)}>
+                  {OCC[o].label}
                 </button>
               ))}
             </div>
-          </label>
-
-          <div className="hlRow">
-            <label className="hlField">
-              <span className="hlLabel">Interest rate</span>
-              <div className="hlMoneyInput">
-                <input
-                  type="number" min={0} max={30} step={0.05} value={rate}
-                  onChange={(e) => setRate(Math.max(0, Number(e.target.value)))}
-                  aria-label="Annual interest rate"
-                />
-                <span className="hlSuffix">%</span>
-              </div>
-            </label>
-
-            <label className="hlField">
-              <span className="hlLabel">Term</span>
-              <div className="hlMoneyInput">
-                <input
-                  type="number" min={1} max={40} step={1} value={years}
-                  onChange={(e) => setYears(Math.max(1, Math.round(Number(e.target.value))))}
-                  aria-label="Loan term in years"
-                />
-                <span className="hlSuffix">yrs</span>
-              </div>
-            </label>
-          </div>
-
-          <p className="hlLoanLine">
-            Loan amount <b>{money(loanAmount)}</b>
-          </p>
-        </section>
-
-        {/* ── Results ── */}
-        <section className="hlCard hlResults" aria-label="Results">
-          <div className="hlPayment">
-            <span className="hlLabel">Monthly payment</span>
-            <span className="hlPaymentValue">{money2(result.monthly)}</span>
-            <span className="hlMuted">principal &amp; interest</span>
-          </div>
-
-          <div className="hlStats">
-            <div className="hlStat">
-              <span className="hlStatLabel">Total interest</span>
-              <span className="hlStatValue hlInterest">{money(result.totalInterest)}</span>
+            <Field label="Home price" prefix="$" step={5000} value={price} onChange={setPrice} />
+            <Field label="Down payment" prefix="$" step={5000} max={price} value={down} onChange={setDown}
+              hint={`${pct(downPct)} · min ${OCC[occ].minDownPct}%`} />
+            <div className="hlPresets">
+              {[OCC[occ].minDownPct, 10, 20].filter((v, i, a) => a.indexOf(v) === i).map((p) => (
+                <button key={p} type="button" className={`hlChip ${Math.round(downPct) === p ? "hlChipOn" : ""}`}
+                  onClick={() => setDown(Math.round((price * p) / 100))}>{p}%</button>
+              ))}
             </div>
-            <div className="hlStat">
-              <span className="hlStatLabel">Total of payments</span>
-              <span className="hlStatValue">{money(result.totalPaid)}</span>
-            </div>
-          </div>
 
-          {result.totalPaid > 0 && (
-            <div className="hlSplit" aria-hidden="true">
-              <div className="hlSplitBar">
-                <span className="hlSplitPrincipal" style={{ width: `${principalShare}%` }} />
-                <span className="hlSplitInterest" style={{ width: `${100 - principalShare}%` }} />
-              </div>
-              <div className="hlSplitLegend">
-                <span><i className="hlDotP" /> Principal {money(result.loanAmount)}</span>
-                <span><i className="hlDotI" /> Interest {money(result.totalInterest)}</span>
-              </div>
+            <div className="hlSeg hlSeg2">
+              <button type="button" className={`hlSegBtn ${loanType === "fixed" ? "hlSegOn" : ""}`} onClick={() => setLoanType("fixed")}>Fixed-rate</button>
+              <button type="button" className={`hlSegBtn ${loanType === "arm" ? "hlSegOn" : ""}`} onClick={() => setLoanType("arm")}>ARM</button>
             </div>
-          )}
+            <div className="hlRow">
+              <Field label={loanType === "arm" ? "Intro rate" : "Interest rate"} suffix="%" step={0.05} value={rate} onChange={setRate} />
+              <Field label="Occupancy rate adj." suffix="%" step={0.125} value={occRateAdj} onChange={setOccRateAdj} hint="pricing add-on" />
+            </div>
+            <Field label="Term" suffix="yrs" step={1} min={1} max={40} value={years} onChange={(n) => setYears(Math.round(n))} />
 
-          <button
-            type="button" className="hlToggle"
-            onClick={() => setShowTable((s) => !s)}
-            aria-expanded={showTable}
-          >
+            {loanType === "arm" && (
+              <div className="hlSub">
+                <div className="hlRow">
+                  <Field label="Intro period" suffix="yrs" value={introYears} onChange={(n) => setIntroYears(Math.round(n))} min={1} />
+                  <Field label="Adjusts every" suffix="yrs" value={adjEvery} onChange={(n) => setAdjEvery(Math.round(n))} min={1} />
+                </div>
+                <div className="hlRow">
+                  <Field label="Index" suffix="%" step={0.05} value={indexPct} onChange={setIndexPct} />
+                  <Field label="Margin" suffix="%" step={0.05} value={marginPct} onChange={setMarginPct} />
+                </div>
+                <div className="hlRow3">
+                  <Field label="Cap: initial" suffix="%" step={0.5} value={capInitial} onChange={setCapInitial} />
+                  <Field label="periodic" suffix="%" step={0.5} value={capPeriodic} onChange={setCapPeriodic} />
+                  <Field label="lifetime" suffix="%" step={0.5} value={capLifetime} onChange={setCapLifetime} />
+                </div>
+                <p className="hlNote">Fully-indexed ≈ {pct(indexPct + marginPct, 2)} · caps limit each move.</p>
+              </div>
+            )}
+          </section>
+
+          {/* Monthly costs */}
+          <section className="hlCard">
+            <h3 className="hlH3">Monthly costs</h3>
+            <div className="hlRow">
+              <Field label="Property tax" suffix="%/yr" step={0.05} value={taxPct} onChange={setTaxPct} />
+              <Field label="Home insurance" prefix="$" suffix="/yr" step={100} value={insAnnual} onChange={setInsAnnual} />
+            </div>
+            <div className="hlRow">
+              <Field label="HOA" prefix="$" suffix="/mo" step={25} value={hoa} onChange={setHoa} />
+              <Field label="PMI rate" suffix="%/yr" step={0.05} value={pmiPct} onChange={setPmiPct} hint={pmiApplies ? "applies" : "n/a"} />
+            </div>
+          </section>
+
+          {/* Extra + costs */}
+          <section className="hlCard">
+            <h3 className="hlH3">Extra payments &amp; closing</h3>
+            <div className="hlRow">
+              <Field label="Extra / month" prefix="$" step={50} value={extra} onChange={setExtra} />
+              <Field label="One-time extra" prefix="$" step={1000} value={oneTime} onChange={setOneTime} />
+            </div>
+            <div className="hlRow">
+              <Field label="Discount points" suffix="%" step={0.25} value={points} onChange={setPoints} />
+              <Field label="Closing costs" prefix="$" step={500} value={closing} onChange={setClosing} />
+            </div>
+            <Field label="Rate without points" suffix="%" step={0.05} value={rateNoPoints} onChange={setRateNoPoints} hint="optional · for break-even" />
+          </section>
+
+          {/* Qualification */}
+          <section className="hlCard">
+            <h3 className="hlH3">Qualification · {isInvestment ? "DSCR" : "DTI / DSR"}</h3>
+            {isInvestment ? (
+              <>
+                <div className="hlRow">
+                  <Field label="Expected rent" prefix="$" suffix="/mo" step={100} value={rent} onChange={setRent} />
+                  <Field label="Expenses/vacancy" suffix="%" step={1} value={expensePct} onChange={setExpensePct} />
+                </div>
+                <Field label="DSCR minimum" step={0.05} value={dscrMin} onChange={setDscrMin} hint="lender threshold" />
+              </>
+            ) : (
+              <>
+                <div className="hlRow">
+                  <Field label="Gross income" prefix="$" suffix="/mo" step={250} value={income} onChange={setIncome} />
+                  <Field label="Other debts" prefix="$" suffix="/mo" step={50} value={otherDebts} onChange={setOtherDebts} />
+                </div>
+                <Field label="Max DTI (back-end)" suffix="%" step={1} value={dtiCap} onChange={setDtiCap} hint="lender cap" />
+              </>
+            )}
+          </section>
+        </div>
+
+        {/* ══ RIGHT: results ══ */}
+        <div className="hlResultsCol">
+          <section className="hlCard hlHero">
+            <span className="hlLabel">Estimated total monthly (PITI)</span>
+            <span className="hlHeroValue">{money2(totalMonthly)}</span>
+            {loanType === "arm" && (
+              <span className="hlMuted">Intro P&amp;I {money(am.firstPI)} → max P&amp;I {money(am.maxPI)}</span>
+            )}
+            <div className="hlBreak">
+              <span><i className="hlDotP" /> P&amp;I {money(am.firstPI)}</span>
+              <span><i className="hlDotT" /> Tax {money(esc.tax)}</span>
+              <span><i className="hlDotI2" /> Ins {money(esc.insurance)}</span>
+              {esc.pmi > 0 && <span><i className="hlDotM" /> PMI {money(esc.pmi)}</span>}
+              {esc.hoa > 0 && <span><i className="hlDotH" /> HOA {money(esc.hoa)}</span>}
+            </div>
+          </section>
+
+          <section className="hlCard hlSummary">
+            <div className="hlKV"><span>Loan amount</span><b>{money(loanAmount)}</b></div>
+            <div className="hlKV"><span>Cash to close</span><b>{money(cashToClose)}</b></div>
+            <div className="hlKV"><span>Total interest</span><b className="hlInterest">{money(am.totalInterest)}</b></div>
+            <div className="hlKV"><span>Total of payments</span><b>{money(loanAmount + am.totalInterest + am.totalPmi)}</b></div>
+            <div className="hlKV"><span>Effective APR</span><b>{pct(apr, 3)}</b></div>
+            {(extra > 0 || oneTime > 0) && am.payoffMonths < years * 12 && (
+              <div className="hlKV"><span>Payoff</span><b>{(am.payoffMonths / 12).toFixed(1)} yrs <span className="hlSaved">({(years - am.payoffMonths / 12).toFixed(1)} yrs early)</span></b></div>
+            )}
+            {am.pmiEndsMonth && <div className="hlKV"><span>PMI drops</span><b>year {Math.ceil(am.pmiEndsMonth / 12)}</b></div>}
+            {be?.breakevenMonths != null && <div className="hlKV"><span>Points break-even</span><b>{Math.ceil(be.breakevenMonths)} mo</b></div>}
+
+            <div className="hlSplitBar" aria-hidden="true">
+              <span className="hlSplitP" style={{ width: `${principalShare}%` }} />
+              <span className="hlSplitI" style={{ width: `${100 - principalShare}%` }} />
+            </div>
+            <div className="hlSplitLegend"><span>Principal {money(loanAmount)}</span><span>Interest {money(am.totalInterest)}</span></div>
+          </section>
+
+          {/* Qualification result */}
+          <section className={`hlCard hlQual ${(isInvestment ? dscrPass : dtiPass) ? "hlPass" : "hlFail"}`}>
+            {isInvestment ? (
+              <>
+                <div className="hlQualTop">
+                  <span className="hlLabel">DSCR</span>
+                  <span className="hlQualValue">{dscr.toFixed(2)}×</span>
+                  <span className={`hlBadge ${dscrPass ? "ok" : "no"}`}>{dscrPass ? "Qualifies" : "Below min"}</span>
+                </div>
+                <p className="hlNote">Net rent {money(effRent)}/mo ÷ debt service {money(totalMonthly)}/mo · needs ≥ {dscrMin.toFixed(2)}×</p>
+              </>
+            ) : (
+              <>
+                <div className="hlQualTop">
+                  <span className="hlLabel">DTI (back-end)</span>
+                  <span className="hlQualValue">{pct(dtiBack)}</span>
+                  <span className={`hlBadge ${dtiPass ? "ok" : "no"}`}>{dtiPass ? "Within cap" : "Over cap"}</span>
+                </div>
+                <p className="hlNote">Housing {pct(dtiFront)} front-end · needs ≤ {dtiCap}% back-end</p>
+              </>
+            )}
+          </section>
+
+          <button type="button" className="hlToggle" onClick={() => setShowTable((s) => !s)} aria-expanded={showTable}>
             {showTable ? "Hide" : "Show"} amortization schedule
           </button>
-        </section>
+        </div>
       </div>
 
-      {showTable && result.schedule.length > 0 && (
-        <section className="hlCard hlTableCard" aria-label="Amortization schedule">
+      {showTable && am.schedule.length > 0 && (
+        <section className="hlCard hlTableCard">
           <div className="hlTableScroll">
             <table className="hlTable">
-              <thead>
-                <tr>
-                  <th>Year</th>
-                  <th className="hlR">Principal paid</th>
-                  <th className="hlR">Interest paid</th>
-                  <th className="hlR">Balance</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Year</th><th className="hlR">Principal</th><th className="hlR">Interest</th><th className="hlR">PMI</th><th className="hlR">Balance</th></tr></thead>
               <tbody>
-                {result.schedule.map((row) => (
+                {am.schedule.map((row) => (
                   <tr key={row.year}>
                     <td>{row.year}</td>
                     <td className="hlR">{money(row.principal)}</td>
                     <td className="hlR hlInterest">{money(row.interest)}</td>
+                    <td className="hlR">{row.pmi > 0 ? money(row.pmi) : "—"}</td>
                     <td className="hlR">{money(row.balance)}</td>
                   </tr>
                 ))}
