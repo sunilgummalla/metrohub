@@ -131,9 +131,10 @@ export function HousingLoanApp() {
   }, [rateNoPoints, am.firstPI, points, loanAmount]);
 
   // qualification
-  const dtiBack = income > 0 ? ((totalMonthly + otherDebts) / income) * 100 : 0;
-  const dtiFront = income > 0 ? (totalMonthly / income) * 100 : 0;
-  const dtiPass = dtiBack <= dtiCap;
+  const hasIncome = income > 0;
+  const dtiBack = hasIncome ? ((totalMonthly + otherDebts) / income) * 100 : 0;
+  const dtiFront = hasIncome ? (totalMonthly / income) * 100 : 0;
+  const dtiPass = hasIncome && dtiBack <= dtiCap; // no income → not a pass
   const effRent = rent * (1 - expensePct / 100);
   const dscr = totalMonthly > 0 ? effRent / totalMonthly : 0;
   const dscrPass = dscr >= dscrMin;
@@ -283,7 +284,7 @@ export function HousingLoanApp() {
           </section>
 
           {/* Qualification result */}
-          <section className={`hlCard hlQual ${(isInvestment ? dscrPass : dtiPass) ? "hlPass" : "hlFail"}`}>
+          <section className={`hlCard hlQual ${isInvestment ? (dscrPass ? "hlPass" : "hlFail") : !hasIncome ? "" : dtiPass ? "hlPass" : "hlFail"}`}>
             {isInvestment ? (
               <>
                 <div className="hlQualTop">
@@ -297,10 +298,10 @@ export function HousingLoanApp() {
               <>
                 <div className="hlQualTop">
                   <span className="hlLabel">DTI (back-end)</span>
-                  <span className="hlQualValue">{pct(dtiBack)}</span>
-                  <span className={`hlBadge ${dtiPass ? "ok" : "no"}`}>{dtiPass ? "Within cap" : "Over cap"}</span>
+                  <span className="hlQualValue">{hasIncome ? pct(dtiBack) : "—"}</span>
+                  {hasIncome && <span className={`hlBadge ${dtiPass ? "ok" : "no"}`}>{dtiPass ? "Within cap" : "Over cap"}</span>}
                 </div>
-                <p className="hlNote">Housing {pct(dtiFront)} front-end · needs ≤ {dtiCap}% back-end</p>
+                <p className="hlNote">{hasIncome ? `Housing ${pct(dtiFront)} front-end · needs ≤ ${dtiCap}% back-end` : "Enter gross income to check DTI"}</p>
               </>
             )}
           </section>
