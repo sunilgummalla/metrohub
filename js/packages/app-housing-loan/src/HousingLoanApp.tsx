@@ -5,10 +5,11 @@ import {
 } from "./finance";
 import "./housing-loan.css";
 
-const money = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(Number.isFinite(n) ? n : 0);
-const money2 = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(Number.isFinite(n) ? n : 0);
+// Hoisted formatters — reused across renders (cheaper than per-call construction).
+const FMT0 = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const FMT2 = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+const money = (n: number) => FMT0.format(Number.isFinite(n) ? n : 0);
+const money2 = (n: number) => FMT2.format(Number.isFinite(n) ? n : 0);
 const pct = (n: number, d = 1) => `${(Number.isFinite(n) ? n : 0).toFixed(d)}%`;
 
 /** Illustrative per-occupancy defaults that seed editable fields (not financial advice). */

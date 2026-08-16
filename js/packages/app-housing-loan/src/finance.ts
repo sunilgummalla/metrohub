@@ -155,6 +155,9 @@ export function amortize(inp: LoanInputs): Amortization {
       extra = Math.max(0, balance - principal);
       if (principal > balance) principal = balance;
     }
+    // Actual P&I paid this month (the final month may be less than the scheduled
+    // level payment); keep rows consistent (payment === principal + interest).
+    const paidPI = principal + interest;
 
     const pmi = balance > pmiDropBalance ? pmiMonthly : 0;
     if (pmi === 0 && pmiMonthly > 0 && out.pmiEndsMonth === null && balance <= pmiDropBalance) {
@@ -163,13 +166,13 @@ export function amortize(inp: LoanInputs): Amortization {
 
     balance = Math.max(0, balance - principal - extra);
 
-    if (m === 1) out.firstPI = payment;
+    if (m === 1) out.firstPI = payment; // scheduled level payment (for display)
     out.maxPI = Math.max(out.maxPI, payment);
     out.totalInterest += interest;
     out.totalPmi += pmi;
     out.payoffMonths = m;
 
-    out.months.push({ month: m, rate, payment, principal, interest, pmi, extra, balance });
+    out.months.push({ month: m, rate, payment: paidPI, principal, interest, pmi, extra, balance });
 
     yr.principal += principal + extra;
     yr.interest += interest;
