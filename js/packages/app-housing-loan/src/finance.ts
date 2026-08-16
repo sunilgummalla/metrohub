@@ -215,12 +215,17 @@ export function computeApr(inp: LoanInputs, am: Amortization): number {
   const pv = (monthlyRate: number) =>
     flows.reduce((acc, pay, i) => acc + pay / (1 + monthlyRate) ** (i + 1), 0);
 
-  // pv decreases as the monthly rate rises. Grow the upper bound until pv(hi)
-  // brackets net (needed when heavy prepaid charges make net small), capped to
-  // avoid a runaway; then bisect.
+  // pv decreases as the monthly rate rises. Grow the upper bound (clamped to a
+  // cap so it can't run away) until pv(hi) brackets net — needed when heavy
+  // prepaid charges make net small — then bisect.
+  const HI_CAP = 1e4;
   let lo = 0, hi = 1;
-  while (pv(hi) > net && hi < 1e4) hi *= 2;
-  if (pv(hi) > net) return hi * 12 * 100; // net ≈ 0 — root beyond the cap; return it
+  let pvHi = pv(hi);
+  while (pvHi > net && hi < HI_CAP) {
+    hi = Math.min(hi * 2, HI_CAP);
+    pvHi = pv(hi);
+  }
+  if (pvHi > net) return hi * 12 * 100; // net ≈ 0 — root beyond the cap; return the capped rate
   for (let i = 0; i < 100; i++) {
     const mid = (lo + hi) / 2;
     if (pv(mid) > net) lo = mid;
