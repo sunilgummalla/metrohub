@@ -31,7 +31,7 @@ export interface LoanInputs {
   propertyTaxAnnualPct: number; // % of home price / year
   insuranceAnnual: number;
   hoaMonthly: number;
-  pmiAnnualPct: number; // % of loan balance / year
+  pmiAnnualPct: number; // % of the ORIGINAL loan / year, charged as a flat monthly amount
   pmiApplies: boolean; // occupancy allows PMI AND down < 20%
   // Extra principal
   extraMonthly: number;

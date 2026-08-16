@@ -11,7 +11,7 @@ const money2 = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(Number.isFinite(n) ? n : 0);
 const pct = (n: number, d = 1) => `${(Number.isFinite(n) ? n : 0).toFixed(d)}%`;
 
-/** Illustrative, editable per-occupancy defaults (not financial advice). */
+/** Illustrative per-occupancy defaults that seed editable fields (not financial advice). */
 const OCC: Record<Occupancy, { label: string; minDownPct: number; rateAdjPct: number; pmi: boolean }> = {
   primary: { label: "Primary", minDownPct: 5, rateAdjPct: 0, pmi: true },
   secondary: { label: "Secondary", minDownPct: 10, rateAdjPct: 0.375, pmi: true },
@@ -111,7 +111,10 @@ export function HousingLoanApp() {
   };
 
   const am = useMemo(() => amortize(inp), [price, down, years, loanType, rate, occRateAdj, introYears, adjEvery, indexPct, marginPct, capInitial, capPeriodic, capLifetime, taxPct, insAnnual, hoa, pmiPct, pmiApplies, extra, oneTime]);
-  const apr = useMemo(() => computeApr(inp, am), [am, points, closing]);
+  // APR is a property of the loan terms, so compute it from a schedule WITHOUT
+  // extra principal — otherwise toggling prepayments would shift the APR.
+  const amForApr = useMemo(() => amortize({ ...inp, extraMonthly: 0, oneTimeExtra: 0 }), [price, down, years, loanType, rate, occRateAdj, introYears, adjEvery, indexPct, marginPct, capInitial, capPeriodic, capLifetime, taxPct, insAnnual, hoa, pmiPct, pmiApplies]);
+  const apr = useMemo(() => computeApr(inp, amForApr), [amForApr, points, closing]);
 
   const firstPmi = am.months[0]?.pmi ?? 0;
   const esc = monthlyEscrow(inp, firstPmi);
@@ -144,9 +147,9 @@ export function HousingLoanApp() {
           {/* Property & loan */}
           <section className="hlCard">
             <h3 className="hlH3">Property &amp; loan</h3>
-            <div className="hlSeg" role="tablist" aria-label="Occupancy">
+            <div className="hlSeg" role="group" aria-label="Occupancy">
               {(Object.keys(OCC) as Occupancy[]).map((o) => (
-                <button key={o} type="button" role="tab" aria-selected={occ === o}
+                <button key={o} type="button" aria-pressed={occ === o}
                   className={`hlSegBtn ${occ === o ? "hlSegOn" : ""}`} onClick={() => chooseOcc(o)}>
                   {OCC[o].label}
                 </button>
