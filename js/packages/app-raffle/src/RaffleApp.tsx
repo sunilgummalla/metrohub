@@ -20,13 +20,39 @@ interface Saved {
 
 const STORAGE_KEY = "mh-raffle-v1";
 
+/** Load + validate/coerce persisted state so a corrupted value can't crash render. */
 function load(): Saved | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Saved) : null;
+    if (!raw) return null;
+    const p = JSON.parse(raw) as Partial<Saved>;
+    if (!p || typeof p !== "object") return null;
+    const entrants: Entrant[] = (Array.isArray(p.entrants) ? p.entrants : [])
+      .filter((e): e is Entrant => !!e && typeof e.name === "string")
+      .map((e, i) => ({
+        id: typeof e.id === "string" ? e.id : `e${i + 1}`,
+        name: e.name,
+        tickets: Math.max(1, Math.round(Number(e.tickets)) || 1),
+      }));
+    const winners: Winner[] = (Array.isArray(p.winners) ? p.winners : [])
+      .filter((w): w is Winner => !!w && typeof w.name === "string")
+      .map((w) => ({ name: w.name, prize: typeof w.prize === "string" ? w.prize : "Prize" }));
+    return {
+      title: typeof p.title === "string" ? p.title : "Friday Night Raffle",
+      prize: typeof p.prize === "string" ? p.prize : "Grand Prize",
+      entrants,
+      winners,
+      excludeWinners: typeof p.excludeWinners === "boolean" ? p.excludeWinners : true,
+    };
   } catch {
     return null;
   }
+}
+
+/** Next entrant id — seed from the max existing numeric suffix so it survives deletions. */
+function nextIdSeed(entrants: Entrant[] | undefined): number {
+  if (!entrants?.length) return 1;
+  return Math.max(0, ...entrants.map((e) => parseInt(String(e.id).replace(/\D/g, ""), 10) || 0)) + 1;
 }
 
 /** Weighted random pick — each entrant's ticket count is its weight. */
@@ -56,7 +82,7 @@ export function RaffleApp() {
   const [rolling, setRolling] = useState<string | null>(null);
   const [latest, setLatest] = useState<Winner | null>(null);
   const rollTimer = useRef<number | null>(null);
-  const idRef = useRef(saved?.entrants?.length ? saved.entrants.length + 1 : 1);
+  const idRef = useRef(nextIdSeed(saved?.entrants));
 
   // Persist on change.
   useEffect(() => {
@@ -98,22 +124,26 @@ export function RaffleApp() {
 
   function draw() {
     if (drawing || pool.length === 0) return;
+    const w = weightedPick(pool);
+    if (!w) return;
+    const commit = () => {
+      const winner: Winner = { name: w.name, prize: prize.trim() || "Prize" };
+      setRolling(null);
+      setDrawing(false);
+      setLatest(winner);
+      setWinners((ws) => [winner, ...ws]);
+    };
+    // Respect reduced motion: skip the rolling animation and reveal immediately.
+    const reduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) { setLatest(null); commit(); return; }
     setLatest(null);
     setDrawing(true);
     let ticks = 0;
     rollTimer.current = window.setInterval(() => {
       setRolling(pool[Math.floor(Math.random() * pool.length)].name);
-      ticks++;
-      if (ticks >= 16) {
+      if (++ticks >= 16) {
         if (rollTimer.current) window.clearInterval(rollTimer.current);
-        const w = weightedPick(pool);
-        setRolling(null);
-        setDrawing(false);
-        if (w) {
-          const winner: Winner = { name: w.name, prize: prize.trim() || "Prize" };
-          setLatest(winner);
-          setWinners((ws) => [winner, ...ws]);
-        }
+        commit();
       }
     }, 80);
   }
@@ -122,9 +152,9 @@ export function RaffleApp() {
     setWinners([]);
     setLatest(null);
   }
+  // Clears entrants only — the winners log persists (it has its own Reset).
   function clearAll() {
     setEntrants([]);
-    setWinners([]);
     setLatest(null);
   }
 
@@ -176,12 +206,14 @@ export function RaffleApp() {
             ) : (
               <ul className="rfList">
                 {entrants.map((e) => {
-                  const odds = totalTickets > 0 ? (e.tickets / totalTickets) * 100 : 0;
                   const won = wonNames.has(e.name);
+                  const excluded = excludeWinners && won; // not in the draw pool
+                  // Odds are computed against the eligible pool, so they match the actual draw.
+                  const odds = poolTickets > 0 ? (e.tickets / poolTickets) * 100 : 0;
                   return (
                     <li key={e.id} className={`rfRow ${won ? "rfWon" : ""}`}>
                       <span className="rfName">{e.name}{won && <span className="rfWonTag">won</span>}</span>
-                      <span className="rfOdds">{odds.toFixed(1)}%</span>
+                      <span className="rfOdds">{excluded ? "—" : `${odds.toFixed(1)}%`}</span>
                       <span className="rfTickets">{e.tickets} 🎟️</span>
                       <button className="rfX" type="button" onClick={() => removeEntrant(e.id)} aria-label={`Remove ${e.name}`}>×</button>
                     </li>
