@@ -425,6 +425,9 @@ importers:
       '@metrohub/poker-scorecard':
         specifier: workspace:*
         version: link:../../packages/app-poker-scorecard
+      '@metrohub/raffle':
+        specifier: workspace:*
+        version: link:../../packages/app-raffle
       '@metrohub/rummy-scorecard':
         specifier: workspace:*
         version: link:../../packages/app-rummy-scorecard
@@ -525,6 +528,12 @@ importers:
       react-dom:
         specifier: '>=18'
         version: 18.3.1(react@18.3.1)
+
+  packages/app-raffle:
+    dependencies:
+      react:
+        specifier: ^18.0.0
+        version: 18.3.1
 
   packages/app-rummy-scorecard:
     dependencies:

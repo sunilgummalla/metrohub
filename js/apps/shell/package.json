@@ -13,6 +13,7 @@
   "dependencies": {
     "@metrohub/bingo": "workspace:*",
     "@metrohub/housing-loan": "workspace:*",
+    "@metrohub/raffle": "workspace:*",
     "@metrohub/poker-scorecard": "workspace:*",
     "@metrohub/rummy-scorecard": "workspace:*",
     "@metrohub/plans": "workspace:*",
