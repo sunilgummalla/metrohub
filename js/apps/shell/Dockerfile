@@ -12,6 +12,7 @@ COPY js/packages/app-tambola/package.json packages/app-tambola/package.json
 COPY js/packages/app-bingo/package.json packages/app-bingo/package.json
 COPY js/packages/app-housing-loan/package.json packages/app-housing-loan/package.json
 COPY js/packages/app-raffle/package.json packages/app-raffle/package.json
+COPY js/packages/app-events/package.json packages/app-events/package.json
 COPY js/packages/app-plans/package.json packages/app-plans/package.json
 COPY js/packages/shared/package.json packages/shared/package.json
 COPY js/packages/app-marketplace/package.json packages/app-marketplace/package.json
@@ -24,6 +25,7 @@ COPY js/packages/app-tambola packages/app-tambola
 COPY js/packages/app-bingo packages/app-bingo
 COPY js/packages/app-housing-loan packages/app-housing-loan
 COPY js/packages/app-raffle packages/app-raffle
+COPY js/packages/app-events packages/app-events
 COPY js/packages/app-plans packages/app-plans
 COPY js/packages/shared packages/shared
 COPY js/packages/app-marketplace packages/app-marketplace
