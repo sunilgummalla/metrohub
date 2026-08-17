@@ -413,6 +413,9 @@ importers:
       '@metrohub/bingo':
         specifier: workspace:*
         version: link:../../packages/app-bingo
+      '@metrohub/events':
+        specifier: workspace:*
+        version: link:../../packages/app-events
       '@metrohub/housing-loan':
         specifier: workspace:*
         version: link:../../packages/app-housing-loan
@@ -485,6 +488,12 @@ importers:
         version: 18.3.1(react@18.3.1)
 
   packages/app-deals: {}
+
+  packages/app-events:
+    dependencies:
+      react:
+        specifier: ^18.0.0
+        version: 18.3.1
 
   packages/app-housing-loan:
     dependencies:

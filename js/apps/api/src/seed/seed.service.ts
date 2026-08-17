@@ -8,6 +8,10 @@ import {
   AppDocument,
   Deal,
   DealDocument,
+  Event,
+  EventDocument,
+  EventRsvp,
+  EventRsvpDocument,
   GameParticipant,
   GameParticipantDocument,
   GameSession,
@@ -178,6 +182,8 @@ export class SeedService implements OnModuleInit {
     @InjectModel(GameSession.name) private readonly gameModel: Model<GameSessionDocument>,
     @InjectModel(GameParticipant.name) private readonly participantModel: Model<GameParticipantDocument>,
     @InjectModel(App.name) private readonly appModel: Model<AppDocument>,
+    @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
+    @InjectModel(EventRsvp.name) private readonly rsvpModel: Model<EventRsvpDocument>,
   ) {}
 
   async onModuleInit() {
@@ -344,5 +350,37 @@ export class SeedService implements OnModuleInit {
       { $set: { handle: "Sunil", role: "host", isGuest: false, joinedAt: new Date() } },
       { upsert: true },
     );
+
+    // 9. Demo personal event (hosted by the demo user) + a few RSVPs. startAt is
+    // kept ~18 days out on each boot so the demo event is always upcoming.
+    const DEMO_EVENT_ID = "block-potluck-demo";
+    await this.eventModel.updateOne(
+      { eventId: DEMO_EVENT_ID },
+      {
+        $set: {
+          hostId: userId,
+          title: "Crossroads Block Potluck",
+          description: "Bring a dish to share — games on the lawn, chai, and a raffle. Kids welcome!",
+          emoji: "🥘",
+          startAt: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000),
+          location: "Crossroads Park, Bellevue",
+          kind: "personal",
+        },
+      },
+      { upsert: true },
+    );
+    const rsvps: Array<{ name: string; status: string; guests: number; note: string }> = [
+      { name: "Sagar", status: "going", guests: 2, note: "Bringing biryani 🍚" },
+      { name: "Naga", status: "going", guests: 1, note: "" },
+      { name: "Soma", status: "maybe", guests: 0, note: "Will try to make it after work" },
+      { name: "Priya", status: "going", guests: 3, note: "Kids + dessert!" },
+    ];
+    for (const r of rsvps) {
+      await this.rsvpModel.updateOne(
+        { eventId: DEMO_EVENT_ID, nameKey: r.name.toLowerCase() },
+        { $set: { name: r.name, status: r.status, guests: r.guests, note: r.note } },
+        { upsert: true },
+      );
+    }
   }
 }

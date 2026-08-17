@@ -138,4 +138,14 @@ export const APP_CATALOG: AppCatalogEntry[] = [
     icon: "🎟️",
     tile: { title: "Raffle", description: "Run a raffle — add entrants and draw a random winner." },
   },
+  {
+    id: "events",
+    packageName: "@metrohub/events",
+    folder: "app-events",
+    displayName: "Event Planner",
+    category: "Events",
+    route: "/apps/events",
+    icon: "🎉",
+    tile: { title: "Event Planner", description: "Create an event, share the link, and collect RSVPs — no login for guests." },
+  },
 ];

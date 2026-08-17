@@ -1,0 +1,262 @@
+/* ─── Events App — theme-aware, all colours inherited from shell tokens ─────── */
+/* No local token block. Light/dark come from the shell's styles.css.            */
+
+.evApp {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  font-family: var(--font-body);
+  color: var(--text);
+}
+
+.evHead,
+.evDetailHead {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.evDetailHead {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.85rem;
+}
+.evTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+.evLede {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.evDetailIcon {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+.evGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+@media (max-width: 720px) {
+  .evGrid { grid-template-columns: 1fr; }
+}
+
+.evSubhead {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+
+/* ── Cards & forms ──────────────────────────────────────────────────────── */
+.evCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.1rem;
+}
+.evForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.evRsvp { margin: 0.25rem 0 0.5rem; }
+
+.evField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.evFieldRow {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+.evGrow { flex: 1 1 auto; display: flex; flex-direction: column; gap: 0.3rem; }
+.evLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.evInput {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+}
+.evInput:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+  border-color: var(--brand);
+}
+.evTextarea { resize: vertical; min-height: 3.5rem; }
+.evEmojiField { display: flex; flex-direction: column; gap: 0.3rem; width: 3.75rem; }
+.evEmojiInput { text-align: center; font-size: 1.15rem; }
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+.evBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.9rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface-muted);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+  transition: filter 0.15s ease, transform 0.05s ease;
+}
+.evBtn:hover { filter: brightness(0.97); }
+.evBtn:active { transform: translateY(1px); }
+.evBtn:disabled { opacity: 0.6; cursor: default; }
+.evBtnPrimary {
+  color: #fff;
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.evBtnPrimary:hover { background: var(--brand-dark); border-color: var(--brand-dark); filter: none; }
+.evBtnSm { padding: 0.4rem 0.65rem; font-size: 0.85rem; }
+
+.evError { margin: 0; color: var(--danger); font-size: 0.85rem; }
+
+/* ── Notices ────────────────────────────────────────────────────────────── */
+.evNotice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+.evNotice p { margin: 0; color: var(--muted); }
+.evEmpty { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+/* ── Event list (host) ──────────────────────────────────────────────────── */
+.evListWrap { min-width: 0; }
+.evList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.65rem; }
+.evRow {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 0.85rem 1rem;
+}
+.evRowIcon { font-size: 1.6rem; line-height: 1; flex: none; }
+.evRowBody { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; flex: 1 1 auto; }
+.evRowTitle { font-weight: 700; color: var(--text); text-decoration: none; }
+.evRowTitle:hover { color: var(--brand); }
+.evRowMeta { font-size: 0.85rem; color: var(--muted); }
+.evRowStats { font-size: 0.8rem; color: var(--faint); }
+.evRowActions { display: flex; flex-direction: column; gap: 0.4rem; flex: none; }
+@media (max-width: 480px) {
+  .evRow { flex-wrap: wrap; }
+  .evRowActions { flex-direction: row; width: 100%; }
+}
+
+/* ── Public event detail ────────────────────────────────────────────────── */
+.evBack {
+  align-self: flex-start;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.evBack:hover { color: var(--brand); }
+.evFacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 0;
+}
+.evFacts div { display: flex; flex-direction: column; gap: 0.15rem; }
+.evFacts dt {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.evFacts dd { margin: 0; font-weight: 600; }
+.evDescription { margin: 0; color: var(--text); line-height: 1.5; max-width: 60ch; }
+
+.evSummary { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.evChip {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.evChipGoing {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success);
+}
+.evChipHead { color: var(--text); }
+
+/* ── RSVP status picker ─────────────────────────────────────────────────── */
+.evStatusPick { display: flex; gap: 0.4rem; }
+.evStatusBtn {
+  flex: 1 1 0;
+  padding: 0.5rem 0.5rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.evStatusBtn.isActive {
+  color: #fff;
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.evStatusBtn:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+
+/* ── Guest list ─────────────────────────────────────────────────────────── */
+.evGuests { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.evGuest {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  flex-wrap: wrap;
+}
+.evStatusDot { width: 0.6rem; height: 0.6rem; border-radius: 999px; flex: none; background: var(--faint); }
+.evStatus-going { background: var(--success); }
+.evStatus-maybe { background: var(--amber-bright, #d99a00); }
+.evStatus-no { background: var(--danger); }
+.evGuestName { font-weight: 600; }
+.evGuestStatus { font-size: 0.8rem; color: var(--muted); }
+.evGuestNote { font-size: 0.85rem; color: var(--muted); font-style: italic; flex-basis: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .evBtn { transition: none; }
+}

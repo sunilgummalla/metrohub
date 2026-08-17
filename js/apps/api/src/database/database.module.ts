@@ -29,6 +29,10 @@ import {
   DealSchema,
   App,
   AppSchema,
+  Event,
+  EventSchema,
+  EventRsvp,
+  EventRsvpSchema,
 } from "./schemas";
 
 /**
@@ -78,6 +82,8 @@ function buildMongoUri(): string {
       { name: Split.name, schema: SplitSchema },
       { name: Deal.name, schema: DealSchema },
       { name: App.name, schema: AppSchema },
+      { name: Event.name, schema: EventSchema },
+      { name: EventRsvp.name, schema: EventRsvpSchema },
     ]),
   ],
   exports: [MongooseModule],
