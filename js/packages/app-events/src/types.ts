@@ -1,5 +1,8 @@
 export type RsvpStatus = "going" | "maybe" | "no";
 
+/** Event category. "personal" today; "community" arrives with community events. */
+export type EventKind = "personal" | "community";
+
 /** Summary counts for an event's RSVPs. headcount = going responders + their guests. */
 export interface RsvpSummary {
   going: number;
@@ -23,7 +26,7 @@ export interface EventCard {
   emoji: string;
   startAt: string;
   location: string;
-  kind: string;
+  kind: EventKind;
   going: number;
   headcount: number;
 }

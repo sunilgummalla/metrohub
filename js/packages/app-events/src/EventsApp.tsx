@@ -19,6 +19,7 @@ function formatWhen(iso: string): string {
 }
 
 const STATUS_LABEL: Record<RsvpStatus, string> = { going: "Going", maybe: "Maybe", no: "Can't make it" };
+const STATUSES: RsvpStatus[] = ["going", "maybe", "no"];
 
 /** Extract the event id from the current path, or null for the host dashboard. */
 function routeEventId(): string | null {
@@ -135,10 +136,18 @@ function CreateEventForm({ onCreated }: { onCreated: (c: EventCard) => void }) {
       setError("A title and start date/time are required.");
       return;
     }
+    // The datetime-local value ("YYYY-MM-DDTHH:mm") has no timezone. Resolve it
+    // against the host's local timezone here and send an absolute UTC ISO string,
+    // so the event time doesn't shift by the server's timezone (UTC in Docker).
+    const startLocal = new Date(startAt);
+    if (Number.isNaN(startLocal.getTime())) {
+      setError("Please enter a valid start date/time.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
-      const card = await createEvent({ title: title.trim(), emoji: emoji.trim() || "🎉", startAt, location: location.trim(), description: description.trim() });
+      const card = await createEvent({ title: title.trim(), emoji: emoji.trim() || "🎉", startAt: startLocal.toISOString(), location: location.trim(), description: description.trim() });
       onCreated(card);
       setTitle("");
       setEmoji("🎉");
@@ -335,6 +344,21 @@ function RsvpForm({ eventId, onUpdated }: { eventId: string; onUpdated: (d: Even
     }
   };
 
+  // Arrow / Home / End navigation for the radiogroup — selects and focuses the
+  // target option, matching the native radio-group keyboard behavior.
+  const onRadioKey = (e: React.KeyboardEvent<HTMLButtonElement>, i: number) => {
+    const delta: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+    let next = i;
+    if (e.key in delta) next = (i + delta[e.key] + STATUSES.length) % STATUSES.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = STATUSES.length - 1;
+    else return;
+    e.preventDefault();
+    setStatus(STATUSES[next]);
+    const btn = e.currentTarget.parentElement?.children[next];
+    if (btn instanceof HTMLElement) btn.focus();
+  };
+
   return (
     <form className="evCard evForm evRsvp" onSubmit={submit}>
       <h3 className="evSubhead">Your RSVP</h3>
@@ -345,14 +369,18 @@ function RsvpForm({ eventId, onUpdated }: { eventId: string; onUpdated: (d: Even
       <div className="evField">
         <span className="evLabel">Are you coming?</span>
         <div className="evStatusPick" role="radiogroup" aria-label="RSVP status">
-          {(["going", "maybe", "no"] as RsvpStatus[]).map((s) => (
+          {STATUSES.map((s, i) => (
             <button
               type="button"
               key={s}
               className={`evStatusBtn${status === s ? " isActive" : ""}`}
               role="radio"
               aria-checked={status === s}
+              // Roving tabIndex: only the checked radio is tabbable; arrows move
+              // between options — the standard radiogroup keyboard pattern.
+              tabIndex={status === s ? 0 : -1}
               onClick={() => setStatus(s)}
+              onKeyDown={(e) => onRadioKey(e, i)}
             >
               {STATUS_LABEL[s]}
             </button>
