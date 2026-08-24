@@ -27,7 +27,14 @@ function routeEventId(): string | null {
   if (path === BASE_ROUTE || path === "") return null;
   if (path.startsWith(`${BASE_ROUTE}/`)) {
     const rest = path.slice(BASE_ROUTE.length + 1).split("/")[0];
-    return rest ? decodeURIComponent(rest) : null;
+    if (!rest) return null;
+    try {
+      // decodeURIComponent throws on malformed percent-encoding (e.g. "%E0%A4");
+      // treat that as an invalid route rather than crashing the app on mount.
+      return decodeURIComponent(rest);
+    } catch {
+      return null;
+    }
   }
   return null;
 }
@@ -43,7 +50,7 @@ export function EventsApp() {
 
 function HostDashboard() {
   const [events, setEvents] = useState<EventCard[]>([]);
-  const [state, setState] = useState<"loading" | "ready" | "signed-out" | "error">("loading");
+  const [state, setState] = useState<"loading" | "ready" | "signed-out" | "disabled" | "error">("loading");
   const [signingIn, setSigningIn] = useState(false);
 
   const load = useCallback(async () => {
@@ -53,7 +60,11 @@ function HostDashboard() {
       setEvents(events);
       setState("ready");
     } catch (err) {
+      // 401 = not signed in; 403 = event management disabled in this environment
+      // (the API gates host endpoints on SEED_SAMPLE_DATA). Retrying a 403 won't
+      // help, so surface a dedicated notice rather than the generic error state.
       if (err instanceof ApiError && err.status === 401) setState("signed-out");
+      else if (err instanceof ApiError && err.status === 403) setState("disabled");
       else setState("error");
     }
   }, []);
@@ -68,8 +79,10 @@ function HostDashboard() {
     try {
       await demoLogin();
       await load();
-    } catch {
-      setState("error");
+    } catch (err) {
+      // demo-login is gated on the same SEED_SAMPLE_DATA flag, so a 403 here
+      // means the same "disabled in this environment" condition.
+      setState(err instanceof ApiError && err.status === 403 ? "disabled" : "error");
     } finally {
       setSigningIn(false);
     }
@@ -88,6 +101,12 @@ function HostDashboard() {
           <button className="evBtn evBtnPrimary" onClick={signIn} disabled={signingIn}>
             {signingIn ? "Signing in…" : "Sign in (demo)"}
           </button>
+        </div>
+      )}
+
+      {state === "disabled" && (
+        <div className="evNotice">
+          <p>Event planning isn't available in this environment yet. Check back on the demo, or once accounts are enabled.</p>
         </div>
       )}
 
