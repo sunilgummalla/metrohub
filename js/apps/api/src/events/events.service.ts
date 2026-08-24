@@ -36,11 +36,14 @@ export class EventsService {
 
   private async uniqueEventId(title: string): Promise<string> {
     const base = slugify(title);
+    // 8 random bytes (64 bits) so the public link is effectively unguessable —
+    // GET /api/events/:eventId is public and exposes the guest list + notes, and
+    // the title-slug prefix is predictable, so the suffix carries the secrecy.
     for (let i = 0; i < 6; i++) {
-      const id = `${base}-${randomBytes(2).toString("hex")}`;
+      const id = `${base}-${randomBytes(8).toString("hex")}`;
       if (!(await this.eventModel.exists({ eventId: id }))) return id;
     }
-    return `${base}-${randomBytes(4).toString("hex")}`;
+    return `${base}-${randomBytes(12).toString("hex")}`;
   }
 
   async create(hostId: string, dto: CreateEventDto) {
