@@ -269,7 +269,7 @@ function EventDetailView({ eventId }: { eventId: string }) {
     return (
       <div className="evApp">
         <div className="evNotice">
-          <p>That event doesn't exist or the link has expired.</p>
+          <p>We couldn't find that event — double-check the link.</p>
           <a className="evBtn" href={BASE_ROUTE}>← Your events</a>
         </div>
       </div>

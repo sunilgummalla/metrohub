@@ -45,7 +45,12 @@ async function request<T>(path: string, init: RequestInit = {}, auth = false): P
     if (t) headers["Authorization"] = `Bearer ${t}`;
   }
   const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
-  if (!res.ok) throw new ApiError(res.status);
+  if (!res.ok) {
+    // A 401 means the stored session token is invalid/expired — clear it so the
+    // app stops retrying with a stale token (matches the shell's session).
+    if (res.status === 401) setToken(null);
+    throw new ApiError(res.status);
+  }
   // 200/201 always carry JSON here; guard just in case.
   const text = await res.text();
   return (text ? JSON.parse(text) : null) as T;
