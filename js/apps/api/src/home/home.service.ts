@@ -243,14 +243,18 @@ export class HomeService {
     const items: ActivityItem[] = [];
 
     for (const d of deals) {
+      // Skip deals whose vendor doesn't resolve under the same
+      // { citySlug, status: "approved" } gate as getLanding() — a public feed
+      // must not surface deals from unapproved / out-of-city / deleted vendors.
       const v = vendorById.get(String(d.vendorId));
+      if (!v) continue;
       const source =
         d.kind === "featured" ? "FEATURED" : d.kind === "event" ? "EVENT" : d.kind === "new" ? "NEW DEAL" : "DEAL";
       items.push({
         id: `deal-${String(d._id)}`,
         kind: "deal",
         source,
-        badge: v?.category ?? "Local",
+        badge: v.category,
         title: d.title,
         href: "/marketplace",
         at: (d as { createdAt?: Date }).createdAt?.toISOString() ?? new Date(0).toISOString(),

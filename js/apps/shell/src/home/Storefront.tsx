@@ -18,17 +18,30 @@ function relTime(iso: string): string {
   return `${Math.round(h / 24)}d ago`;
 }
 
-function LiveRow({ it, dup = false }: { it: ActivityItem; dup?: boolean }) {
+function liveRowInner(it: ActivityItem) {
   return (
-    <a className={`sfLiveItem sfLive-${it.kind}`} href={it.href} tabIndex={dup ? -1 : undefined}>
+    <>
       <div className="sfLiveTop">
         <span className="sfLiveSrc">{it.source}</span>
         <span className="sfLiveBadge">{it.badge}</span>
       </div>
       <div className="sfLiveMsg">{it.title}</div>
       <div className="sfLiveAgo">{relTime(it.at)}</div>
+    </>
+  );
+}
+
+function LiveRow({ it }: { it: ActivityItem }) {
+  return (
+    <a className={`sfLiveItem sfLive-${it.kind}`} href={it.href}>
+      {liveRowInner(it)}
     </a>
   );
+}
+
+/** Non-interactive copy for the marquee's aria-hidden duplicate (no focusable links). */
+function LiveRowGhost({ it }: { it: ActivityItem }) {
+  return <div className={`sfLiveItem sfLive-${it.kind}`}>{liveRowInner(it)}</div>;
 }
 
 /** Right-hand streaming rail of real neighborhood activity. */
@@ -49,7 +62,7 @@ function LiveFeed({ items }: { items: ActivityItem[] }) {
           {items.map((it) => <LiveRow key={it.id} it={it} />)}
           {marquee && (
             <div className="sfLiveDup" aria-hidden="true">
-              {items.map((it) => <LiveRow key={`dup-${it.id}`} it={it} dup />)}
+              {items.map((it) => <LiveRowGhost key={`dup-${it.id}`} it={it} />)}
             </div>
           )}
         </div>
