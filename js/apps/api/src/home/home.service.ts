@@ -257,7 +257,7 @@ export class HomeService {
         badge: v.category,
         title: d.title,
         href: "/marketplace",
-        at: (d as { createdAt?: Date }).createdAt?.toISOString() ?? new Date(0).toISOString(),
+        at: (d as { createdAt?: Date }).createdAt?.toISOString() ?? new Date().toISOString(),
       });
     }
 
@@ -272,7 +272,7 @@ export class HomeService {
         badge: type.toUpperCase(),
         title: `${label} table is live — join the game`,
         href,
-        at: (g as { createdAt?: Date }).createdAt?.toISOString() ?? new Date(0).toISOString(),
+        at: (g as { createdAt?: Date }).createdAt?.toISOString() ?? new Date().toISOString(),
       });
     }
 
@@ -284,7 +284,7 @@ export class HomeService {
         badge: v.category,
         title: `${v.businessName} is on the marketplace`,
         href: "/marketplace",
-        at: v.createdAt?.toISOString() ?? new Date(0).toISOString(),
+        at: v.createdAt?.toISOString() ?? new Date().toISOString(),
       });
     }
 
