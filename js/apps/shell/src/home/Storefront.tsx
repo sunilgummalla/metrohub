@@ -9,13 +9,15 @@ const ROT_WORDS = ["game night", "local deal", "shared bill", "block party"];
 function relTime(iso: string): string {
   const t = new Date(iso).getTime();
   if (Number.isNaN(t)) return "";
-  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  // floor (not round) each unit so an elapsed time never jumps a unit early
+  // (e.g. 59m31s stays "59m ago", not "1h ago").
+  const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
   if (s < 45) return "just now";
-  const m = Math.round(s / 60);
+  const m = Math.floor(s / 60);
   if (m < 60) return `${m}m ago`;
-  const h = Math.round(m / 60);
+  const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
-  return `${Math.round(h / 24)}d ago`;
+  return `${Math.floor(h / 24)}d ago`;
 }
 
 function liveRowInner(it: ActivityItem) {

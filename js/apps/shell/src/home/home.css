@@ -91,6 +91,9 @@
 .sfLiveTrack,.sfLiveDup{display:flex;flex-direction:column}
 .sfLiveScroll .sfLiveTrack{animation:sfScroll 46s linear infinite}
 .sfLiveScroll:hover .sfLiveTrack,.sfLiveScroll:focus-within .sfLiveTrack{animation-play-state:paused}
+/* While paused (hover/keyboard focus) let the list scroll, so a focused item
+   outside the viewport can be reached and is auto-scrolled into view. */
+.sfLiveScroll:hover,.sfLiveScroll:focus-within{overflow-y:auto}
 @keyframes sfScroll{from{transform:translateY(0)}to{transform:translateY(-50%)}}
 .sfLiveItem{display:block;padding:13px 16px;border-bottom:1px solid var(--border);text-decoration:none;color:var(--text);transition:background .14s}
 .sfLiveItem:hover{background:var(--surface-muted)}
