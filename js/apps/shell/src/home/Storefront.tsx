@@ -12,7 +12,8 @@ function relTime(iso: string): string {
   // floor (not round) each unit so an elapsed time never jumps a unit early
   // (e.g. 59m31s stays "59m ago", not "1h ago").
   const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
-  if (s < 45) return "just now";
+  // "just now" covers the whole first minute so floored minutes never read "0m ago".
+  if (s < 60) return "just now";
   const m = Math.floor(s / 60);
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
