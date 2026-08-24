@@ -48,9 +48,7 @@ export class EventsService {
     if (!title) throw new BadRequestException("Title is required");
     const startAt = new Date(str(dto.startAt));
     if (Number.isNaN(startAt.getTime())) throw new BadRequestException("A valid start date/time is required");
-    const eventId = await this.uniqueEventId(title);
-    const doc = await this.eventModel.create({
-      eventId,
+    const base = {
       hostId: new Types.ObjectId(hostId),
       title,
       description: str(dto.description),
@@ -58,8 +56,22 @@ export class EventsService {
       startAt,
       location: str(dto.location),
       kind: "personal",
-    });
-    return this.card(doc.toObject(), { going: 0, maybe: 0, no: 0, headcount: 0 });
+    };
+    // Retry the insert on E11000 (duplicate eventId): uniqueEventId() checks then
+    // inserts, so two concurrent creates can still collide. A fresh id per attempt
+    // resolves the rare race instead of surfacing a 500.
+    const MAX_ATTEMPTS = 5;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const eventId = await this.uniqueEventId(title);
+      try {
+        const doc = await this.eventModel.create({ eventId, ...base });
+        return this.card(doc.toObject(), { going: 0, maybe: 0, no: 0, headcount: 0 });
+      } catch (err: unknown) {
+        if ((err as { code?: number })?.code === 11000 && attempt < MAX_ATTEMPTS - 1) continue;
+        throw err;
+      }
+    }
+    throw new Error("Failed to create event after retries");
   }
 
   async listMine(hostId: string) {
@@ -89,11 +101,20 @@ export class EventsService {
     if (!name) throw new BadRequestException("Your name is required");
     const status = ["going", "maybe", "no"].includes(dto.status as string) ? (dto.status as string) : "going";
     const guests = Math.max(0, Math.min(20, Math.round(Number(dto.guests)) || 0));
-    await this.rsvpModel.updateOne(
-      { eventId, nameKey: name.toLowerCase() },
-      { $set: { name, status, guests, note: str(dto.note) } },
-      { upsert: true },
-    );
+    const filter = { eventId, nameKey: name.toLowerCase() };
+    const update = { $set: { name, status, guests, note: str(dto.note) } };
+    try {
+      await this.rsvpModel.updateOne(filter, update, { upsert: true });
+    } catch (err: unknown) {
+      // Concurrent upserts against the unique (eventId, nameKey) index can race
+      // to E11000 (e.g. a double-submit). The RSVP is idempotent, so on a
+      // duplicate-key the row now exists — retry once as a plain update.
+      if ((err as { code?: number })?.code === 11000) {
+        await this.rsvpModel.updateOne(filter, update);
+      } else {
+        throw err;
+      }
+    }
     return this.getPublic(eventId);
   }
 
