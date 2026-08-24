@@ -119,7 +119,15 @@ function HostDashboard() {
 
       {state === "ready" && (
         <div className="evGrid">
-          <CreateEventForm onCreated={(c) => setEvents((prev) => [c, ...prev])} />
+          <CreateEventForm
+            onCreated={(c) =>
+              // Keep the list in startAt-ascending order (matching the backend's
+              // sort) instead of prepending, so a new event lands in its place.
+              setEvents((prev) =>
+                [...prev, c].sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()),
+              )
+            }
+          />
           <section className="evListWrap">
             <h3 className="evSubhead">Upcoming ({events.length})</h3>
             {events.length === 0 ? (
