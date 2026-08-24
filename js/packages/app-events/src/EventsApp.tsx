@@ -127,6 +127,9 @@ function HostDashboard() {
                 [...prev, c].sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()),
               )
             }
+            // A 401 during create means the token was invalid and got cleared —
+            // drop back to the sign-in gate so the host can re-authenticate.
+            onAuthLost={() => setState("signed-out")}
           />
           <section className="evListWrap">
             <h3 className="evSubhead">Upcoming ({events.length})</h3>
@@ -148,7 +151,7 @@ function HostDashboard() {
   );
 }
 
-function CreateEventForm({ onCreated }: { onCreated: (c: EventCard) => void }) {
+function CreateEventForm({ onCreated, onAuthLost }: { onCreated: (c: EventCard) => void; onAuthLost: () => void }) {
   const [title, setTitle] = useState("");
   const [emoji, setEmoji] = useState("🎉");
   const [startAt, setStartAt] = useState("");
@@ -181,7 +184,13 @@ function CreateEventForm({ onCreated }: { onCreated: (c: EventCard) => void }) {
       setStartAt("");
       setLocation("");
       setDescription("");
-    } catch {
+    } catch (err) {
+      // request() already cleared the token on a 401 — send the host back to the
+      // sign-in gate instead of a dead "ready" state with no way to recover.
+      if (err instanceof ApiError && err.status === 401) {
+        onAuthLost();
+        return;
+      }
       setError("Could not create the event. Please try again.");
     } finally {
       setBusy(false);
