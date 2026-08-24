@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Req, UnauthorizedException } from "@nestjs/common";
+import { Body, Controller, ForbiddenException, Get, HttpCode, Param, Post, Req, UnauthorizedException } from "@nestjs/common";
 import { EventsService } from "./events.service";
 import { parseStubBearerToken } from "../common/stub-auth";
 
@@ -18,12 +18,12 @@ export class EventsController {
 
   @Post()
   @HttpCode(201)
-  create(@Req() req: Req, @Body() body: unknown) {
-    return this.events.create(hostId(req), body ?? {});
+  create(@Req() req: ReqLike, @Body() body: unknown) {
+    return this.events.create(hostId(req), asObject(body));
   }
 
   @Get()
-  listMine(@Req() req: Req) {
+  listMine(@Req() req: ReqLike) {
     return this.events.listMine(hostId(req));
   }
 
@@ -35,14 +35,29 @@ export class EventsController {
   @Post(":eventId/rsvp")
   @HttpCode(200)
   rsvp(@Param("eventId") eventId: string, @Body() body: unknown) {
-    return this.events.rsvp(eventId, body ?? {});
+    return this.events.rsvp(eventId, asObject(body));
   }
 }
 
-type Req = { headers: Record<string, string | string[] | undefined> };
+type ReqLike = { headers: Record<string, string | string[] | undefined> };
 
-/** Resolve the host id from the Bearer stub token, or 401. */
-function hostId(req: Req): string {
+/** Coerce a JSON body to a plain object so a non-object payload can't slip through. */
+function asObject(body: unknown): Record<string, unknown> {
+  return body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
+}
+
+/**
+ * Resolve the host id from the Bearer stub token.
+ *
+ * Stub auth is a placeholder pending real OAuth, so — like Home's
+ * demo-login/dashboard — it is only trusted where the demo persona is seeded
+ * (SEED_SAMPLE_DATA=true). In any other environment a forged `stub-token-<id>`
+ * must not be able to create or list events, so we default-deny with a 403.
+ */
+function hostId(req: ReqLike): string {
+  if (process.env["SEED_SAMPLE_DATA"] !== "true") {
+    throw new ForbiddenException("Event management is not available in this environment.");
+  }
   const id = parseStubBearerToken(req.headers["authorization"] ?? req.headers["Authorization"]);
   if (!id) throw new UnauthorizedException("Sign in to manage events");
   return id;
