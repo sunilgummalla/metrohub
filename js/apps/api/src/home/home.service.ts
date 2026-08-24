@@ -94,6 +94,17 @@ function toPlanCard(p: PlanLean) {
   };
 }
 
+/** One entry in the storefront live-feed rail. */
+export interface ActivityItem {
+  id: string;
+  kind: "deal" | "game" | "vendor";
+  source: string;
+  badge: string;
+  title: string;
+  href: string;
+  at: string; // ISO timestamp; the client renders it relative
+}
+
 @Injectable()
 export class HomeService {
   constructor(
@@ -203,6 +214,78 @@ export class HomeService {
       kind: d.kind,
       vendor: vendor ? toVendorCard(vendor) : null,
     };
+  }
+
+  /**
+   * A merged, most-recent-first stream of real neighborhood activity for the
+   * storefront's live-feed rail: new deals, games live now, and vendors that
+   * recently joined the marketplace. Public (no auth), like the landing.
+   */
+  async getActivity(citySlugRaw?: unknown) {
+    const citySlugStr = typeof citySlugRaw === "string" ? citySlugRaw : "";
+    const citySlug = citySlugStr.trim().toLowerCase() || "seattle";
+
+    const [deals, games, vendors] = await Promise.all([
+      this.dealModel.find({ citySlug, active: true }).sort({ createdAt: -1 }).limit(8).lean(),
+      this.gameModel.find({ status: "active" }).sort({ createdAt: -1 }).limit(4).lean(),
+      this.vendorModel.find({ citySlug, status: "approved" }).sort({ createdAt: -1 }).limit(6).lean(),
+    ]);
+
+    // Resolve each deal's vendor (for the source badge) in one round-trip.
+    const dealVendorIds = [...new Set(deals.map((d) => String(d.vendorId)))];
+    const dealVendors = dealVendorIds.length
+      ? await this.vendorModel
+          .find({ _id: { $in: dealVendorIds }, citySlug, status: "approved" }, { businessName: 1, category: 1 })
+          .lean()
+      : [];
+    const vendorById = new Map(dealVendors.map((v) => [String(v._id), v]));
+
+    const items: ActivityItem[] = [];
+
+    for (const d of deals) {
+      const v = vendorById.get(String(d.vendorId));
+      const source =
+        d.kind === "featured" ? "FEATURED" : d.kind === "event" ? "EVENT" : d.kind === "new" ? "NEW DEAL" : "DEAL";
+      items.push({
+        id: `deal-${String(d._id)}`,
+        kind: "deal",
+        source,
+        badge: v?.category ?? "Local",
+        title: d.title,
+        href: "/marketplace",
+        at: (d as { createdAt?: Date }).createdAt?.toISOString() ?? new Date(0).toISOString(),
+      });
+    }
+
+    for (const g of games) {
+      const type = String(g.gameType);
+      const label = type.charAt(0).toUpperCase() + type.slice(1);
+      const href = type === "rummy" ? "/apps/rummy-scorecard" : `/apps/${type}`;
+      items.push({
+        id: `game-${String(g.gameId)}`,
+        kind: "game",
+        source: "GAME LIVE",
+        badge: type.toUpperCase(),
+        title: `${label} table is live — join the game`,
+        href,
+        at: (g as { createdAt?: Date }).createdAt?.toISOString() ?? new Date(0).toISOString(),
+      });
+    }
+
+    for (const v of vendors as unknown as Array<VendorLean & { createdAt?: Date }>) {
+      items.push({
+        id: `vendor-${String(v._id)}`,
+        kind: "vendor",
+        source: v.featured ? "FEATURED VENDOR" : "NEW VENDOR",
+        badge: v.category,
+        title: `${v.businessName} is on the marketplace`,
+        href: "/marketplace",
+        at: v.createdAt?.toISOString() ?? new Date(0).toISOString(),
+      });
+    }
+
+    items.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+    return { citySlug, items: items.slice(0, 12) };
   }
 
   async getDashboard(userId: string) {

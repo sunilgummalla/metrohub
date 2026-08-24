@@ -56,6 +56,21 @@ export interface Landing {
   plans: Plan[];
 }
 
+export interface ActivityItem {
+  id: string;
+  kind: "deal" | "game" | "vendor";
+  source: string;
+  badge: string;
+  title: string;
+  href: string;
+  at: string; // ISO timestamp
+}
+
+export interface Activity {
+  citySlug: string;
+  items: ActivityItem[];
+}
+
 export interface GameSummary {
   gameId: string;
   joinCode: string;
