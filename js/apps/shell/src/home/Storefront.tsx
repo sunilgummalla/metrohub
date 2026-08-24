@@ -1,9 +1,81 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiGet, money } from "./api";
 import { TopNav } from "./TopNav";
-import type { Landing, VendorCard } from "./types";
+import type { Activity, ActivityItem, Landing, VendorCard } from "./types";
 
-const ROT_WORDS = ["game nights", "shared bills", "local storefronts", "nearby deals"];
+const ROT_WORDS = ["game night", "local deal", "shared bill", "block party"];
+
+/** Compact relative time for the live feed ("just now", "4m ago", "2h ago"). */
+function relTime(iso: string): string {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "";
+  // floor (not round) each unit so an elapsed time never jumps a unit early
+  // (e.g. 59m31s stays "59m ago", not "1h ago").
+  const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  // "just now" covers the whole first minute so floored minutes never read "0m ago".
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function liveRowInner(it: ActivityItem) {
+  return (
+    <>
+      <div className="sfLiveTop">
+        <span className="sfLiveSrc">{it.source}</span>
+        <span className="sfLiveBadge">{it.badge}</span>
+      </div>
+      <div className="sfLiveMsg">{it.title}</div>
+      <div className="sfLiveAgo">{relTime(it.at)}</div>
+    </>
+  );
+}
+
+function LiveRow({ it }: { it: ActivityItem }) {
+  return (
+    <a className={`sfLiveItem sfLive-${it.kind}`} href={it.href}>
+      {liveRowInner(it)}
+    </a>
+  );
+}
+
+/** Non-interactive copy for the marquee's aria-hidden duplicate (no focusable links). */
+function LiveRowGhost({ it }: { it: ActivityItem }) {
+  return <div className={`sfLiveItem sfLive-${it.kind}`}>{liveRowInner(it)}</div>;
+}
+
+/** Right-hand streaming rail of real neighborhood activity. */
+function LiveFeed({ items }: { items: ActivityItem[] }) {
+  // Duplicate the list so the marquee can loop seamlessly. The second copy is
+  // hidden from assistive tech and taken out of the tab order. When there's
+  // little to show — or reduced motion — CSS drops the animation and the
+  // viewport just scrolls.
+  const marquee = items.length >= 6;
+  return (
+    <aside className="sfLive" aria-label="Live neighborhood activity">
+      <div className="sfLiveHd">
+        <span className="sfLiveTitle">Live feed</span>
+        <span className="sfLiveNow"><i className="sfPulse" aria-hidden="true" /> Now</span>
+      </div>
+      <div className={`sfLiveViewport${marquee ? " sfLiveScroll" : ""}`}>
+        <div className="sfLiveTrack">
+          {items.map((it) => <LiveRow key={it.id} it={it} />)}
+          {marquee && (
+            <div className="sfLiveDup" aria-hidden="true">
+              {items.map((it) => <LiveRowGhost key={`dup-${it.id}`} it={it} />)}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="sfLiveFt">
+        <span className="sfLiveDot" aria-hidden="true" /> Updated live · neighborhood activity
+      </div>
+    </aside>
+  );
+}
 
 function stars(rating: number | null): string {
   if (rating == null) return "";
@@ -38,6 +110,7 @@ function VendorTile({ v }: { v: VendorCard }) {
 
 export function Storefront({ onSignIn }: { onSignIn: () => void }) {
   const [data, setData] = useState<Landing | null>(null);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [error, setError] = useState(false);
   const [rot, setRot] = useState(0);
 
@@ -47,6 +120,19 @@ export function Storefront({ onSignIn }: { onSignIn: () => void }) {
       .then((d) => { if (alive) setData(d); })
       .catch(() => { if (alive) setError(true); });
     return () => { alive = false; };
+  }, []);
+
+  // Live feed: fetch now, then refresh every 60s so the rail (and its relative
+  // timestamps) stays current while the storefront is open.
+  useEffect(() => {
+    let alive = true;
+    const pull = () =>
+      apiGet<Activity>("/api/home/activity")
+        .then((a) => { if (alive) setActivity(a.items ?? []); })
+        .catch(() => { /* the rail just stays as-is on a transient error */ });
+    void pull();
+    const t = window.setInterval(pull, 60_000);
+    return () => { alive = false; window.clearInterval(t); };
   }, []);
 
   useEffect(() => {
@@ -67,10 +153,13 @@ export function Storefront({ onSignIn }: { onSignIn: () => void }) {
         <TopNav onSignIn={onSignIn} />
 
         <header className="sfHero">
-          <div>
+          <div className="sfHeroText">
+            <span className="sfHeroGlow" aria-hidden="true" />
             <span className="sfTag">◆ One hub for the neighborhood</span>
             <h1 className="sfH1">
-              Everything the block does — <span className="sfRot">{ROT_WORDS[rot]}</span>.
+              Your block.<br />
+              Every <span className="sfRot">{ROT_WORDS[rot]}</span>.<br />
+              One hub.
             </h1>
             <p className="sfSub">
               Play the scorecard, split the bill, shop the local marketplace, and find what's open
@@ -89,35 +178,7 @@ export function Storefront({ onSignIn }: { onSignIn: () => void }) {
             )}
           </div>
 
-          {data?.featuredDeal && (
-            <aside className="sfFeature">
-              <div className="sfAd">
-                <span>🏪</span> Featured this week · {data.featuredDeal.vendor?.name ?? "Local vendor"}
-                <span className="sfAdTag">AD</span>
-              </div>
-              <div className="sfFb">
-                <h3>{data.featuredDeal.title}</h3>
-                <p>{data.featuredDeal.blurb}</p>
-                {data.featuredDeal.vendor && (
-                  <div className="sfMeta">
-                    {data.featuredDeal.vendor.rating != null && (
-                      <>
-                        <span className="sfStars" aria-hidden="true">{stars(data.featuredDeal.vendor.rating)}</span>
-                        {data.featuredDeal.vendor.rating.toFixed(1)}{" · "}
-                      </>
-                    )}
-                    {data.featuredDeal.vendor.category}
-                    {data.featuredDeal.vendor.distanceMi != null && ` · ${data.featuredDeal.vendor.distanceMi} mi`}
-                    {data.featuredDeal.vendor.open != null && (
-                      <span className={`sfOpen ${data.featuredDeal.vendor.open ? "" : "sfClosed"}`}>
-                        {data.featuredDeal.vendor.open ? "Open now" : "Closed"}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </aside>
-          )}
+          <LiveFeed items={activity} />
         </header>
 
         <div className="sfCats">

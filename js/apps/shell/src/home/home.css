@@ -25,16 +25,14 @@
 /* ─────────────────────────── STOREFRONT ─────────────────────────── */
 .sfApp{
   --coral:#e0567a; --coral-soft:#fbe7ee;
-  /* Fixed, non-flipping surfaces. Unlike the theme --amber/--teal/--coral
+  /* Fixed, non-flipping tile gradients. Unlike the theme --amber/--teal/--coral
      tokens (which flip to light values in dark mode), these stay saturated in
-     both schemes so their text — dark on the ad ribbon, white on the tiles —
-     always meets contrast. Tweak the palette here, not inline. */
-  --sf-ad-grad:linear-gradient(100deg,#fbbf24,#f59e0b);
-  --sf-ad-ink:#3d2b00;
+     both schemes so their white text always meets contrast. Tweak here, not inline. */
   --sf-tile-play:linear-gradient(155deg,#4338ca,#7c3aed);
   --sf-tile-manage:linear-gradient(155deg,#0f766e,#047857);
   --sf-tile-shop:linear-gradient(155deg,#be185d,#c2410c);
   background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;
+  overflow-x:hidden; /* contain the hero glow so it never triggers a page-wide horizontal scroll */
 }
 :root[data-theme="dark"] .sfApp{ --coral:#f27a99; --coral-soft:#3a1f2a; }
 
@@ -57,24 +55,64 @@
 .sfBtnFill{background:var(--brand);border-color:transparent;color:#fff}
 .sfBtnFill:hover{background:var(--brand-dark);color:#fff}
 
-.sfHero{display:grid;grid-template-columns:1.15fr .85fr;gap:34px;align-items:center;padding:20px 0 30px}
-.sfTag{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--brand);background:var(--surface-muted);padding:6px 12px;border-radius:999px}
-.sfH1{font-size:clamp(38px,5.6vw,66px);line-height:1;font-weight:900;letter-spacing:-.035em;margin:18px 0 0;text-wrap:balance;color:var(--text)}
-.sfRot{color:var(--coral);display:inline-block;min-width:5ch;transition:opacity .18s ease}
+.sfHero{display:grid;grid-template-columns:1.2fr .8fr;gap:40px;align-items:start;padding:26px 0 40px}
+.sfHeroText{position:relative;min-width:0}
+/* Brand-tinted radial bloom behind the headline (the reference's signature move,
+   recoloured to MetroHub's palette). z-index:-1 keeps it behind the copy without
+   needing to lift every text node. */
+.sfHeroGlow{
+  position:absolute;z-index:-1;left:-6%;top:-14%;width:min(600px,92%);height:380px;pointer-events:none;
+  background:
+    radial-gradient(closest-side, color-mix(in srgb,var(--brand) 46%, transparent), transparent 72%),
+    radial-gradient(closest-side, color-mix(in srgb,var(--coral) 40%, transparent), transparent 70%);
+  background-repeat:no-repeat;
+  background-position:0% 0%, 72% 46%;
+  background-size:66% 100%, 60% 82%;
+  filter:blur(20px);opacity:.5;
+}
+:root[data-theme="dark"] .sfHeroGlow{opacity:.42}
+.sfTag{position:relative;display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--brand);background:var(--surface-muted);padding:6px 12px;border-radius:999px}
+.sfH1{font-size:clamp(40px,6vw,74px);line-height:.98;font-weight:900;letter-spacing:-.04em;margin:18px 0 0;color:var(--text)}
+.sfRot{color:var(--coral);display:inline-block;min-width:6ch;transition:opacity .18s ease}
 .sfSub{font-size:17px;line-height:1.55;color:var(--muted);max-width:46ch;margin:20px 0 24px}
 .sfCta{display:flex;gap:12px;flex-wrap:wrap}
 .sfTrust{display:flex;gap:22px;margin-top:24px;font-size:13.5px;color:var(--muted)}
 .sfTrust b{color:var(--text);font-variant-numeric:tabular-nums}
 
-.sfFeature{background:var(--surface);border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow-lg);overflow:hidden}
-/* Fixed amber ribbon with dark text — readable in light & dark (the amber
-   tokens flip light in dark mode, so white text on them fails contrast). */
-.sfAd{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--sf-ad-grad);color:var(--sf-ad-ink);font-weight:800;font-size:12.5px}
-.sfAdTag{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.1em;border:1px solid rgba(0,0,0,.38);border-radius:5px;padding:2px 6px}
-.sfFb{padding:18px}
-.sfFb h3{margin:0 0 5px;font-size:19px;font-weight:850;letter-spacing:-.01em;color:var(--text)}
-.sfFb p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
-.sfMeta{display:flex;gap:8px;align-items:center;margin-top:14px;font-size:12.5px;color:var(--muted)}
+/* ── Live feed rail ─────────────────────────────────────────────────────── */
+.sfLive{display:flex;flex-direction:column;height:452px;background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow-lg);overflow:hidden}
+.sfLiveHd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+.sfLiveTitle{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--text)}
+.sfLiveNow{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--danger)}
+.sfPulse{width:8px;height:8px;border-radius:50%;background:var(--danger);animation:sfPulse 1.8s ease-out infinite}
+@keyframes sfPulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--danger) 55%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.sfLiveViewport{position:relative;flex:1;overflow:hidden}
+.sfLiveViewport:not(.sfLiveScroll){overflow-y:auto}
+.sfLiveTrack,.sfLiveDup{display:flex;flex-direction:column}
+.sfLiveScroll .sfLiveTrack{animation:sfScroll 46s linear infinite}
+.sfLiveScroll:hover .sfLiveTrack,.sfLiveScroll:focus-within .sfLiveTrack{animation-play-state:paused}
+/* While paused (hover/keyboard focus) let the list scroll, so a focused item
+   outside the viewport can be reached and is auto-scrolled into view. */
+.sfLiveScroll:hover,.sfLiveScroll:focus-within{overflow-y:auto}
+@keyframes sfScroll{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+.sfLiveItem{display:block;padding:13px 16px;border-bottom:1px solid var(--border);text-decoration:none;color:var(--text);transition:background .14s}
+.sfLiveItem:hover{background:var(--surface-muted)}
+.sfLiveTop{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.sfLiveSrc{font-size:10.5px;font-weight:800;letter-spacing:.1em;color:var(--brand)}
+.sfLiveBadge{margin-left:auto;font-size:10px;font-weight:700;color:var(--muted);background:var(--surface-muted);border:1px solid var(--border);border-radius:5px;padding:2px 7px}
+.sfLiveMsg{font-size:13.5px;font-weight:650;line-height:1.35;color:var(--text)}
+.sfLiveAgo{font-size:11px;color:var(--faint);margin-top:5px;font-variant-numeric:tabular-nums}
+.sfLive-game .sfLiveSrc{color:var(--danger)}
+.sfLive-vendor .sfLiveSrc{color:var(--success)}
+.sfLiveFt{display:flex;align-items:center;gap:8px;padding:11px 16px;border-top:1px solid var(--border);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.sfLiveDot{width:6px;height:6px;border-radius:50%;background:var(--success)}
+@media(prefers-reduced-motion:reduce){
+  .sfLiveScroll .sfLiveTrack{animation:none}
+  .sfLiveViewport{overflow-y:auto}
+  .sfLiveDup{display:none}
+  .sfPulse{animation:none}
+}
+
 .sfStars{color:var(--amber-bright);letter-spacing:.04em}
 .sfOpen{margin-left:auto;font-size:11px;font-weight:800;color:var(--success);background:var(--success-bg);border-radius:999px;padding:2px 8px}
 .sfClosed{color:var(--muted);background:var(--surface-muted)}
@@ -190,6 +228,7 @@
 /* responsive */
 @media(max-width:900px){
   .sfHero,.sfPro{grid-template-columns:1fr}
+  .sfLive{height:380px}
   .csGrid{grid-template-columns:1fr}
   .csKpis{grid-template-columns:repeat(2,1fr)}
   .sfCats{grid-template-columns:1fr}

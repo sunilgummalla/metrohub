@@ -7,6 +7,7 @@ import { parseStubBearerToken } from "../common/stub-auth";
  *   POST /api/home/demo-login   -> a session token for the seeded demo user
  *   GET  /api/home/apps         -> public micro-app catalog (the registry)
  *   GET  /api/home/landing      -> public storefront payload (no auth)
+ *   GET  /api/home/activity     -> public live-feed activity stream (no auth)
  *   GET  /api/home/dashboard    -> personalized console payload (Bearer token)
  *
  * The token format (`stub-token-<userId>`) matches the members stub scheme so a
@@ -34,6 +35,12 @@ export class HomeController {
   landing(@Query("citySlug") citySlug?: unknown) {
     // citySlug is validated/coerced in the service (qs can yield a non-string).
     return this.homeService.getLanding(citySlug);
+  }
+
+  @Get("activity")
+  activity(@Query("citySlug") citySlug?: unknown) {
+    // Public live-feed stream; citySlug coerced/validated in the service.
+    return this.homeService.getActivity(citySlug);
   }
 
   @Get("dashboard")
