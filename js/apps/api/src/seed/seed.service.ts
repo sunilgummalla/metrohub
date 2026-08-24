@@ -353,7 +353,10 @@ export class SeedService implements OnModuleInit {
 
     // 9. Demo personal event (hosted by the demo user) + a few RSVPs. startAt is
     // kept ~18 days out on each boot so the demo event is always upcoming.
-    const DEMO_EVENT_ID = "block-potluck-demo";
+    // Fixed (so reseeds upsert idempotently) but carries a baked-in random
+    // suffix, so the seeded event's public link is unguessable like a real one —
+    // GET /api/events/:eventId exposes the guest list even in a demo environment.
+    const DEMO_EVENT_ID = "block-potluck-demo-8f21c7a4e0b9d635";
     await this.eventModel.updateOne(
       { eventId: DEMO_EVENT_ID },
       {

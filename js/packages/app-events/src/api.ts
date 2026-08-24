@@ -38,7 +38,10 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init: RequestInit = {}, auth = false): Promise<T> {
-  const headers: Record<string, string> = { ...(init.headers as Record<string, string>) };
+  // Normalize via Headers so a caller-supplied Headers instance or [k,v][] isn't
+  // silently dropped by an object spread (RequestInit.headers is a union type).
+  const headers: Record<string, string> = {};
+  new Headers(init.headers).forEach((value, key) => { headers[key] = value; });
   if (init.body) headers["Content-Type"] = "application/json";
   if (auth) {
     const t = getToken();
