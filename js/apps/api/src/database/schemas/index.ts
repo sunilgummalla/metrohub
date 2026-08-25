@@ -39,3 +39,9 @@ export type { DealDocument } from "./deal.schema";
 
 export { App, AppSchema } from "./app.schema";
 export type { AppDocument } from "./app.schema";
+
+export { Event, EventSchema } from "./event.schema";
+export type { EventDocument } from "./event.schema";
+
+export { EventRsvp, EventRsvpSchema } from "./event-rsvp.schema";
+export type { EventRsvpDocument } from "./event-rsvp.schema";

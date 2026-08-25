@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => {
         "@metrohub/marketplace": path.resolve(__dirname, "../../packages/app-marketplace/src/index.ts"),
         "@metrohub/housing-loan": path.resolve(__dirname, "../../packages/app-housing-loan/src/index.ts"),
         "@metrohub/raffle": path.resolve(__dirname, "../../packages/app-raffle/src/index.ts"),
+        "@metrohub/events": path.resolve(__dirname, "../../packages/app-events/src/index.ts"),
       },
     },
     server: {
