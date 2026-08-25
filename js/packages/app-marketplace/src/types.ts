@@ -1,3 +1,12 @@
+/** Structured "open for sponsorships" intake. */
+export interface Sponsorship {
+  eventTypes: string[];
+  budgetRange: string;
+  audience: string;
+  contactEmail: string;
+  notes: string;
+}
+
 /** Mirrors the API Vendor document shape returned by GET /api/vendors */
 export interface Vendor {
   _id: string;
@@ -20,8 +29,39 @@ export interface Vendor {
     coordinates: [number, number]; // [lng, lat]
   } | null;
   activeBoosters: Array<{ type: string; expiresAt: string }>;
+  openToSponsorships?: boolean;
+  sponsorship?: Sponsorship;
   createdAt: string;
   updatedAt: string;
+}
+
+/** A member's own listing (any status) from GET /api/vendors/mine. */
+export interface MyListing extends Vendor {
+  status: "pending" | "approved" | "rejected" | "suspended";
+}
+
+/** Sign-in providers the onboarding flow offers. */
+export type Provider = "google" | "instagram" | "amazon" | "entra-work" | "entra-personal";
+
+export interface Session {
+  memberId: string;
+  email: string;
+  displayName: string;
+  provider: string;
+  token: string;
+}
+
+/** Payload for POST /api/vendors (create a listing). */
+export interface CreateVendorInput {
+  businessName: string;
+  category: string;
+  citySlug: string;
+  descriptionMarkdown?: string;
+  address?: string;
+  searchTags?: string[];
+  contact?: { phone?: string; email?: string; website?: string };
+  openToSponsorships?: boolean;
+  sponsorship?: Sponsorship;
 }
 
 export interface BrowseResponse {
@@ -35,4 +75,5 @@ export interface BrowseFilters {
   q?: string;
   page?: number;
   limit?: number;
+  openToSponsorships?: boolean;
 }

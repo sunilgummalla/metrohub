@@ -1,4 +1,12 @@
-import type { BrowseFilters, BrowseResponse, Vendor } from "./types";
+import type {
+  BrowseFilters,
+  BrowseResponse,
+  CreateVendorInput,
+  MyListing,
+  Provider,
+  Session,
+  Vendor,
+} from "./types";
 
 // Vite replaces import.meta.env.VITE_API_URL at build time.
 // Fall back to /api for SSR / test environments where import.meta is unavailable.
@@ -11,6 +19,43 @@ const API_BASE: string = (() => {
   }
 })();
 
+// Shared with the shell's session helper so a member signed in here is
+// recognized across the app.
+const TOKEN_KEY = "mh-session-token";
+
+export function getToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setToken(token: string | null): void {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* storage unavailable — non-fatal */
+  }
+}
+
+export class ApiError extends Error {
+  constructor(public status: number, message?: string) {
+    super(message ?? `Request failed (${status})`);
+  }
+}
+
+async function readError(res: Response): Promise<string> {
+  try {
+    const body = (await res.json()) as { message?: string | string[] };
+    const m = body?.message;
+    return Array.isArray(m) ? m.join(", ") : (m ?? `Request failed (${res.status})`);
+  } catch {
+    return `Request failed (${res.status})`;
+  }
+}
+
 export async function browseVendors(filters: BrowseFilters): Promise<BrowseResponse> {
   const params = new URLSearchParams();
   params.set("citySlug", filters.citySlug);
@@ -18,10 +63,61 @@ export async function browseVendors(filters: BrowseFilters): Promise<BrowseRespo
   if (filters.q) params.set("q", filters.q);
   if (filters.page) params.set("page", String(filters.page));
   if (filters.limit) params.set("limit", String(filters.limit));
+  if (filters.openToSponsorships) params.set("openToSponsorships", "true");
 
   const res = await fetch(`${API_BASE}/vendors?${params.toString()}`);
   if (!res.ok) throw new Error(`Failed to browse vendors: ${res.status}`);
   return res.json() as Promise<BrowseResponse>;
+}
+
+// ─── Onboarding (member auth + own listings) ────────────────────────────────
+
+/** Stub provider sign-in — stores the returned session token. */
+export async function providerSignIn(provider: Provider): Promise<Session> {
+  const res = await fetch(`${API_BASE}/members/oauth/${provider}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  if (!res.ok) throw new ApiError(res.status, await readError(res));
+  const session = (await res.json()) as Session;
+  setToken(session.token);
+  return session;
+}
+
+export function signOut(): void {
+  setToken(null);
+}
+
+export async function listMyVendors(): Promise<MyListing[]> {
+  const t = getToken();
+  const res = await fetch(`${API_BASE}/vendors/mine`, {
+    headers: t ? { Authorization: `Bearer ${t}` } : {},
+  });
+  if (res.status === 401) {
+    setToken(null);
+    throw new ApiError(401, "Please sign in again");
+  }
+  if (!res.ok) throw new ApiError(res.status, await readError(res));
+  return res.json() as Promise<MyListing[]>;
+}
+
+export async function createVendor(input: CreateVendorInput): Promise<MyListing> {
+  const t = getToken();
+  const res = await fetch(`${API_BASE}/vendors`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(t ? { Authorization: `Bearer ${t}` } : {}),
+    },
+    body: JSON.stringify(input),
+  });
+  if (res.status === 401) {
+    setToken(null);
+    throw new ApiError(401, "Please sign in again");
+  }
+  if (!res.ok) throw new ApiError(res.status, await readError(res));
+  return res.json() as Promise<MyListing>;
 }
 
 export async function getVendor(id: string): Promise<Vendor> {
