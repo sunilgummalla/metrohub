@@ -234,6 +234,16 @@ export class VendorsController {
     return this.vendorsService.setStatus(id, status);
   }
 
+  // ─── Member: own listings (MemberGuard) ───────────────────────────────────
+  // Declared before :id so "mine" isn't captured as an :id param.
+
+  @Get("mine")
+  @UseGuards(MemberGuard)
+  listMine(@Req() req: { headers: Record<string, string> }) {
+    const ownerId = extractMemberIdOrThrow(req);
+    return this.vendorsService.listMine(ownerId);
+  }
+
   // ─── Public (by ID) ───────────────────────────────────────────────────────
 
   @Get(":id")

@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Param,
   Patch,
   Post,
   Req,
@@ -12,7 +13,7 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { MembersService } from "./members.service";
-import { ForgotPasswordDto, LoginDto, RegisterDto, UpdateProfileDto } from "./members.dto";
+import { ForgotPasswordDto, LoginDto, RegisterDto, SocialLoginDto, UpdateProfileDto } from "./members.dto";
 import { parseStubBearerToken } from "../common/stub-auth";
 
 /**
@@ -53,6 +54,12 @@ export class MembersController {
   @Post("login")
   login(@Body() dto: LoginDto) {
     return this.membersService.login(dto);
+  }
+
+  @Post("oauth/:provider")
+  socialLogin(@Param("provider") provider: string, @Body() dto: SocialLoginDto) {
+    // Stub provider sign-in (google | instagram | amazon | entra-work | entra-personal).
+    return this.membersService.socialLogin(provider, dto ?? {});
   }
 
   @Post("forgot-password")

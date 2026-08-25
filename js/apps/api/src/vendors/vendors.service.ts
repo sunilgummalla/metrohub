@@ -179,6 +179,16 @@ export class VendorsService {
 
   // ─── Member (Vendor Self-Service) ─────────────────────────────────────────
 
+  /** Lists all listings owned by a member (any status) — for the onboarding dashboard. */
+  async listMine(ownerId: string): Promise<VendorDocument[]> {
+    const rows = await this.vendorModel
+      .find({ ownerId: toObjectId(ownerId, "ownerId") })
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+    return rows as unknown as VendorDocument[];
+  }
+
   /** Creates a new vendor application (status: pending) */
   async create(ownerId: string, dto: CreateVendorDto): Promise<VendorDocument> {
     const vendor = new this.vendorModel({
