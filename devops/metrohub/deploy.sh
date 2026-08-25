@@ -8,6 +8,7 @@ set -eu
 required_vars="
 STACK_NAME
 APP_DOMAIN
+MEMBER_DOMAIN
 API_IMAGE
 EXPERIENCE_IMAGE
 SHELL_IMAGE
@@ -58,10 +59,24 @@ CORS_ORIGINS="${CORS_ORIGINS:-}"
 # routing registry is always seeded regardless). Defaults OFF here so a manual
 # deploy seeds no demo data; the CI pipeline passes "true" for the demo stacks.
 SEED_SAMPLE_DATA="${SEED_SAMPLE_DATA:-false}"
+# ── Member portal / OAuth. All optional except MEMBER_DOMAIN (required above).
+# Unset provider credentials leave that provider disabled (no error). OAuth
+# callbacks land on the member portal, so the redirect base defaults to it.
+OAUTH_REDIRECT_BASE="${OAUTH_REDIRECT_BASE:-https://${MEMBER_DOMAIN}}"
+MH_SESSION_SECRET="${MH_SESSION_SECRET:-}"
+OAUTH_GOOGLE_CLIENT_ID="${OAUTH_GOOGLE_CLIENT_ID:-}"; OAUTH_GOOGLE_CLIENT_SECRET="${OAUTH_GOOGLE_CLIENT_SECRET:-}"
+OAUTH_ENTRA_CLIENT_ID="${OAUTH_ENTRA_CLIENT_ID:-}"; OAUTH_ENTRA_CLIENT_SECRET="${OAUTH_ENTRA_CLIENT_SECRET:-}"
+OAUTH_AMAZON_CLIENT_ID="${OAUTH_AMAZON_CLIENT_ID:-}"; OAUTH_AMAZON_CLIENT_SECRET="${OAUTH_AMAZON_CLIENT_SECRET:-}"
+OAUTH_INSTAGRAM_CLIENT_ID="${OAUTH_INSTAGRAM_CLIENT_ID:-}"; OAUTH_INSTAGRAM_CLIENT_SECRET="${OAUTH_INSTAGRAM_CLIENT_SECRET:-}"
 # Export every var docker-stack.yml substitutes — including MONGO_DB (${MONGO_DB:?})
 # — so `docker stack deploy` sees them even when deploy.sh is sourced rather than
 # executed (a child process only inherits EXPORTED vars).
-export STACK_NAME APP_DOMAIN API_IMAGE EXPERIENCE_IMAGE SHELL_IMAGE CORS_ORIGINS MONGO_DB SEED_SAMPLE_DATA
+export STACK_NAME APP_DOMAIN MEMBER_DOMAIN API_IMAGE EXPERIENCE_IMAGE SHELL_IMAGE CORS_ORIGINS MONGO_DB SEED_SAMPLE_DATA
+export OAUTH_REDIRECT_BASE MH_SESSION_SECRET \
+  OAUTH_GOOGLE_CLIENT_ID OAUTH_GOOGLE_CLIENT_SECRET \
+  OAUTH_ENTRA_CLIENT_ID OAUTH_ENTRA_CLIENT_SECRET \
+  OAUTH_AMAZON_CLIENT_ID OAUTH_AMAZON_CLIENT_SECRET \
+  OAUTH_INSTAGRAM_CLIENT_ID OAUTH_INSTAGRAM_CLIENT_SECRET
 docker stack deploy --with-registry-auth --prune -c docker-stack.yml "$STACK_NAME"
 
 docker service ls --filter "label=com.docker.stack.namespace=$STACK_NAME"

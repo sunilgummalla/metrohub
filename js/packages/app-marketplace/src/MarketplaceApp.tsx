@@ -1,9 +1,24 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { browseVendors, getCategories, getVendor } from "./api";
 import { VendorDetail } from "./VendorDetail";
-import { Onboarding } from "./Onboarding";
 import type { BrowseFilters, Vendor } from "./types";
 import "./marketplace.css";
+
+/**
+ * The vendor/member portal lives on its own subdomain (the experience app):
+ * dev.metrohub.io → dev-member.metrohub.io, www.metrohub.io → member.metrohub.io.
+ * Falls back to member.metrohub.io elsewhere (e.g. local dev).
+ */
+function memberPortalUrl(): string {
+  try {
+    const host = window.location.host;
+    if (host.startsWith("www.")) return `${window.location.protocol}//${host.replace(/^www\./, "member.")}`;
+    if (host.startsWith("dev.")) return `${window.location.protocol}//${host.replace(/^dev\./, "dev-member.")}`;
+  } catch {
+    /* fall through */
+  }
+  return "https://member.metrohub.io";
+}
 
 interface MarketplaceAppProps {
   /** City slug for this MetroHub instance, e.g. "seattle" */
@@ -143,14 +158,6 @@ export function MarketplaceApp({ citySlug = "seattle" }: MarketplaceAppProps) {
   const [total, setTotal] = useState(0);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
-  // Reopen onboarding after an OAuth redirect returns to /marketplace?onboarding=1.
-  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
-    try {
-      return new URLSearchParams(window.location.search).get("onboarding") === "1";
-    } catch {
-      return false;
-    }
-  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -224,14 +231,6 @@ export function MarketplaceApp({ citySlug = "seattle" }: MarketplaceAppProps) {
   const activeLimit = filters.limit ?? PAGE_SIZE;
   const totalPages = Math.ceil(total / activeLimit);
   const activePage = filters.page ?? 1;
-
-  if (showOnboarding) {
-    return (
-      <div className="mktApp">
-        <Onboarding citySlug={citySlug} categories={categories} onBack={() => setShowOnboarding(false)} />
-      </div>
-    );
-  }
 
   if (selectedVendor) {
     return (
@@ -365,7 +364,7 @@ export function MarketplaceApp({ citySlug = "seattle" }: MarketplaceAppProps) {
               Join the MetroHub Marketplace — reach thousands of active local users.
             </p>
           </div>
-          <button type="button" className="mktJoinBtn" onClick={() => setShowOnboarding(true)}>List your business →</button>
+          <a className="mktJoinBtn" href={memberPortalUrl()}>List your business →</a>
         </div>
       </section>
     </div>

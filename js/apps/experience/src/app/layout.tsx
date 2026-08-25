@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Money Money",
-  description: "Personal finance shell app"
+  title: "MetroHub",
+  description: "MetroHub experience layer — member, admin, and www surfaces."
 };
 
 export default function RootLayout({

@@ -210,3 +210,19 @@ h2 {
     grid-template-columns: 1fr;
   }
 }
+
+/* Placeholder surfaces (admin / www / root fallback). */
+.surfacePlaceholder {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+}
+.surfacePlaceholder h1 { margin: 0; font-size: 1.8rem; }
+.surfacePlaceholder a { color: var(--accent); font-weight: 600; }
