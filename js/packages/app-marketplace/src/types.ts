@@ -1,3 +1,12 @@
+/** Structured "open for sponsorships" intake. */
+export interface Sponsorship {
+  eventTypes: string[];
+  budgetRange: string;
+  audience: string;
+  contactEmail: string;
+  notes: string;
+}
+
 /** Mirrors the API Vendor document shape returned by GET /api/vendors */
 export interface Vendor {
   _id: string;
@@ -20,6 +29,8 @@ export interface Vendor {
     coordinates: [number, number]; // [lng, lat]
   } | null;
   activeBoosters: Array<{ type: string; expiresAt: string }>;
+  openToSponsorships?: boolean;
+  sponsorship?: Sponsorship;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,4 +46,5 @@ export interface BrowseFilters {
   q?: string;
   page?: number;
   limit?: number;
+  openToSponsorships?: boolean;
 }

@@ -88,6 +88,21 @@ services:
       # `docker stack deploy` seeds no demo data into a real DB — the CI deploy
       # sets it "true" for the demo/showcase dev+prod stacks.
       - SEED_SAMPLE_DATA=${SEED_SAMPLE_DATA:-false}
+      # ── Member OAuth sign-in (vendor onboarding) ──────────────────────────
+      # All optional: a provider is enabled only when BOTH its id and secret are
+      # set — otherwise it's simply not offered (no error). MH_SESSION_SECRET
+      # signs OAuth session tokens (per-process fallback if unset). Set these via
+      # the deploy environment / secrets to turn real sign-in on.
+      - MH_SESSION_SECRET=${MH_SESSION_SECRET:-}
+      - OAUTH_REDIRECT_BASE=${OAUTH_REDIRECT_BASE:-}
+      - OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID:-}
+      - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET:-}
+      - OAUTH_ENTRA_CLIENT_ID=${OAUTH_ENTRA_CLIENT_ID:-}
+      - OAUTH_ENTRA_CLIENT_SECRET=${OAUTH_ENTRA_CLIENT_SECRET:-}
+      - OAUTH_AMAZON_CLIENT_ID=${OAUTH_AMAZON_CLIENT_ID:-}
+      - OAUTH_AMAZON_CLIENT_SECRET=${OAUTH_AMAZON_CLIENT_SECRET:-}
+      - OAUTH_INSTAGRAM_CLIENT_ID=${OAUTH_INSTAGRAM_CLIENT_ID:-}
+      - OAUTH_INSTAGRAM_CLIENT_SECRET=${OAUTH_INSTAGRAM_CLIENT_SECRET:-}
     networks:
       - edge
       - data
@@ -105,6 +120,9 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      # Proxy target for /api/* (see js/apps/experience/next.config.mjs). The API
+      # keeps no public hostname; the experience app reaches it on the overlay.
+      - EXPERIENCE_API_ORIGIN=http://api:3000
     networks:
       - edge
     deploy:
@@ -114,6 +132,14 @@ services:
         delay: 10s
         max_attempts: 10
         window: 60s
+      # Public router for the member portal (and future admin/www surfaces the
+      # experience app serves). The app routes by host: member.<domain> /
+      # dev-member.<domain> render the member portal.
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.${STACK_NAME}-experience.rule=Host(`${MEMBER_DOMAIN}`)
+        - traefik.http.routers.${STACK_NAME}-experience.entrypoints=web
+        - traefik.http.services.${STACK_NAME}-experience.loadbalancer.server.port=3000
 
   shell:
     image: ${SHELL_IMAGE:?SHELL_IMAGE_required}

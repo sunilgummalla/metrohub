@@ -2,7 +2,20 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { Vendor, VendorDocument, VendorStatus } from "../database";
-import { BrowseVendorsQueryDto, CreateVendorDto, UpdateVendorDto } from "./vendors.dto";
+import { BrowseVendorsQueryDto, CreateVendorDto, SponsorshipInput, UpdateVendorDto } from "./vendors.dto";
+
+const str = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
+
+/** Coerce a (possibly partial/untrusted) sponsorship payload into the stored shape. */
+function normalizeSponsorship(s: SponsorshipInput | undefined) {
+  return {
+    eventTypes: Array.isArray(s?.eventTypes) ? s!.eventTypes.filter((t): t is string => typeof t === "string").map((t) => t.trim()).filter(Boolean).slice(0, 20) : [],
+    budgetRange: str(s?.budgetRange),
+    audience: str(s?.audience),
+    contactEmail: str(s?.contactEmail),
+    notes: str(s?.notes).slice(0, 2000),
+  };
+}
 
 const DEFAULT_PAGE_LIMIT = 20;
 const MAX_PAGE_LIMIT = 100;
@@ -96,6 +109,11 @@ export class VendorsService {
       filter.$text = { $search: q };
     }
 
+    // Sponsorship filter — arrives as a query string; only "true" narrows results.
+    if (query.openToSponsorships === "true") {
+      filter.openToSponsorships = true;
+    }
+
     // Geo-proximity filter using MongoDB 2dsphere index.
     // Only applied when all three values are present and finite numbers.
     const isGeoQuery = lat !== undefined && lng !== undefined && radiusKm !== undefined;
@@ -161,6 +179,16 @@ export class VendorsService {
 
   // ─── Member (Vendor Self-Service) ─────────────────────────────────────────
 
+  /** Lists all listings owned by a member (any status) — for the onboarding dashboard. */
+  async listMine(ownerId: string): Promise<VendorDocument[]> {
+    const rows = await this.vendorModel
+      .find({ ownerId: toObjectId(ownerId, "ownerId") })
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+    return rows as unknown as VendorDocument[];
+  }
+
   /** Creates a new vendor application (status: pending) */
   async create(ownerId: string, dto: CreateVendorDto): Promise<VendorDocument> {
     const vendor = new this.vendorModel({
@@ -180,6 +208,8 @@ export class VendorsService {
             coordinates: [dto.location.longitude, dto.location.latitude],
           }
         : null,
+      openToSponsorships: dto.openToSponsorships === true,
+      sponsorship: normalizeSponsorship(dto.sponsorship),
     });
 
     return vendor.save();
@@ -210,6 +240,12 @@ export class VendorsService {
         type: "Point",
         coordinates: [dto.location.longitude, dto.location.latitude],
       };
+    }
+    if (dto.openToSponsorships !== undefined) update.openToSponsorships = dto.openToSponsorships === true;
+    // The sponsorship profile is a cohesive block — replace it wholesale (after
+    // normalizing) rather than dot-patching individual fields.
+    if (dto.sponsorship !== undefined) {
+      update.sponsorship = normalizeSponsorship(dto.sponsorship);
     }
 
     // Mark as needing re-tokenization whenever content changes

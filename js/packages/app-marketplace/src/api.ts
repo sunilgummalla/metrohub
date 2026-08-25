@@ -18,6 +18,7 @@ export async function browseVendors(filters: BrowseFilters): Promise<BrowseRespo
   if (filters.q) params.set("q", filters.q);
   if (filters.page) params.set("page", String(filters.page));
   if (filters.limit) params.set("limit", String(filters.limit));
+  if (filters.openToSponsorships) params.set("openToSponsorships", "true");
 
   const res = await fetch(`${API_BASE}/vendors?${params.toString()}`);
   if (!res.ok) throw new Error(`Failed to browse vendors: ${res.status}`);

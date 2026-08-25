@@ -40,6 +40,7 @@ jobs:
       environment: ${{ steps.target.outputs.environment }}
       stack: ${{ steps.target.outputs.stack }}
       app_domain: ${{ steps.target.outputs.app_domain }}
+      member_domain: ${{ steps.target.outputs.member_domain }}
       cors_origins: ${{ steps.target.outputs.cors_origins }}
       mongo_db: ${{ steps.target.outputs.mongo_db }}
       seed_sample_data: ${{ steps.target.outputs.seed_sample_data }}
@@ -60,10 +61,12 @@ jobs:
           if [ "$environment" = "dev" ]; then
             stack="mh-dev"
             app_domain="dev.metrohub.io"
+            member_domain="dev-member.metrohub.io"
             mongo_db="metrohub_dev"
           else
             stack="mh-prod"
             app_domain="www.metrohub.io"
+            member_domain="member.metrohub.io"
             mongo_db="metrohub_prod"
           fi
 
@@ -75,6 +78,7 @@ jobs:
           echo "environment=$environment" >> "$GITHUB_OUTPUT"
           echo "stack=$stack" >> "$GITHUB_OUTPUT"
           echo "app_domain=$app_domain" >> "$GITHUB_OUTPUT"
+          echo "member_domain=$member_domain" >> "$GITHUB_OUTPUT"
           echo "cors_origins=https://$app_domain" >> "$GITHUB_OUTPUT"
           echo "mongo_db=$mongo_db" >> "$GITHUB_OUTPUT"
           echo "seed_sample_data=$seed_sample_data" >> "$GITHUB_OUTPUT"
@@ -186,6 +190,7 @@ jobs:
         env:
           STACK_NAME: ${{ needs.target.outputs.stack }}
           APP_DOMAIN: ${{ needs.target.outputs.app_domain }}
+          MEMBER_DOMAIN: ${{ needs.target.outputs.member_domain }}
           CORS_ORIGINS: ${{ needs.target.outputs.cors_origins }}
           MONGO_DB: ${{ needs.target.outputs.mongo_db }}
           SEED_SAMPLE_DATA: ${{ needs.target.outputs.seed_sample_data }}
@@ -196,4 +201,4 @@ jobs:
           REDEPLOY_BASE: ${{ github.event_name == 'workflow_dispatch' && inputs.redeploy_base || 'false' }}
         run: |
           ssh -i ~/.ssh/metrohub "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            "cd /opt/metrohub/deploy && chmod +x deploy.sh scripts/sync-secrets.sh && STACK_NAME='$STACK_NAME' APP_DOMAIN='$APP_DOMAIN' CORS_ORIGINS='$CORS_ORIGINS' MONGO_DB='$MONGO_DB' SEED_SAMPLE_DATA='$SEED_SAMPLE_DATA' REDEPLOY_BASE='$REDEPLOY_BASE' API_IMAGE='$API_IMAGE' EXPERIENCE_IMAGE='$EXPERIENCE_IMAGE' SHELL_IMAGE='$SHELL_IMAGE' ./deploy.sh"
+            "cd /opt/metrohub/deploy && chmod +x deploy.sh scripts/sync-secrets.sh && STACK_NAME='$STACK_NAME' APP_DOMAIN='$APP_DOMAIN' MEMBER_DOMAIN='$MEMBER_DOMAIN' CORS_ORIGINS='$CORS_ORIGINS' MONGO_DB='$MONGO_DB' SEED_SAMPLE_DATA='$SEED_SAMPLE_DATA' REDEPLOY_BASE='$REDEPLOY_BASE' API_IMAGE='$API_IMAGE' EXPERIENCE_IMAGE='$EXPERIENCE_IMAGE' SHELL_IMAGE='$SHELL_IMAGE' ./deploy.sh"

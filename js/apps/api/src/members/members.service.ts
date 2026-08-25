@@ -7,7 +7,16 @@ import {
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { User, UserDocument, Vendor, VendorDocument } from "../database";
-import { ForgotPasswordDto, LoginDto, RegisterDto, UpdateProfileDto } from "./members.dto";
+import { ForgotPasswordDto, LoginDto, RegisterDto, SocialLoginDto, UpdateProfileDto } from "./members.dto";
+
+/** Supported sign-in providers → human label. Real OAuth handlers slot in later. */
+const PROVIDERS: Record<string, string> = {
+  google: "Google",
+  instagram: "Instagram",
+  amazon: "Amazon",
+  "entra-work": "Microsoft (Work)",
+  "entra-personal": "Microsoft (Personal)",
+};
 
 /**
  * Returns true when the stub auth endpoints should be disabled.
@@ -133,6 +142,52 @@ export class MembersService {
       businessName: vendor?.businessName ?? user.displayName,
       token: `stub-token-${(user._id as Types.ObjectId).toHexString()}`,
     };
+  }
+
+  /**
+   * Stub provider sign-in (Google / Instagram / Amazon / Microsoft Entra).
+   *
+   * Real OAuth token exchange isn't wired yet, so this finds-or-creates a User
+   * for the given provider identity and returns a stub session token — it does
+   * NOT create a vendor (the listing is created separately via POST /api/vendors).
+   * A real handler replaces the identity resolution below; the response shape and
+   * the caller stay the same.
+   *
+   * DISABLED unless ALLOW_STUB_AUTH=true and NODE_ENV != "production".
+   */
+  async socialLogin(
+    providerRaw: string,
+    dto: SocialLoginDto,
+  ): Promise<{ memberId: string; email: string; displayName: string; provider: string; token: string }> {
+    if (isStubAuthDisabled()) {
+      throw new ServiceUnavailableException(
+        "Sign-in is not yet available — social OAuth coming soon. " +
+        "Set ALLOW_STUB_AUTH=true in local dev to use the stub.",
+      );
+    }
+    const provider = (providerRaw ?? "").toLowerCase();
+    const label = PROVIDERS[provider];
+    if (!label) {
+      throw new BadRequestException(`Unsupported provider — expected one of: ${Object.keys(PROVIDERS).join(", ")}`);
+    }
+    const rawEmail = typeof dto.email === "string" ? dto.email.trim().toLowerCase() : "";
+    // Without real OAuth we synthesize a stable per-provider demo identity when
+    // the client doesn't supply one, so "Sign in with Google" yields a session.
+    const email = rawEmail || `demo.${provider}@metrohub.example`;
+    const displayName = (typeof dto.displayName === "string" && dto.displayName.trim()) || `${label} Business Owner`;
+
+    let user = await this.userModel.findOne({ email }).exec();
+    if (!user) {
+      user = await new this.userModel({
+        email,
+        displayName,
+        defaultHandle: email.split("@")[0],
+        passwordHash: null,
+        oauthProviders: [{ provider, providerId: `stub-${email}` }],
+      }).save();
+    }
+    const id = (user._id as Types.ObjectId).toHexString();
+    return { memberId: id, email: user.email, displayName: user.displayName, provider, token: `stub-token-${id}` };
   }
 
   /**

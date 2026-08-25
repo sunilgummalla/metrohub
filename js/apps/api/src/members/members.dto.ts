@@ -28,6 +28,17 @@ export class ForgotPasswordDto {
   declare email: string;
 }
 
+/**
+ * Provider sign-in payload. Real OAuth (Google / Instagram / Amazon / Microsoft
+ * Entra) isn't wired yet, so the stub optionally accepts an email/displayName to
+ * differentiate demo accounts; a real handler would derive these from the
+ * provider's token exchange instead.
+ */
+export class SocialLoginDto {
+  declare email?: string;
+  declare displayName?: string;
+}
+
 export class UpdateProfileDto {
   declare businessName?: string;
   declare category?: string;

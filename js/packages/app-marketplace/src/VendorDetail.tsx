@@ -127,6 +127,38 @@ export function VendorDetail({ vendor, onBack }: VendorDetailProps) {
           </section>
         )}
 
+        {/* Sponsorships */}
+        {vendor.openToSponsorships && (
+          <section className="mktSponsorDetail" aria-label="Sponsorships">
+            <h2>
+              <span className="mktBadge mktBadgeSponsor">Open to sponsorships</span>
+            </h2>
+            {vendor.sponsorship?.eventTypes && vendor.sponsorship.eventTypes.length > 0 && (
+              <div className="mktChips mktChipsStatic">
+                {vendor.sponsorship.eventTypes.map((t) => (
+                  <span key={t} className="mktChip isActive">{t}</span>
+                ))}
+              </div>
+            )}
+            <dl className="vm-detail__dl mktSponsorDl">
+              {vendor.sponsorship?.budgetRange && (
+                <><dt className="vm-detail__dt">Budget</dt><dd className="vm-detail__dd">{vendor.sponsorship.budgetRange}</dd></>
+              )}
+              {vendor.sponsorship?.audience && (
+                <><dt className="vm-detail__dt">Audience</dt><dd className="vm-detail__dd">{vendor.sponsorship.audience}</dd></>
+              )}
+              {vendor.sponsorship?.notes && (
+                <><dt className="vm-detail__dt">Notes</dt><dd className="vm-detail__dd">{vendor.sponsorship.notes}</dd></>
+              )}
+            </dl>
+            {vendor.sponsorship?.contactEmail && (
+              <a className="mktSubmitBtn mktSponsorCta" href={`mailto:${vendor.sponsorship.contactEmail}?subject=Sponsorship enquiry`}>
+                Pitch a sponsorship →
+              </a>
+            )}
+          </section>
+        )}
+
         {/* Category-specific data */}
         {Object.keys(vendor.categoryData).length > 0 && (
           <section className="vm-detail__category-data" aria-label="Details">

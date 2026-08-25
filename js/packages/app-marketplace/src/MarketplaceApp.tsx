@@ -4,6 +4,22 @@ import { VendorDetail } from "./VendorDetail";
 import type { BrowseFilters, Vendor } from "./types";
 import "./marketplace.css";
 
+/**
+ * The vendor/member portal lives on its own subdomain (the experience app):
+ * dev.metrohub.io → dev-member.metrohub.io, www.metrohub.io → member.metrohub.io.
+ * Falls back to member.metrohub.io elsewhere (e.g. local dev).
+ */
+function memberPortalUrl(): string {
+  try {
+    const host = window.location.host;
+    if (host.startsWith("www.")) return `${window.location.protocol}//${host.replace(/^www\./, "member.")}`;
+    if (host.startsWith("dev.")) return `${window.location.protocol}//${host.replace(/^dev\./, "dev-member.")}`;
+  } catch {
+    /* fall through */
+  }
+  return "https://member.metrohub.io";
+}
+
 interface MarketplaceAppProps {
   /** City slug for this MetroHub instance, e.g. "seattle" */
   citySlug?: string;
@@ -68,7 +84,10 @@ function BusinessCard({
   const line = tagline(vendor);
   return (
     <button type="button" className="mktBizCard" onClick={() => onClick(vendor)} aria-label={`View ${vendor.businessName}`}>
-      {featured && <span className="mktBadge mktBadgeFeatured">Featured</span>}
+      <div className="mktBizBadges">
+        {featured && <span className="mktBadge mktBadgeFeatured">Featured</span>}
+        {vendor.openToSponsorships && <span className="mktBadge mktBadgeSponsor">Open to sponsorships</span>}
+      </div>
       <div className="mktBizIconWrap">
         {vendor.images[0] ? (
           <img className="mktBizThumb" src={vendor.images[0]} alt={vendor.businessName} loading="lazy" />
@@ -273,6 +292,14 @@ export function MarketplaceApp({ citySlug = "seattle" }: MarketplaceAppProps) {
       <section className="mktSection">
         <div className="mktSectionHeader">
           <h3 className="mktSectionTitle">{filters.category ?? "All businesses"}</h3>
+          <label className="mktSponsorFilter">
+            <input
+              type="checkbox"
+              checked={!!filters.openToSponsorships}
+              onChange={(e) => setFilters((f) => ({ ...f, openToSponsorships: e.target.checked || undefined, page: 1 }))}
+            />
+            Open to sponsorships
+          </label>
           {!loading && !error && <span className="mktResultCount">{total} results</span>}
         </div>
 
@@ -337,7 +364,7 @@ export function MarketplaceApp({ citySlug = "seattle" }: MarketplaceAppProps) {
               Join the MetroHub Marketplace — reach thousands of active local users.
             </p>
           </div>
-          <button type="button" className="mktJoinBtn">List your business →</button>
+          <a className="mktJoinBtn" href={memberPortalUrl()}>List your business →</a>
         </div>
       </section>
     </div>
