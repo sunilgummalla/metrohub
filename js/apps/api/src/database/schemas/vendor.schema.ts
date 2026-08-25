@@ -37,6 +37,33 @@ class ActiveBooster {
   declare expiresAt: Date;
 }
 
+/**
+ * Structured "open for sponsorships" intake — what a vendor is looking to
+ * sponsor and how a sponsor can reach them. Only meaningful when the top-level
+ * `openToSponsorships` flag is true.
+ */
+class SponsorshipProfile {
+  /** Kinds of events they'll sponsor, e.g. ["Cultural festival","Game night"]. */
+  @Prop({ type: [String], default: [] })
+  declare eventTypes: string[];
+
+  /** Free-text budget range, e.g. "$500–$2,000". */
+  @Prop({ type: String, default: "" })
+  declare budgetRange: string;
+
+  /** Who they're trying to reach, e.g. "Families in Bellevue/Redmond". */
+  @Prop({ type: String, default: "" })
+  declare audience: string;
+
+  /** Contact for sponsorship enquiries (may differ from the public contact). */
+  @Prop({ type: String, default: "" })
+  declare contactEmail: string;
+
+  /** Anything else a sponsor should know. */
+  @Prop({ type: String, default: "" })
+  declare notes: string;
+}
+
 @Schema({ collection: "vendors", timestamps: true })
 export class Vendor {
   /** References users._id — the vendor account owner */
@@ -116,6 +143,16 @@ export class Vendor {
 
   @Prop({ type: [ActiveBooster], default: [] })
   declare activeBoosters: ActiveBooster[];
+
+  // ─── Sponsorships ─────────────────────────────────────────────────────────
+
+  /** Whether this vendor is currently open to sponsoring community events. */
+  @Prop({ type: Boolean, default: false, index: true })
+  declare openToSponsorships: boolean;
+
+  /** Structured sponsorship intake (see SponsorshipProfile). */
+  @Prop({ type: SponsorshipProfile, default: () => ({}) })
+  declare sponsorship: SponsorshipProfile;
 
   // ─── AI / Vector ──────────────────────────────────────────────────────────
 

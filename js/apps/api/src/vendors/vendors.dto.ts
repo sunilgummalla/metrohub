@@ -4,6 +4,15 @@
  * dependency yet — add when the project adopts it globally).
  */
 
+/** Structured sponsorship intake — see SponsorshipProfile on the Vendor schema. */
+export interface SponsorshipInput {
+  eventTypes?: string[];
+  budgetRange?: string;
+  audience?: string;
+  contactEmail?: string;
+  notes?: string;
+}
+
 export class CreateVendorDto {
   declare businessName: string;
   declare category: string;
@@ -21,6 +30,8 @@ export class CreateVendorDto {
     longitude: number;
     latitude: number;
   };
+  declare openToSponsorships?: boolean;
+  declare sponsorship?: SponsorshipInput;
 }
 
 export class UpdateVendorDto {
@@ -40,6 +51,8 @@ export class UpdateVendorDto {
     latitude: number;
   };
   declare images?: string[];
+  declare openToSponsorships?: boolean;
+  declare sponsorship?: SponsorshipInput;
 }
 
 /**
@@ -57,6 +70,8 @@ export class BrowseVendorsQueryDto {
   declare category?: string;
   /** Optional free-text search across businessName, searchTags, and descriptionMarkdown */
   declare q?: string;
+  /** When "true", restrict results to vendors open to sponsorships. */
+  declare openToSponsorships?: string;
   /** Pagination — arrive as strings from the query string; coerced in the service */
   declare page?: number | string;
   declare limit?: number | string;

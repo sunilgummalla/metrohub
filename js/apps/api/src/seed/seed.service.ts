@@ -59,6 +59,8 @@ const VENDORS: Array<{
   open: boolean;
   searchTags: string[];
   contact: { phone: string | null; email: string | null; website: string | null };
+  openToSponsorships?: boolean;
+  sponsorship?: { eventTypes: string[]; budgetRange: string; audience: string; contactEmail: string; notes: string };
 }> = [
   {
     businessName: "Mayuri Foods",
@@ -70,6 +72,14 @@ const VENDORS: Array<{
     lng: -122.14, lat: 47.63, rating: 4.6, ratingCount: 214, priceLevel: 2,
     hoursLabel: "Open till 9", open: true, searchTags: ["indian", "grocery", "thali", "spices"],
     contact: { phone: "+1 425-555-0142", email: "hello@mayurifoods.example", website: null },
+    openToSponsorships: true,
+    sponsorship: {
+      eventTypes: ["Cultural festival", "Community potluck", "Game night"],
+      budgetRange: "$500–$2,000",
+      audience: "Families across Bellevue, Redmond & Kirkland",
+      contactEmail: "sponsor@mayurifoods.example",
+      notes: "Happy to provide catering or gift cards for neighborhood events.",
+    },
   },
   {
     businessName: "Spice Route Café",
@@ -92,6 +102,14 @@ const VENDORS: Array<{
     lng: -122.19, lat: 47.60, rating: 4.5, ratingCount: 61, priceLevel: 2,
     hoursLabel: "RSVP for Sat", open: true, searchTags: ["events", "venue", "tambola", "community"],
     contact: { phone: "+1 425-555-0199", email: "events@atahall.example", website: null },
+    openToSponsorships: true,
+    sponsorship: {
+      eventTypes: ["Cultural festival", "Kids event", "Fundraiser"],
+      budgetRange: "Venue in-kind + up to $1,000",
+      audience: "South-Asian community in the Eastside",
+      contactEmail: "sponsor@atahall.example",
+      notes: "Can offer the hall at a discount and co-promote to our mailing list.",
+    },
   },
   {
     businessName: "Rani Florals",
@@ -278,6 +296,8 @@ export class SeedService implements OnModuleInit {
               hoursLabel: v.hoursLabel,
               open: v.open,
             },
+            openToSponsorships: v.openToSponsorships ?? false,
+            sponsorship: v.sponsorship ?? { eventTypes: [], budgetRange: "", audience: "", contactEmail: "", notes: "" },
           },
         },
         { upsert: true },
