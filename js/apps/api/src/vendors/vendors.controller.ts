@@ -18,7 +18,7 @@ import {
 import { VendorsService } from "./vendors.service";
 import { BrowseVendorsQueryDto, CreateVendorDto, UpdateVendorDto } from "./vendors.dto";
 import { VendorStatus } from "../database";
-import { parseStubBearerToken } from "../common/stub-auth";
+import { resolveMemberId } from "../common/session";
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
 
@@ -77,26 +77,14 @@ class AdminGuard implements CanActivate {
 @Injectable()
 class MemberGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const stubAuthEnabled =
-      process.env["ALLOW_STUB_AUTH"] === "true" &&
-      process.env["NODE_ENV"] !== "production";
-
-    if (!stubAuthEnabled) {
-      throw new ForbiddenException(
-        "Member auth is not configured — set ALLOW_STUB_AUTH=true for local dev (never in production)",
-      );
-    }
-
-    // Validate that the request carries a well-formed stub Bearer token.
-    // extractMemberIdOrThrow will re-validate below; this guard just ensures
-    // the request is rejected early with a 401 before reaching the handler.
+    // Accept a real signed OAuth session in any environment; the dev-only stub
+    // token is accepted only when ALLOW_STUB_AUTH is on (handled by resolveMemberId).
     const request = context.switchToHttp().getRequest<{ headers: Record<string, string> }>();
-    if (!parseStubBearerToken(request.headers["authorization"])) {
+    if (!resolveMemberId(request.headers["authorization"])) {
       throw new UnauthorizedException(
-        "Missing or invalid Authorization token — please log in again",
+        "Missing or invalid session — please sign in again",
       );
     }
-
     return true;
   }
 }
@@ -118,20 +106,11 @@ class MemberGuard implements CanActivate {
  * the memberId via a custom decorator.
  */
 function extractMemberIdOrThrow(req: { headers: Record<string, string> }): string {
-  // Stub tokens are only valid when ALLOW_STUB_AUTH=true AND not in production.
-  const stubAuthEnabled =
-    process.env["ALLOW_STUB_AUTH"] === "true" &&
-    process.env["NODE_ENV"] !== "production";
-
-  const memberId = parseStubBearerToken(req.headers["authorization"]);
+  // Accepts a real signed OAuth session anywhere; stub token only in dev.
+  const memberId = resolveMemberId(req.headers["authorization"]);
   if (!memberId) {
     throw new UnauthorizedException(
-      "Missing or invalid Authorization token — please log in again",
-    );
-  }
-  if (!stubAuthEnabled) {
-    throw new UnauthorizedException(
-      "Stub auth is disabled in this environment — use a real JWT",
+      "Missing or invalid session — please sign in again",
     );
   }
   return memberId;

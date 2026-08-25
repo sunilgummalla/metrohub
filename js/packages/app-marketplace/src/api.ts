@@ -72,7 +72,42 @@ export async function browseVendors(filters: BrowseFilters): Promise<BrowseRespo
 
 // ─── Onboarding (member auth + own listings) ────────────────────────────────
 
-/** Stub provider sign-in — stores the returned session token. */
+/** Which real OAuth providers are configured, plus whether the dev stub is on. */
+export async function getAuthProviders(): Promise<{ providers: Array<{ id: Provider; label: string }>; stub: boolean }> {
+  const res = await fetch(`${API_BASE}/members/auth/providers`);
+  if (!res.ok) return { providers: [], stub: false };
+  return res.json() as Promise<{ providers: Array<{ id: Provider; label: string }>; stub: boolean }>;
+}
+
+/** Kick off the real OAuth redirect flow for a configured provider. */
+export function startOAuth(provider: Provider, redirectPath: string): void {
+  const url = `${API_BASE}/members/auth/${provider}/start?redirect=${encodeURIComponent(redirectPath)}`;
+  window.location.assign(url);
+}
+
+/**
+ * On returning from an OAuth redirect the token/error arrives in the URL hash
+ * (#mh_token=… / #mh_error=…). Consume it: store the token and clear the hash.
+ * Returns "ok" | "error" | null (no OAuth hash present).
+ */
+export function consumeOAuthRedirect(): { status: "ok" } | { status: "error"; code: string } | null {
+  const hash = window.location.hash.replace(/^#/, "");
+  if (!hash) return null;
+  const params = new URLSearchParams(hash);
+  const token = params.get("mh_token");
+  const err = params.get("mh_error");
+  if (!token && !err) return null;
+  // Strip the hash so the token doesn't linger in history / on reload.
+  const clean = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", clean);
+  if (token) {
+    setToken(token);
+    return { status: "ok" };
+  }
+  return { status: "error", code: err ?? "signin_failed" };
+}
+
+/** Stub provider sign-in (dev only) — stores the returned session token. */
 export async function providerSignIn(provider: Provider): Promise<Session> {
   const res = await fetch(`${API_BASE}/members/oauth/${provider}`, {
     method: "POST",

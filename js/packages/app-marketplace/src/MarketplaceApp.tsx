@@ -143,7 +143,14 @@ export function MarketplaceApp({ citySlug = "seattle" }: MarketplaceAppProps) {
   const [total, setTotal] = useState(0);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  // Reopen onboarding after an OAuth redirect returns to /marketplace?onboarding=1.
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
+    try {
+      return new URLSearchParams(window.location.search).get("onboarding") === "1";
+    } catch {
+      return false;
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

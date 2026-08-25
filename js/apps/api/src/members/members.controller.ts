@@ -14,7 +14,7 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import { MembersService } from "./members.service";
 import { ForgotPasswordDto, LoginDto, RegisterDto, SocialLoginDto, UpdateProfileDto } from "./members.dto";
-import { parseStubBearerToken } from "../common/stub-auth";
+import { resolveMemberId } from "../common/session";
 
 /**
  * Members REST API — vendor self-service endpoints.
@@ -117,22 +117,12 @@ export class MembersController {
  * the memberId via a custom decorator.
  */
 function extractMemberIdOrThrow(req: { headers: Record<string, string> }): string {
-  // Stub tokens are only valid when ALLOW_STUB_AUTH=true AND NODE_ENV !== "production".
-  // This mirrors the guard in MembersService so that a correctly-shaped token string
-  // cannot be used to bypass auth in production or staging environments.
-  const stubAuthEnabled =
-    process.env["ALLOW_STUB_AUTH"] === "true" &&
-    process.env["NODE_ENV"] !== "production";
-
-  const memberId = parseStubBearerToken(req.headers["authorization"]);
+  // A real signed OAuth session is accepted anywhere; the dev-only stub token is
+  // accepted only when ALLOW_STUB_AUTH is on (both handled by resolveMemberId).
+  const memberId = resolveMemberId(req.headers["authorization"]);
   if (!memberId) {
     throw new UnauthorizedException(
-      "Missing or invalid Authorization token — please log in again",
-    );
-  }
-  if (!stubAuthEnabled) {
-    throw new UnauthorizedException(
-      "Stub auth is disabled in this environment — use a real JWT",
+      "Missing or invalid session — please sign in again",
     );
   }
   return memberId;

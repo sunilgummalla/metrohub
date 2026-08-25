@@ -1,14 +1,23 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
-import { ApiError, createVendor, getToken, listMyVendors, providerSignIn, signOut } from "./api";
+import {
+  ApiError, consumeOAuthRedirect, createVendor, getAuthProviders, getToken,
+  listMyVendors, providerSignIn, signOut, startOAuth,
+} from "./api";
 import type { CreateVendorInput, MyListing, Provider, Session } from "./types";
 
-const PROVIDERS: Array<{ id: Provider; label: string; glyph: string }> = [
-  { id: "google", label: "Google", glyph: "G" },
-  { id: "instagram", label: "Instagram", glyph: "◎" },
-  { id: "amazon", label: "Amazon", glyph: "a" },
-  { id: "entra-work", label: "Microsoft — Work", glyph: "⊞" },
-  { id: "entra-personal", label: "Microsoft — Personal", glyph: "⊞" },
+const GLYPHS: Record<Provider, string> = {
+  google: "G", instagram: "◎", amazon: "a", "entra-work": "⊞", "entra-personal": "⊞",
+};
+/** Stub buttons used in local dev when no real OAuth provider is configured. */
+const STUB_PROVIDERS: Array<{ id: Provider; label: string }> = [
+  { id: "google", label: "Google" },
+  { id: "instagram", label: "Instagram" },
+  { id: "amazon", label: "Amazon" },
+  { id: "entra-work", label: "Microsoft — Work" },
+  { id: "entra-personal", label: "Microsoft — Personal" },
 ];
+/** Where the OAuth redirect returns to — reopens the onboarding view. */
+const RETURN_PATH = "/marketplace?onboarding=1";
 
 const SUGGESTED_EVENT_TYPES = [
   "Cultural festival", "Game night", "Kids event", "Fundraiser",
@@ -57,6 +66,21 @@ export function Onboarding({
   const [loadingList, setLoadingList] = useState(false);
   const [busyProvider, setBusyProvider] = useState<Provider | null>(null);
   const [authError, setAuthError] = useState("");
+  // Which real providers are configured (+ whether the dev stub is available).
+  const [auth, setAuth] = useState<{ providers: Array<{ id: Provider; label: string }>; stub: boolean }>({ providers: [], stub: false });
+
+  // On mount: consume any OAuth redirect (token/error in the URL hash) and load
+  // which sign-in providers are available.
+  useEffect(() => {
+    const r = consumeOAuthRedirect();
+    if (r?.status === "ok") setSignedIn(true);
+    else if (r?.status === "error") {
+      setAuthError(r.code === "no_email"
+        ? "Your provider didn't share an email address — try a different one."
+        : "Sign-in didn't complete. Please try again.");
+    }
+    getAuthProviders().then(setAuth).catch(() => { /* leave empty — falls back to coming-soon */ });
+  }, []);
 
   const loadListings = useCallback(async () => {
     setLoadingList(true);
@@ -112,24 +136,48 @@ export function Onboarding({
         <section className="mktOnbCard mktSignin">
           <h3 className="mktOnbSub">Sign in to get started</h3>
           <p className="mktMuted">Use your business account — we never post on your behalf.</p>
-          <div className="mktProviders">
-            {PROVIDERS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className={`mktProviderBtn mktProvider-${p.id}`}
-                onClick={() => handleSignIn(p.id)}
-                disabled={busyProvider !== null}
-              >
-                <span className="mktProviderGlyph" aria-hidden="true">{p.glyph}</span>
-                {busyProvider === p.id ? "Signing in…" : `Continue with ${p.label}`}
-              </button>
-            ))}
-          </div>
+
+          {auth.providers.length > 0 ? (
+            // Real OAuth: redirect to the provider's consent screen.
+            <div className="mktProviders">
+              {auth.providers.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={`mktProviderBtn mktProvider-${p.id}`}
+                  onClick={() => startOAuth(p.id, RETURN_PATH)}
+                >
+                  <span className="mktProviderGlyph" aria-hidden="true">{GLYPHS[p.id]}</span>
+                  Continue with {p.label}
+                </button>
+              ))}
+            </div>
+          ) : auth.stub ? (
+            // Local dev with no OAuth configured — use the demo session stub.
+            <>
+              <div className="mktProviders">
+                {STUB_PROVIDERS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={`mktProviderBtn mktProvider-${p.id}`}
+                    onClick={() => handleSignIn(p.id)}
+                    disabled={busyProvider !== null}
+                  >
+                    <span className="mktProviderGlyph" aria-hidden="true">{GLYPHS[p.id]}</span>
+                    {busyProvider === p.id ? "Signing in…" : `Continue with ${p.label}`}
+                  </button>
+                ))}
+              </div>
+              <p className="mktFinePrint">
+                No OAuth provider is configured, so this uses a local demo session so you can try the flow.
+              </p>
+            </>
+          ) : (
+            <p className="mktFinePrint">Sign-in is being set up — please check back soon.</p>
+          )}
+
           {authError && <p className="mktFormError">{authError}</p>}
-          <p className="mktFinePrint">
-            Social sign-in is being finalized — for now this uses a demo session so you can try the flow.
-          </p>
         </section>
       ) : (
         <>
